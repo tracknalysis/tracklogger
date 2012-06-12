@@ -22,21 +22,26 @@ import org.slf4j.LoggerFactory;
 
 import net.tracknalysis.common.android.io.BtSocketManager;
 import net.tracknalysis.common.android.io.BtSocketManager.BtProfile;
+import net.tracknalysis.common.android.notification.AndroidNotificationStrategy;
+import net.tracknalysis.common.concurrent.GracefulShutdownThread;
 import net.tracknalysis.common.io.SocketManager;
 import net.tracknalysis.location.LocationManager;
 import net.tracknalysis.location.Route;
 import net.tracknalysis.location.Waypoint;
 import net.tracknalysis.location.nmea.NmeaLocationManager;
+import net.tracknalysis.tracklogger.config.Configuration;
+import net.tracknalysis.tracklogger.config.ConfigurationFactory;
 import net.tracknalysis.tracklogger.dataprovider.AccelData;
 import net.tracknalysis.tracklogger.dataprovider.AccelDataProvider;
-import net.tracknalysis.tracklogger.dataprovider.AndroidTrackLoggerDataProviderCoordinator;
 import net.tracknalysis.tracklogger.dataprovider.EcuData;
 import net.tracknalysis.tracklogger.dataprovider.EcuDataProvider;
 import net.tracknalysis.tracklogger.dataprovider.LocationData;
 import net.tracknalysis.tracklogger.dataprovider.LocationDataProvider;
+import net.tracknalysis.tracklogger.dataprovider.TimingData;
 import net.tracknalysis.tracklogger.dataprovider.TimingDataProvider;
 import net.tracknalysis.tracklogger.dataprovider.TrackLoggerDataProviderCoordinator;
-import net.tracknalysis.tracklogger.dataprovider.AndroidAccelDataProvider;
+import net.tracknalysis.tracklogger.dataprovider.android.AndroidAccelDataProvider;
+import net.tracknalysis.tracklogger.dataprovider.android.AndroidTrackLoggerDataProviderCoordinator;
 import net.tracknalysis.tracklogger.dataprovider.ecu.MegasquirtEcuDataProvider;
 import net.tracknalysis.tracklogger.dataprovider.location.LocationManagerLocationDataProvider;
 import net.tracknalysis.tracklogger.dataprovider.timing.RouteManagerTimingDataProvider;
@@ -44,14 +49,13 @@ import net.tracknalysis.tracklogger.R;
 
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.app.Dialog;
 import android.app.ProgressDialog;
 import android.bluetooth.BluetoothAdapter;
-import android.bluetooth.BluetoothDevice;
 import android.content.DialogInterface;
 import android.content.DialogInterface.OnCancelListener;
 import android.content.Intent;
 import android.hardware.SensorManager;
-import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -76,13 +80,11 @@ public class LogActivity extends Activity implements OnCancelListener {
     
     // Location
     private SocketManager gpsSocketManager;
-    private BluetoothDevice btGpsDevice;
     private LocationManager locationManager;
     private LocationDataProvider locationDataProvider;
     
     // ECU
     private SocketManager ecuSocketManager;
-    private BluetoothDevice btEcuDevice;
     private EcuDataProvider ecuDataProvider;
     
     // Timing
@@ -93,12 +95,13 @@ public class LogActivity extends Activity implements OnCancelListener {
     
     // Display
     private DisplayTask displayTask;
-    private ProgressDialog initDataProviderCoordinatorProgressDialog;
+    private Dialog initDataProviderCoordinatorDialog;
+    private ProgressDialog waitingForStartTriggerDialog;
     
     private TrackLoggerDataProviderCoordinator dataProviderCoordinator;
 
     @Override
-    public void onCreate(Bundle savedInstanceState) {
+    protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         
         PowerManager pm = (PowerManager) getSystemService(POWER_SERVICE);
@@ -108,6 +111,18 @@ public class LogActivity extends Activity implements OnCancelListener {
         
         btAdapter = BluetoothAdapter.getDefaultAdapter();
         displayTask = new DisplayTask();
+        
+        initDataProviderCoordinatorDialog = new Dialog(this);
+        initDataProviderCoordinatorDialog.setContentView(R.layout.log_wait_for_ready);
+        initDataProviderCoordinatorDialog.setTitle("Waiting for data providers...");
+        initDataProviderCoordinatorDialog.setCancelable(true);
+        initDataProviderCoordinatorDialog.setOnCancelListener(this);
+        
+        waitingForStartTriggerDialog = new ProgressDialog(LogActivity.this);
+        waitingForStartTriggerDialog.setTitle("Logging Start");
+        waitingForStartTriggerDialog.setCancelable(true);
+        waitingForStartTriggerDialog.setMessage("Waiting for logging trigger...");
+        waitingForStartTriggerDialog.setOnCancelListener(this);
         
         setContentView(R.layout.log);
         
@@ -149,39 +164,11 @@ public class LogActivity extends Activity implements OnCancelListener {
 
     @Override
     protected void onDestroy() {
-        if (dataProviderCoordinator != null) {
-            dataProviderCoordinator.stop();
-        }
-        
-        if (accelDataProvider != null) {
-            accelDataProvider.stop();
-        }
-        
-        if (locationDataProvider != null) {
-            locationDataProvider.stop();
-        }
-        
-        if (locationManager != null) {
-            locationManager.stop();
-        }
-        silentSocketManagerDisconnect(gpsSocketManager);
-        
-        if (ecuDataProvider != null) {
-            ecuDataProvider.stop();
-        }
-        silentSocketManagerDisconnect(ecuSocketManager);
-        
-        if (displayTask != null) {
-            displayTask.cancel(true);
-        }
-        
-        if (initDataProviderCoordinatorProgressDialog != null) {
-            initDataProviderCoordinatorProgressDialog.dismiss();
-        }
+        cleanup();
         
         super.onDestroy();
     }
-    
+
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data)
     {
@@ -203,19 +190,131 @@ public class LogActivity extends Activity implements OnCancelListener {
     
     @Override
     public void onCancel(DialogInterface dialog) {
-        if (dialog == initDataProviderCoordinatorProgressDialog) {
+        if (dialog == initDataProviderCoordinatorDialog || dialog == waitingForStartTriggerDialog) {
             finish();
         }
     }
     
+    protected void cleanup() {
+        if (dataProviderCoordinator != null) {
+            dataProviderCoordinator.stop();
+        }
+        
+        if (accelDataProvider != null) {
+            accelDataProvider.stop();
+        }
+        
+        if (locationDataProvider != null) {
+            locationDataProvider.stop();
+        }
+        
+        if (timingDataProvider != null) {
+            timingDataProvider.stop();
+        }
+        
+        if (locationManager != null) {
+            locationManager.stop();
+        }
+        silentSocketManagerDisconnect(gpsSocketManager);
+        
+        if (ecuDataProvider != null) {
+            ecuDataProvider.stop();
+        }
+        silentSocketManagerDisconnect(ecuSocketManager);
+        
+        if (displayTask != null) {
+            displayTask.cancel();
+        }
+        
+        if (initDataProviderCoordinatorDialog != null) {
+            initDataProviderCoordinatorDialog.dismiss();
+        }
+        
+        if (waitingForStartTriggerDialog != null) {
+            initDataProviderCoordinatorDialog.dismiss();
+        }
+    }
+    
     protected void initDataProviderCoordinator() {
-        btGpsDevice = btAdapter.getRemoteDevice("00:1C:88:13:F5:64");
-        btEcuDevice = btAdapter.getRemoteDevice("00:12:6F:25:68:DE");
+        Configuration config = ConfigurationFactory.getInstance().getConfiguration();
         
         try {
-            gpsSocketManager = new BtSocketManager(btGpsDevice.getAddress(),
+            // Handles events from the data provider coordinator
+            Handler dataProviderCoordinatorHandler = new Handler() {
+                @Override
+                public void handleMessage(Message msg) {
+                    LOG.debug("Handling data provider coordinator message: {}.", msg);
+                    
+                    TrackLoggerDataProviderCoordinator.NotificationType type = 
+                            TrackLoggerDataProviderCoordinator.NotificationType.fromInt(msg.what);
+                    
+                    switch (type) {
+                        case START_FAILED:
+                            onInitDataProviderCoordinatorError();
+                            break;
+                        case READY_PROGRESS:
+                            Object[] data = (Object[]) msg.obj;
+                            if (data[0] != null) {
+                                TextView locationStatusView = (TextView) initDataProviderCoordinatorDialog
+                                        .findViewById(R.id.locationStatus);
+                                
+                                locationStatusView.setText("OK");
+                            }
+                            
+                            if(data[1] != null) {
+                                TextView accelStatusView = (TextView) initDataProviderCoordinatorDialog
+                                        .findViewById(R.id.accelStatus);
+                                
+                                accelStatusView.setText("OK");
+                            }
+                            
+                            if(data[2] != null) {
+                                TextView ecuStatusView = (TextView) initDataProviderCoordinatorDialog
+                                        .findViewById(R.id.ecuStatus);
+                                
+                                ecuStatusView.setText("OK");
+                            }
+                            
+                            break;
+                        case READY:
+                            initDataProviderCoordinatorDialog.dismiss();
+                            waitingForStartTriggerDialog.show();
+                            dataProviderCoordinator.startLogging();
+                            displayTask.start();
+                            break;
+                        case TIMING_START_TRIGGER_FIRED:
+                            initDataProviderCoordinatorDialog.dismiss();
+                            waitingForStartTriggerDialog.dismiss();
+                            
+                            break;
+                        case LOGGING_FAILED:
+                            onDataProviderCoordinatorLoggingError();
+                            break;
+                    }
+                }
+            };
+            
+            // Handles events from the location manager
+            Handler locationManagerHandler = new Handler() {
+                @Override
+                public void handleMessage(Message msg) {
+                    LOG.debug("Handling location manager message: {}.", msg);
+                    
+                    NmeaLocationManager.NotificationType type = 
+                            NmeaLocationManager.NotificationType.fromInt(msg.what);
+                    
+                    switch (type) {
+                        case START_FAILED:
+                            onInitDataProviderCoordinatorError();
+                            break;
+                    }
+                }
+            };
+            
+            gpsSocketManager = new BtSocketManager(config.getLocationBtAddress(),
                     btAdapter, BtProfile.SPP);
-            locationManager = new NmeaLocationManager(gpsSocketManager);
+            locationManager = new NmeaLocationManager(gpsSocketManager,
+                    new AndroidNotificationStrategy(locationManagerHandler));
             
             
             locationDataProvider = new LocationManagerLocationDataProvider(locationManager);
@@ -224,10 +323,13 @@ public class LogActivity extends Activity implements OnCancelListener {
             WindowManager windowManager = (WindowManager) getSystemService(WINDOW_SERVICE);
             accelDataProvider = new AndroidAccelDataProvider(sensorManager, windowManager);
 
-            ecuSocketManager = new BtSocketManager(btEcuDevice.getAddress(),
-                    btAdapter, BtProfile.SPP);
-            ecuDataProvider = new MegasquirtEcuDataProvider(ecuSocketManager);
+            if (config.isEcuLoggingEnabled()) {
+                ecuSocketManager = new BtSocketManager(config.getEcuBtAddress(),
+                        btAdapter, BtProfile.SPP);
+                ecuDataProvider = new MegasquirtEcuDataProvider(ecuSocketManager);
+            }
             
+            // TODO route from external source
             Route route = new Route("My Route", Arrays.asList(
                     new Waypoint("1", 38.979896545410156d, -77.54102325439453d),
                     new Waypoint("2", 38.98295974731445d, -77.53973388671875d),
@@ -235,52 +337,29 @@ public class LogActivity extends Activity implements OnCancelListener {
                     new Waypoint("4", 38.972618103027344d, -77.54145050048828d),
                     new Waypoint("5", 38.97257995605469d, -77.5412826538086d)));
             
-            timingDataProvider = new RouteManagerTimingDataProvider(locationManager.getRouteManager(), route);
-            
-            // Handles events from the data provider coordinator
-            Handler dataProviderCoordinatorHandler = new Handler() {
-                @Override
-                public void handleMessage(Message msg) {
-                    
-                    if (msg.what == TrackLoggerDataProviderCoordinator.NotificationType
-                            .READY_PROGRESS.getNotificationTypeId()) {
-                        // TODO display feedback to user
-                    } else if (msg.what == TrackLoggerDataProviderCoordinator.NotificationType
-                            .READY.getNotificationTypeId()) {
-                        initDataProviderCoordinatorProgressDialog.dismiss();
-                        dataProviderCoordinator.startLogging();
-                    } else if (msg.what == TrackLoggerDataProviderCoordinator.NotificationType
-                            .LOGGING_START_TRIGGER_FIRED.getNotificationTypeId()) {
-                        initDataProviderCoordinatorProgressDialog.dismiss();
-                        displayTask.execute();
-                    } else if (msg.what == TrackLoggerDataProviderCoordinator.NotificationType
-                            .LOGGING_FAILED.getNotificationTypeId()) {
-                        onDataProviderCoordinatorLoggingError();
-                    }
-                }
-            };
+            timingDataProvider = new RouteManagerTimingDataProvider(
+                    locationManager.getRouteManager(), route);
             
             dataProviderCoordinator = new AndroidTrackLoggerDataProviderCoordinator(
                     dataProviderCoordinatorHandler, getApplication(), accelDataProvider, 
                     locationDataProvider, ecuDataProvider, timingDataProvider);
             
-            // Do the start(s) in another thread so that we don't block the UI. 
+            initDataProviderCoordinatorDialog.show();
+            
+            // Do the start(s) in another thread so that we don't block the UI thread.  Notifications
+            // are used to apprise the UI of the progress, but we still capture and log any exceptions
+            // that are thrown.
             Thread t = new Thread() {
                 public void run() {
-                    locationManager.start();
-                    dataProviderCoordinator.start();
+                    try {
+                        locationManager.start();
+                        dataProviderCoordinator.start();
+                    } catch (Exception e) {
+                        LOG.error("Error starting location manager and data provider coordinator.", e);
+                    }
                 };
             };
             t.start();
-            
-            initDataProviderCoordinatorProgressDialog = 
-                    ProgressDialog.show(
-                            this, 
-                            "Waiting for data providers...",
-                            null,
-                            true,
-                            true,
-                            this);
             
         } catch (Exception e) {
             LOG.error("Fatal error while initializing data providers and coordinator.", e);
@@ -289,6 +368,11 @@ public class LogActivity extends Activity implements OnCancelListener {
     }
     
     protected void onInitDataProviderCoordinatorError() {
+        initDataProviderCoordinatorDialog.dismiss();
+        waitingForStartTriggerDialog.dismiss();
+        
+        cleanup();
+        
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder
                 .setMessage("Error initializing data providers.  Check the logs for more details.")
@@ -306,6 +390,11 @@ public class LogActivity extends Activity implements OnCancelListener {
     }
     
     protected void onDataProviderCoordinatorLoggingError() {
+        initDataProviderCoordinatorDialog.dismiss();
+        waitingForStartTriggerDialog.dismiss();
+        
+        cleanup();
+        
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder
                 .setMessage("Error recording log data.  Check the logs for more details.")
@@ -332,75 +421,106 @@ public class LogActivity extends Activity implements OnCancelListener {
         }
     }
     
-    protected class DisplayTask extends AsyncTask<Void, Void, Void> {
-       
+    protected class DisplayTask extends GracefulShutdownThread {
         @Override
-        protected Void doInBackground(Void... params) {
-            // TODO, can't use isCancelled inside the task as it doesn't change state until the thread stops
-            while(!isCancelled()) {
+        public void run() {
+            
+            while(run) {
                 try {
                     Thread.sleep(100);
                 } catch (InterruptedException e) {
-                    if (!isCancelled()) {
+                    if (run) {
                         LOG.error("Interrupted display task while running.", e);
                     } else {
-                        LOG.debug("Interrupted display task while running.", e);
+                        LOG.info("Interrupted display task while running.", e);
                     }
                 }
                 
-                publishProgress();
-            }
-            
-            return null;
-        }
-        
-        protected void onProgressUpdate(Void... progress) {
-            TextView tv;
-            
-            AccelData accelData = accelDataProvider.getCurrentData();
-            LocationData gpsData = locationDataProvider.getCurrentData();
-            EcuData ecuData = ecuDataProvider.getCurrentData();
-            
-            if (accelData != null) {
-                tv = (TextView) findViewById(R.id.accelUpdateFreq);
-                tv.setText(String.valueOf(accelDataProvider.getUpdateFrequency()));
-                
-                tv = (TextView) findViewById(R.id.lateralA);
-                tv.setText(String.valueOf(accelData.getLateral()));
-                
-                tv = (TextView) findViewById(R.id.verticalA);
-                tv.setText(String.valueOf(accelData.getVertical()));
-                
-                tv = (TextView) findViewById(R.id.longitudinalA);
-                tv.setText(String.valueOf(accelData.getLongitudinal()));
-            }
-            
-            if (gpsData != null) {
-                tv = (TextView) findViewById(R.id.gpsUpdateFreq);
-                tv.setText(String.valueOf(locationDataProvider.getUpdateFrequency()));
-                
-                tv = (TextView) findViewById(R.id.latitude);
-                tv.setText(String.valueOf(gpsData.getLatitude()));
-                
-                tv = (TextView) findViewById(R.id.longitude);
-                tv.setText(String.valueOf(gpsData.getLongitude()));
-                
-                tv = (TextView) findViewById(R.id.altitude);
-                tv.setText(String.valueOf(gpsData.getAltitude()));
-            }
-            
-            if (ecuData != null) {
-                tv = (TextView) findViewById(R.id.ecuUpdateFreq);
-                tv.setText(String.valueOf(ecuDataProvider.getUpdateFrequency()));
-                
-                tv = (TextView) findViewById(R.id.rpm);
-                tv.setText(String.valueOf(ecuData.getRpm()));
-                
-                tv = (TextView) findViewById(R.id.throttle);
-                tv.setText(String.valueOf(ecuData.getThrottlePosition()));
-                
-                tv = (TextView) findViewById(R.id.map);
-                tv.setText(String.valueOf(ecuData.getManifoldAbsolutePressure()));
+                LogActivity.this.runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        TextView tv;
+
+                        AccelData accelData = accelDataProvider
+                                .getCurrentData();
+                        LocationData gpsData = locationDataProvider
+                                .getCurrentData();
+                        TimingData timingData = timingDataProvider
+                                .getCurrentData();
+                        EcuData ecuData = null;
+                        
+                        if (ecuDataProvider != null) {
+                            ecuData = ecuDataProvider.getCurrentData();
+                        }
+                        
+                        if (timingData != null) {
+                            tv = (TextView) findViewById(R.id.lap);
+                            tv.setText(String.valueOf(timingData.getLap()));
+                            
+                            tv = (TextView) findViewById(R.id.splitIndex);
+                            tv.setText(String.valueOf(timingData.getSplitIndex()));
+                            
+                            if (timingData.getLapTime() != null) {
+                                tv = (TextView) findViewById(R.id.lapTime);
+                                tv.setText(String.valueOf(timingData.getLapTime()));
+                            }
+                        }
+
+                        if (accelData != null) {
+                            
+                            tv = (TextView) findViewById(R.id.accelUpdateFreq);
+                            tv.setText(String.format("%.3f",
+                                    accelDataProvider.getUpdateFrequency()));
+
+                            tv = (TextView) findViewById(R.id.lateralA);
+                            tv.setText(String.format("%.3f",
+                                    accelData.getLateral()));
+
+                            tv = (TextView) findViewById(R.id.verticalA);
+                            tv.setText(String.format("%.3f",
+                                    accelData.getVertical()));
+
+                            tv = (TextView) findViewById(R.id.longitudinalA);
+                            tv.setText(String.format("%.3f",
+                                    accelData.getLongitudinal()));
+                        }
+
+                        if (gpsData != null) {
+                            tv = (TextView) findViewById(R.id.gpsUpdateFreq);
+                            tv.setText(String.format("%.3f",
+                                    locationDataProvider.getUpdateFrequency()));
+
+                            tv = (TextView) findViewById(R.id.latitude);
+                            tv.setText(String.format("%.8f",
+                                    gpsData.getLatitude()));
+
+                            tv = (TextView) findViewById(R.id.longitude);
+                            tv.setText(String.format("%.8f",
+                                    gpsData.getLongitude()));
+
+                            tv = (TextView) findViewById(R.id.altitude);
+                            tv.setText(String.format("%.3f",
+                                    gpsData.getAltitude()));
+                        }
+
+                        if (ecuData != null) {
+                            tv = (TextView) findViewById(R.id.ecuUpdateFreq);
+                            tv.setText(String.valueOf(ecuDataProvider
+                                    .getUpdateFrequency()));
+
+                            tv = (TextView) findViewById(R.id.rpm);
+                            tv.setText(String.valueOf(ecuData.getRpm()));
+
+                            tv = (TextView) findViewById(R.id.throttle);
+                            tv.setText(String.valueOf(ecuData
+                                    .getThrottlePosition()));
+
+                            tv = (TextView) findViewById(R.id.map);
+                            tv.setText(String.valueOf(ecuData
+                                    .getManifoldAbsolutePressure()));
+                        }
+                    }
+                });
             }
         }
     }

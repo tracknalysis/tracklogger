@@ -40,10 +40,10 @@ public class RouteManagerTimingDataProvider extends AbstractDataProvider<TimingD
     private final RouteManager routeManager;
     private final Route route;
     private volatile TimingData currentTimingData;
-    private volatile int lap = 1;
+    private volatile int lap = 0;
     private volatile long lastLapStartTime;
     private volatile long lastSplitStartTime;
-    private volatile long bestLapTime;
+    private volatile Long bestLapTime;
     private volatile Long[] bestSplitTimes;
     
     public RouteManagerTimingDataProvider(RouteManager routeManager, Route segmentsRoute) {
@@ -83,37 +83,34 @@ public class RouteManagerTimingDataProvider extends AbstractDataProvider<TimingD
             long deltaSplit = getLocationBasedElapsedTime(lastSplitStartTime, locationTime);
             
             if (lap == 0 && waypointIndex == 0) {
-                builder.setLap(++lap);
-                builder.setSplitIndex(waypointIndex);
-                bestLapTime = Long.MAX_VALUE;
-            } else if (waypointIndex == 0) {
-                
-                if (deltaLap < bestLapTime) {
-                    bestLapTime = deltaLap;
-                }
-                
-                if (deltaSplit < bestSplitTimes[bestSplitTimes.length - 1]) {
-                    bestSplitTimes[bestSplitTimes.length - 1] = deltaSplit;
-                }
-                
                 builder.setLap(lap++);
                 builder.setSplitIndex(bestSplitTimes.length - 1);
-                builder.setLapTime(deltaLap);
-                builder.setSplitTime(deltaSplit);
-                builder.setBestLapTime(bestLapTime);
-                
-                lastLapStartTime = locationTime;
-                lastSplitStartTime = locationTime;
             } else {
                 
-                if (deltaSplit < bestSplitTimes[waypointIndex]) {
-                    bestSplitTimes[waypointIndex] = deltaSplit;
+                int splitIndex;
+                
+                if (waypointIndex == 0) {
+                    splitIndex = bestSplitTimes.length - 1;
+                    
+                    if (bestLapTime == null || deltaLap < bestLapTime) {
+                        bestLapTime = deltaLap;
+                    }
+                    
+                    builder.setLapTime(deltaLap);
+                    builder.setBestLapTime(bestLapTime);
+                } else {
+                    splitIndex = waypointIndex - 1;
                 }
                 
-                builder.setLap(lap);
-                builder.setSplitIndex(waypointIndex);
+                if (bestSplitTimes[splitIndex] == null || deltaSplit < bestSplitTimes[splitIndex]) {
+                    bestSplitTimes[splitIndex] = deltaSplit;
+                }
+                
+                
+                builder.setLap(lap++);
+                builder.setSplitIndex(splitIndex);
+                
                 builder.setSplitTime(deltaSplit);
-                builder.setBestLapTime(bestLapTime);
                 
                 lastSplitStartTime = locationTime;
             }

@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <PreferenceCategory android:title="@string/loggingPreferenceTitle">
+          <ListPreference
+            android:entries="@array/loggingLevelNames"
+            android:entryValues="@array/loggingLevelValues"
+            android:defaultValue="INFO"
+            android:key="log.level"
+            android:title="@string/logLevel" />
+          <CheckBoxPreference
+            android:key="log.file.enable"
+            android:defaultValue="false"
+            android:title="@string/logFileEnable" />
+    </PreferenceCategory>
+    
+    <PreferenceCategory android:title="@string/locationPreferenceTitle">
+        <net.tracknalysis.tracklogger.preference.BtDeviceListPreference
+            android:key="location.bt.address"
+            android:title="@string/locationBt" />
+    </PreferenceCategory>
+    
+    <PreferenceCategory android:title="@string/ecuPreferenceTitle">
+        <CheckBoxPreference
+            android:key="ecu.enable"
+            android:defaultValue="false"
+            android:title="@string/ecuEnable" />
+        <net.tracknalysis.tracklogger.preference.BtDeviceListPreference
+            android:key="ecu.bt.address"
+            android:title="@string/ecuBt" />
+    </PreferenceCategory>
+
+</PreferenceScreen>

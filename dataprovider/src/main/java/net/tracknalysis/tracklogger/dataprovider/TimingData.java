@@ -32,6 +32,10 @@ public class TimingData extends AbstractData {
     private Long bestLapTime;
     private List<Long> bestSplitTimes;
     
+    /**
+     * Returns the UTC time in the day when the lap time was captured.  Used for synchronization
+     * with other data.
+     */
     public long getTime() {
         return time;
     }
@@ -52,7 +56,8 @@ public class TimingData extends AbstractData {
     }
 
     /**
-     * Returns the one based lap counter.
+     * Returns the zero based lap counter.  That is, the first timing data
+     * will be for lap 0 and will have no valid time information.
      */
     public int getLap() {
         return lap;

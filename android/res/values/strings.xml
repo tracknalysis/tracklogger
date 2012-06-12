@@ -1,4 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">TrackLogger</string>
+    <string name="loggingPreferenceTitle">Logging</string>
+    <string name="logLevel">Log Level</string>
+    <string name="logFileEnable">Enable Log to File</string>
+    
+    <string name="locationPreferenceTitle">Location Logging</string>
+    <string name="locationBt">Location Bluetooth Device</string>
+    
+    <string name="ecuPreferenceTitle">ECU Logging</string>
+    <string name="ecuEnable">Enable</string>
+    <string name="ecuBt">ECU Bluetooth Device</string>
 </resources>

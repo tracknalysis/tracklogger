@@ -13,10 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package net.tracknalysis.tracklogger.dataprovider;
+package net.tracknalysis.tracklogger.dataprovider.android;
 
 import net.tracknalysis.tracklogger.dataprovider.AbstractDataProvider;
 import net.tracknalysis.tracklogger.dataprovider.AccelData;
+import net.tracknalysis.tracklogger.dataprovider.AccelData.AccelDataBuilder;
 import net.tracknalysis.tracklogger.dataprovider.AccelDataProvider;
 
 import org.slf4j.Logger;
@@ -103,23 +104,26 @@ public class AndroidAccelDataProvider extends AbstractDataProvider<AccelData>
     @Override
     public void onSensorChanged(SensorEvent event) {
         
+        long deltaSystemTime = -(System.nanoTime() - event.timestamp);
+        long receviedTimestamp = (long) (System.currentTimeMillis() + (deltaSystemTime / 1000000d));
+        
         if (LOG.isTraceEnabled()) {
             
             sensorChangeCount++;
             if (lastEventTime == 0) {
                 lastEventTime = event.timestamp;
             }
-            long deltaEventTime = event.timestamp - lastEventTime;
+            long deltaEventTime = -(event.timestamp - lastEventTime);
             lastEventTime = event.timestamp;
             totalAccelDeltaEventTime += deltaEventTime;
             
-            long deltaSystemTime = System.nanoTime() - event.timestamp;
+            
             long avgAccelDeltaEventTime = totalAccelDeltaEventTime / sensorChangeCount;
             long avgAccelDeltaSystemTime = totalAccelDeltaSystemTime / sensorChangeCount;
             
             LOG.trace(
                     "Got accel sensor update {}.  Delta T from now is {}ms.  "
-                            + "Delta T from last event is {}ms.  "
+                            + "Delta T from now is {}ms.  "
                             + "Average delta T from now is {}ms.  "
                             + "Average delta T between events is {}ms.  "
                             + "Received {} updates up to now.",
@@ -166,13 +170,13 @@ public class AndroidAccelDataProvider extends AbstractDataProvider<AccelData>
         
         vertical = vertical - SensorManager.GRAVITY_EARTH;
         
-        AccelData newAccelData = new AccelData();
-        newAccelData.setDataRecivedTime(event.timestamp);
-        newAccelData.setLateral(lateral);
-        newAccelData.setLongitudinal(longitudinal);
-        newAccelData.setVertical(vertical);
+        AccelDataBuilder builder = new AccelDataBuilder();
+        builder.setDataRecivedTime(receviedTimestamp);
+        builder.setLateral(lateral);
+        builder.setLongitudinal(longitudinal);
+        builder.setVertical(vertical);
         
-        currentAccelData = newAccelData;
+        currentAccelData = builder.build();
         
         notifySynchronousListeners(currentAccelData);
     }

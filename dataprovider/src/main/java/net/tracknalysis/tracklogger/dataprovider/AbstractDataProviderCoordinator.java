@@ -15,16 +15,10 @@
  */
 package net.tracknalysis.tracklogger.dataprovider;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 /**
  * @author David Valeri
  */
 public abstract class AbstractDataProviderCoordinator implements DataProviderCoordinator {
-    
-    private static final Logger LOG = LoggerFactory
-            .getLogger(AbstractDataProviderCoordinator.class);
     
     private volatile boolean running;
     
@@ -47,65 +41,62 @@ public abstract class AbstractDataProviderCoordinator implements DataProviderCoo
 
     @Override
     public synchronized void start() {
+        locationListener = new DataListener<LocationData>() {
+            
+            @Override
+            public void receiveData(LocationData data) {
+                AccelData accelData = accelDataProvider.getCurrentData();
+                EcuData ecuData = null;
+                if (ecuDataProvider != null) {
+                    ecuData = ecuDataProvider.getCurrentData();
+                }
+                
+                handleUpdate(data, accelData, ecuData);
+            }
+        };
         
-        try {
-            locationDataProvider.start();
-            accelDataProvider.start();
+        timingListener = new DataListener<TimingData>() {
+            
+            @Override
+            public void receiveData(TimingData data) {
+                handleUpdate(data);
+            }
+        };
+        
+        locationDataProvider.addSynchronousListener(locationListener);
+        timingDataProvider.addSynchronousListener(timingListener);
+        
+        locationDataProvider.start();
+        accelDataProvider.start();
+        if (ecuDataProvider != null) {
             ecuDataProvider.start();
-            timingDataProvider.start();
-            
-            locationListener = new DataListener<LocationData>() {
-                
-                @Override
-                public void receiveData(LocationData data) {
-                    AccelData accelData = accelDataProvider.getCurrentData();
-                    EcuData ecuData = ecuDataProvider.getCurrentData();
-                    
-                    handleUpdate(data, accelData, ecuData);
-                }
-            };
-            
-            timingListener = new DataListener<TimingData>() {
-                
-                @Override
-                public void receiveData(TimingData data) {
-                    handleUpdate(data);
-                }
-            };
-            
-            locationDataProvider.addSynchronousListener(locationListener);
-            timingDataProvider.addSynchronousListener(timingListener);
-            
-            running = true;
-        } catch (Exception e) {
-            // TODO trigger event for an error here and try to clean up the mess
-            LOG.error("BAD!", e);
-            throw new RuntimeException(e);
         }
+        timingDataProvider.start();
+        
+        running = true;
     }
     
     @Override
     public synchronized void stop() {
-        
-        try {
-            locationDataProvider.removeSynchronousListener(locationListener);
-            timingDataProvider.removeSynchronousListener(timingListener);
-            locationDataProvider.stop();
-            timingDataProvider.stop();
-            accelDataProvider.stop();
+        locationDataProvider.removeSynchronousListener(locationListener);
+        timingDataProvider.removeSynchronousListener(timingListener);
+        locationDataProvider.stop();
+        timingDataProvider.stop();
+        accelDataProvider.stop();
+        if (ecuDataProvider != null) {
             ecuDataProvider.stop();
-            
-            running = false;
-        } catch (Exception e) {
-            // TODO trigger event for an error here and try to clean up the mess
-            LOG.error("BAD!", e);
-            throw new RuntimeException(e);
         }
+        
+        running = false;
     }
     
     @Override
-    public boolean isRunning() {
+    public final boolean isRunning() {
         return running;
+    }
+    
+    protected final boolean isEcuDataProviderEnabled() {
+        return ecuDataProvider != null;
     }
     
     protected abstract void handleUpdate(LocationData gpsData, AccelData accelData, EcuData ecuData);

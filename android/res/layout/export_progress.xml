@@ -4,32 +4,38 @@
     android:layout_height="match_parent" >
 
     <TextView
-        android:id="@+id/textView1"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_centerHorizontal="true"
-        android:text="Waiting for data sources..."
+        android:text="Exporting data..."
         android:textAppearance="?android:attr/textAppearanceLarge" />
     
      <ProgressBar
-        android:id="@+id/waitingForDataProgressBar"
-        style="?android:attr/progressBarStyleLarge"
-        android:layout_width="wrap_content"
+        android:id="@+id/exportProgressBar"
+        android:layout_width="fill_parent"
         android:layout_height="wrap_content"
         android:layout_below="@+id/textView1"
         android:layout_centerHorizontal="true"
-        android:layout_marginTop="14dp"
-        android:indeterminate="true" />
+        android:padding="15dp"
+        android:indeterminate="false"
+        style="@android:style/Widget.ProgressBar.Horizontal" />
 
     <TextView
-        android:id="@+id/status"
+        android:id="@+id/exportProgressMessage"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_centerHorizontal="true"
-        android:layout_below="@+id/waitingForDataProgressBar"
-        android:text="Waiting..."
+        android:layout_below="@+id/exportProgressBar"
+        android:text=""
         android:textAppearance="?android:attr/textAppearanceLarge" />
-
-   
+    
+    <Button
+        android:id="@+id/ok"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerHorizontal="true"
+        android:layout_below="@+id/exportProgressMessage"
+        android:clickable="false"
+        android:text="Ok"/>
 
 </RelativeLayout>

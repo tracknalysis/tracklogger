@@ -13,12 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package net.tracknalysis.tracklogger.dataprovider;
+package net.tracknalysis.tracklogger.dataprovider.android;
 
 import java.util.Date;
 
 import net.tracknalysis.common.android.notification.AndroidNotificationStrategy;
-import net.tracknalysis.tracklogger.provider.TrackLogData;
+import net.tracknalysis.tracklogger.dataprovider.AccelDataProvider;
+import net.tracknalysis.tracklogger.dataprovider.EcuDataProvider;
+import net.tracknalysis.tracklogger.dataprovider.LocationDataProvider;
+import net.tracknalysis.tracklogger.dataprovider.TimingData;
+import net.tracknalysis.tracklogger.dataprovider.TimingDataProvider;
+import net.tracknalysis.tracklogger.dataprovider.TrackLoggerDataProviderCoordinator;
+import net.tracknalysis.tracklogger.provider.TrackLoggerData;
 import android.content.ContentResolver;
 import android.content.ContentUris;
 import android.content.ContentValues;
@@ -48,15 +54,15 @@ public class AndroidTrackLoggerDataProviderCoordinator extends
         Date now = new Date();
         
         ContentValues cv = new ContentValues();
-        cv.put(TrackLogData.Session.COLUMN_NAME_START_DATE,
+        cv.put(TrackLoggerData.Session.COLUMN_NAME_START_DATE,
                 formatAsSqlDate(now));
-        cv.put(TrackLogData.Session.COLUMN_NAME_LAST_MODIFIED_DATE,
+        cv.put(TrackLoggerData.Session.COLUMN_NAME_LAST_MODIFIED_DATE,
                 formatAsSqlDate(now));
         
         Uri currentSessionUri = context.getContentResolver().insert(
-                TrackLogData.Session.CONTENT_URI, cv);
+                TrackLoggerData.Session.CONTENT_URI, cv);
         return Integer.parseInt(currentSessionUri.getPathSegments().get(
-                TrackLogData.Session.SESSION_ID_PATH_POSITION));
+                TrackLoggerData.Session.SESSION_ID_PATH_POSITION));
     }
 
     @Override
@@ -64,10 +70,10 @@ public class AndroidTrackLoggerDataProviderCoordinator extends
         Date now = new Date();
         
         Uri currentSessionUri = ContentUris.withAppendedId(
-                TrackLogData.Session.CONTENT_ID_URI_BASE, sessionId);
+                TrackLoggerData.Session.CONTENT_ID_URI_BASE, sessionId);
         
         ContentValues cv = new ContentValues();
-        cv.put(TrackLogData.Session.COLUMN_NAME_LAST_MODIFIED_DATE,
+        cv.put(TrackLoggerData.Session.COLUMN_NAME_LAST_MODIFIED_DATE,
                 formatAsSqlDate(now));
         
         if (context.getContentResolver().update(
@@ -81,54 +87,56 @@ public class AndroidTrackLoggerDataProviderCoordinator extends
         ContentResolver cr = context.getContentResolver();
         ContentValues cv = new ContentValues();
         
-        cv.put(TrackLogData.LogEntry.COLUMN_NAME_SESSION_ID,
+        cv.put(TrackLoggerData.LogEntry.COLUMN_NAME_SESSION_ID,
                 sessionId);
         
-        cv.put(TrackLogData.LogEntry.COLUMN_NAME_SYNCH_TIMESTAMP,
+        cv.put(TrackLoggerData.LogEntry.COLUMN_NAME_SYNCH_TIMESTAMP,
                 logEntry.locationData.getTime());
         
-        cv.put(TrackLogData.LogEntry.COLUMN_NAME_ACCEL_CAPTURE_TIMESTAMP,
+        cv.put(TrackLoggerData.LogEntry.COLUMN_NAME_ACCEL_CAPTURE_TIMESTAMP,
                 logEntry.accelData.getDataRecivedTime());
-        cv.put(TrackLogData.LogEntry.COLUMN_NAME_LONGITUDINAL_ACCEL,
+        cv.put(TrackLoggerData.LogEntry.COLUMN_NAME_LONGITUDINAL_ACCEL,
                 logEntry.accelData.getLongitudinal());
-        cv.put(TrackLogData.LogEntry.COLUMN_NAME_LATERAL_ACCEL,
+        cv.put(TrackLoggerData.LogEntry.COLUMN_NAME_LATERAL_ACCEL,
                 logEntry.accelData.getLateral());
-        cv.put(TrackLogData.LogEntry.COLUMN_NAME_VERTICAL_ACCEL,
+        cv.put(TrackLoggerData.LogEntry.COLUMN_NAME_VERTICAL_ACCEL,
                 logEntry.accelData.getVertical());
         
-        cv.put(TrackLogData.LogEntry.COLUMN_NAME_LOCATION_CAPTURE_TIMESTAMP,
+        cv.put(TrackLoggerData.LogEntry.COLUMN_NAME_LOCATION_CAPTURE_TIMESTAMP,
                 logEntry.locationData.getDataRecivedTime());
-        cv.put(TrackLogData.LogEntry.COLUMN_NAME_LATITUDE,
+        cv.put(TrackLoggerData.LogEntry.COLUMN_NAME_LATITUDE,
                 logEntry.locationData.getLatitude());
-        cv.put(TrackLogData.LogEntry.COLUMN_NAME_LONGITUDE,
+        cv.put(TrackLoggerData.LogEntry.COLUMN_NAME_LONGITUDE,
                 logEntry.locationData.getLongitude());
-        cv.put(TrackLogData.LogEntry.COLUMN_NAME_ALTITUDE,
+        cv.put(TrackLoggerData.LogEntry.COLUMN_NAME_ALTITUDE,
                 logEntry.locationData.getAltitude());
-        cv.put(TrackLogData.LogEntry.COLUMN_NAME_SPEED,
+        cv.put(TrackLoggerData.LogEntry.COLUMN_NAME_SPEED,
                 logEntry.locationData.getSpeed());
-        cv.put(TrackLogData.LogEntry.COLUMN_NAME_BEARING,
+        cv.put(TrackLoggerData.LogEntry.COLUMN_NAME_BEARING,
                 logEntry.locationData.getSpeed());
         
-        cv.put(TrackLogData.LogEntry.COLUMN_NAME_LOCATION_CAPTURE_TIMESTAMP,
-                logEntry.ecuData.getDataRecivedTime());
-        cv.put(TrackLogData.LogEntry.COLUMN_NAME_LOCATION_CAPTURE_TIMESTAMP,
-                logEntry.ecuData.getDataRecivedTime());
-        cv.put(TrackLogData.LogEntry.COLUMN_NAME_MAP,
-                logEntry.ecuData.getManifoldAbsolutePressure());
-        cv.put(TrackLogData.LogEntry.COLUMN_NAME_TP,
-                logEntry.ecuData.getThrottlePosition());
-        cv.put(TrackLogData.LogEntry.COLUMN_NAME_AFR,
-                logEntry.ecuData.getAirFuelRatio());
-        cv.put(TrackLogData.LogEntry.COLUMN_NAME_MAT,
-                logEntry.ecuData.getManifoldAirTemperature());
-        cv.put(TrackLogData.LogEntry.COLUMN_NAME_CLT,
-                logEntry.ecuData.getCoolantTemperature());
-        cv.put(TrackLogData.LogEntry.COLUMN_NAME_IGNITION_ADVANCE,
-                logEntry.ecuData.getIgnitionAdvance());
-        cv.put(TrackLogData.LogEntry.COLUMN_NAME_BATTERY_VOLTAGE,
-                logEntry.ecuData.getBatteryVoltage());
+        if (logEntry.ecuData != null) {
+            cv.put(TrackLoggerData.LogEntry.COLUMN_NAME_LOCATION_CAPTURE_TIMESTAMP,
+                    logEntry.ecuData.getDataRecivedTime());
+            cv.put(TrackLoggerData.LogEntry.COLUMN_NAME_LOCATION_CAPTURE_TIMESTAMP,
+                    logEntry.ecuData.getDataRecivedTime());
+            cv.put(TrackLoggerData.LogEntry.COLUMN_NAME_MAP,
+                    logEntry.ecuData.getManifoldAbsolutePressure());
+            cv.put(TrackLoggerData.LogEntry.COLUMN_NAME_TP,
+                    logEntry.ecuData.getThrottlePosition());
+            cv.put(TrackLoggerData.LogEntry.COLUMN_NAME_AFR,
+                    logEntry.ecuData.getAirFuelRatio());
+            cv.put(TrackLoggerData.LogEntry.COLUMN_NAME_MAT,
+                    logEntry.ecuData.getManifoldAirTemperature());
+            cv.put(TrackLoggerData.LogEntry.COLUMN_NAME_CLT,
+                    logEntry.ecuData.getCoolantTemperature());
+            cv.put(TrackLoggerData.LogEntry.COLUMN_NAME_IGNITION_ADVANCE,
+                    logEntry.ecuData.getIgnitionAdvance());
+            cv.put(TrackLoggerData.LogEntry.COLUMN_NAME_BATTERY_VOLTAGE,
+                    logEntry.ecuData.getBatteryVoltage());
+        }
         
-        cr.insert(TrackLogData.LogEntry.CONTENT_URI, cv);
+        cr.insert(TrackLoggerData.LogEntry.CONTENT_URI, cv);
     }
 
     @Override
@@ -136,19 +144,21 @@ public class AndroidTrackLoggerDataProviderCoordinator extends
         ContentResolver cr = context.getContentResolver();
         ContentValues cv = new ContentValues();
         
-        cv.put(TrackLogData.TimingEntry.COLUMN_NAME_SESSION_ID,
+        cv.put(TrackLoggerData.TimingEntry.COLUMN_NAME_SESSION_ID,
                 sessionId);
-        cv.put(TrackLogData.TimingEntry.COLUMN_NAME_SYNCH_TIMESTAMP,
+        cv.put(TrackLoggerData.TimingEntry.COLUMN_NAME_SYNCH_TIMESTAMP,
                 timingData.getTime());
-        cv.put(TrackLogData.TimingEntry.COLUMN_NAME_LAP,
+        cv.put(TrackLoggerData.TimingEntry.COLUMN_NAME_CAPTURE_TIMESTAMP,
+                timingData.getDataRecivedTime());
+        cv.put(TrackLoggerData.TimingEntry.COLUMN_NAME_LAP,
                 timingData.getLap());
-        cv.put(TrackLogData.TimingEntry.COLUMN_NAME_LAP_TIME,
+        cv.put(TrackLoggerData.TimingEntry.COLUMN_NAME_LAP_TIME,
                 timingData.getLapTime());
-        cv.put(TrackLogData.TimingEntry.COLUMN_NAME_SPLIT_INDEX,
+        cv.put(TrackLoggerData.TimingEntry.COLUMN_NAME_SPLIT_INDEX,
                 timingData.getSplitIndex());
-        cv.put(TrackLogData.TimingEntry.COLUMN_NAME_SPLIT_TIME,
+        cv.put(TrackLoggerData.TimingEntry.COLUMN_NAME_SPLIT_TIME,
                 timingData.getSplitTime());
         
-        cr.insert(TrackLogData.TimingEntry.CONTENT_URI, cv);
+        cr.insert(TrackLoggerData.TimingEntry.CONTENT_URI, cv);
     }
 }

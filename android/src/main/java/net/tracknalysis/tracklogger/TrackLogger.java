@@ -17,7 +17,10 @@ package net.tracknalysis.tracklogger;
 
 import java.io.File;
 
-import org.apache.log4j.Level;
+import net.tracknalysis.tracklogger.config.AndroidConfiguration;
+import net.tracknalysis.tracklogger.config.Configuration;
+import net.tracknalysis.tracklogger.config.ConfigurationFactory;
+import net.tracknalysis.tracklogger.config.DefaultConfigurationFactory;
 
 import de.mindpipe.android.logging.log4j.LogConfigurator;
 import android.app.Application;
@@ -30,11 +33,17 @@ public class TrackLogger extends Application {
     
     private static LogConfigurator LOG_CONFIGURATOR;
     
+    public static final String SESSION_EXPORT_ACTION = TrackLogger.class
+            .getPackage().getName() + "." + "SESSION_EXPORT_ACTION";
+    
     @Override
     public void onCreate() {
         super.onCreate();
         
-        File outputDir = new File(Environment.getExternalStorageDirectory(), "TrackLog");
+        DefaultConfigurationFactory.setConfiguration(new AndroidConfiguration(this));
+        Configuration configuration = ConfigurationFactory.getInstance().getConfiguration();
+        
+        File outputDir = new File(Environment.getExternalStorageDirectory(), "TrackLogger");
         if (!outputDir.exists()) {
             if (!outputDir.mkdirs()) {
                 throw new RuntimeException("Could not create log output directory.");
@@ -44,9 +53,10 @@ public class TrackLogger extends Application {
         File logFile = new File(outputDir, "tracklog.log");
         
         LOG_CONFIGURATOR = new LogConfigurator();
-        LOG_CONFIGURATOR.setUseFileAppender(false);
+        LOG_CONFIGURATOR.setUseFileAppender(configuration.isLogToFile());
         LOG_CONFIGURATOR.setFileName(logFile.getAbsolutePath());
-        LOG_CONFIGURATOR.setRootLevel(Level.DEBUG);
+        LOG_CONFIGURATOR.setRootLevel(configuration.getDefaultLogLevel());
+        LOG_CONFIGURATOR.setMaxFileSize(1024 * 1024 * 5);
         LOG_CONFIGURATOR.configure();
     }
 }

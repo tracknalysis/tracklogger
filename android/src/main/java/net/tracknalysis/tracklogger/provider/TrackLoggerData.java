@@ -23,13 +23,13 @@ import android.provider.BaseColumns;
  * 
  * @author David Valeri
  */
-public final class TrackLogData {
-    public static final String AUTHORITY = "net.tracknalysis.TrackLog.provider";
+public final class TrackLoggerData {
+    public static final String AUTHORITY = "net.tracknalysis.TrackLogger.provider";
 
     /**
      * Hidden in non-instantiable class.
      */
-    private TrackLogData() {
+    private TrackLoggerData() {
     }
 
     /**
@@ -51,14 +51,14 @@ public final class TrackLogData {
          * The MIME type of {@link #CONTENT_URI} providing a directory of Sessions.
          */
         public static final String SESSION_TYPE = 
-                "vnd.android.cursor.dir/net.tracknalysis.tracklog.session";
+                "vnd.android.cursor.dir/net.tracknalysis.tracklogger.session";
 
         /**
          * The MIME type of a {@link #CONTENT_URI} sub-directory of a single
          * Session.
          */
         public static final String SESSION_ITEM_TYPE = 
-                "vnd.android.cursor.item/net.tracknalysis.tracklog.session";
+                "vnd.android.cursor.item/net.tracknalysis.tracklogger.session";
 
         // URI ////////////
 
@@ -140,14 +140,14 @@ public final class TrackLogData {
          * The MIME type of {@link #CONTENT_URI} providing a directory of log entry.
          */
         public static final String LOG_ENTRY_TYPE = 
-                "vnd.android.cursor.dir/net.tracknalysis.tracklog.logentry";
+                "vnd.android.cursor.dir/net.tracknalysis.tracklogger.logentry";
 
         /**
          * The MIME type of a {@link #CONTENT_URI} sub-directory of a single
          * log entry.
          */
         public static final String LOG_ENTRY_ITEM_TYPE = 
-                "vnd.android.cursor.item/net.tracknalysis.tracklog.logentry";
+                "vnd.android.cursor.item/net.tracknalysis.tracklogger.logentry";
         
         // URI ////////////
 
@@ -194,7 +194,7 @@ public final class TrackLogData {
         /**
          * The default sort order for this table.
          */
-        public static final String DEFAULT_SORT_ORDER = "_id DESC";
+        public static final String DEFAULT_SORT_ORDER = "_id ASC";
 
         // Columns ////////////
         
@@ -281,6 +281,12 @@ public final class TrackLogData {
         public static final String COLUMN_NAME_ECU_CAPTURE_TIMESTAMP = "ecu_capture_timestamp";
         
         /**
+         * Column name for RPMs.
+         * <P>Type: BIGINT</P>
+         */
+        public static final String COLUMN_NAME_RPM = "rpm";
+        
+        /**
          * Column name for MAP in kPa.
          * <p>Type: DOUBLE</p>
          */
@@ -290,7 +296,7 @@ public final class TrackLogData {
          * Column name for throttle position % (0-1).
          * <p>Type: DOUBLE</p>
          */
-        public static final String COLUMN_NAME_TP = "throttle_position";
+        public static final String COLUMN_NAME_TP = "tp";
         
         /**
          * Column name for air fuel ratio.
@@ -342,14 +348,14 @@ public final class TrackLogData {
          * The MIME type of {@link #CONTENT_URI} providing a directory of timing entries.
          */
         public static final String TIMING_ENTRY_TYPE = 
-                "vnd.android.cursor.dir/net.tracknalysis.tracklog.timingentry";
+                "vnd.android.cursor.dir/net.tracknalysis.tracklogger.timingentry";
 
         /**
          * The MIME type of a {@link #CONTENT_URI} sub-directory of a single
          * timing entry.
          */
         public static final String TIMING_ENTRY_ITEM_TYPE = 
-                "vnd.android.cursor.item/net.tracknalysis.tracklog.timingentry";
+                "vnd.android.cursor.item/net.tracknalysis.tracklogger.timingentry";
         
         // URI ////////////
 
@@ -396,7 +402,7 @@ public final class TrackLogData {
         /**
          * The default sort order for this table.
          */
-        public static final String DEFAULT_SORT_ORDER = "_id DESC";
+        public static final String DEFAULT_SORT_ORDER = "_id ASC";
 
         // Columns ////////////
         

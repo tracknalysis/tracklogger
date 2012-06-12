@@ -13,17 +13,27 @@
       android:name=".TrackLogger">
       
     <provider 
-      android:name=".provider.TrackLogDataProvider"
-      android:authorities="net.tracknalysis.TrackLog.provider"
+      android:name=".provider.TrackLoggerDataProvider"
+      android:authorities="net.tracknalysis.TrackLogger.provider"
       android:exported="false">
       <grant-uri-permission android:pathPattern=".*" />
     </provider>
-    <activity android:name=".activity.LogActivity">
+    <activity android:name=".activity.HomeActivity">
       <intent-filter>
         <action android:name="android.intent.action.MAIN" />
         <category android:name="android.intent.category.LAUNCHER" />
       </intent-filter>
     </activity>
+    <activity android:name=".activity.LogActivity"/>
+    <activity android:name=".activity.SessionListActivity"/>
+    <activity android:name=".activity.SessionExportActivity">
+      <intent-filter>
+        <action android:name="net.tracknalysis.tracklogger.SESSION_EXPORT_ACTION" />
+        <category android:name="android.intent.category.DEFAULT" />
+        <data android:mimeType="vnd.android.cursor.item/net.tracknalysis.tracklogger.session" />
+      </intent-filter>  
+    </activity>
+    <activity android:name=".activity.ConfigActivity"/>
   </application>
 
 </manifest>
