@@ -25,10 +25,10 @@ Authors: David Valeri
     <version>0.1.0-SNAPSHOT</version>
   </parent>
 
-  <artifactId>tracklogger-dataprovider</artifactId>
+  <artifactId>tracklogger-export</artifactId>
   
-  <name>Tracknalysis :: TrackLogger :: Data Provider</name>
-  <description>Data providers for TrackLogger.</description>
+  <name>Tracknalysis :: TrackLogger :: Export</name>
+  <description>Export logic for TrackLogger.</description>
   <inceptionYear>2012</inceptionYear>
   
   <dependencies>
@@ -40,25 +40,6 @@ Authors: David Valeri
       <groupId>log4j</groupId>
       <artifactId>log4j</artifactId>
       <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>net.tracknalysis.location</groupId> 
-      <artifactId>tracknalysis-location-core</artifactId>
-      <version>0.1.0-SNAPSHOT</version>
-    </dependency>
-    <dependency>
-      <groupId>net.tracknalysis.location</groupId> 
-      <artifactId>tracknalysis-location-nmea</artifactId>
-      <version>0.1.0-SNAPSHOT</version>
-    </dependency>
-    <dependency>
-      <groupId>net.tracknalysis.ecu</groupId> 
-      <artifactId>tracknalysis-mega-com</artifactId>
-      <version>0.1.0-SNAPSHOT</version>
-    </dependency>
-    <dependency>
-      <groupId>org.easymock</groupId>
-      <artifactId>easymock</artifactId>
     </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>

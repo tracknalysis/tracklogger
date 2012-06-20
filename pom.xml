@@ -103,7 +103,8 @@ Authors: David Valeri
   </dependencies>
   
   <modules>
-      <module>dataprovider</module>
       <module>android</module>
+      <module>dataprovider</module>
+      <module>export</module>
   </modules>
 </project>

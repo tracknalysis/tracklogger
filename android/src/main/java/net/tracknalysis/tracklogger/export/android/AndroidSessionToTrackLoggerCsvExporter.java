@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package net.tracknalysis.tracklogger.export;
+package net.tracknalysis.tracklogger.export.android;
 
 import java.io.IOException;
 import java.io.Writer;
@@ -22,6 +22,8 @@ import java.util.Date;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import net.tracknalysis.tracklogger.export.AbstractSessionToTrackLoggerCsvExporter;
+import net.tracknalysis.tracklogger.export.SessionExporter;
 import net.tracknalysis.tracklogger.provider.TrackLoggerData;
 import android.content.ContentResolver;
 import android.content.Context;
