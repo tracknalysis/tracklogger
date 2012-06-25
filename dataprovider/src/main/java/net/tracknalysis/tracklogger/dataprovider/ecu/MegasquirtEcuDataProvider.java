@@ -171,7 +171,14 @@ public class MegasquirtEcuDataProvider extends AbstractDataProvider<EcuData>
             builder.setManifoldAbsolutePressure(ms.getValue("map"));
             builder.setManifoldAirTemperature(ms.getValue("mat"));
             builder.setRpm((int) ms.getValue("rpm"));
-            builder.setThrottlePosition(ms.getValue("throttle"));
+            
+            double throttle = ms.getValue("throttle");
+            // Set the floor for throttle position to 0
+            if (throttle < 0d) {
+                throttle = 0d;
+            }
+            
+            builder.setThrottlePosition(throttle);
             
             EcuData newEcuData = builder.build();
             currentEcuData = newEcuData;

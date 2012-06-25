@@ -46,6 +46,8 @@ public abstract class AbstractSessionToTrackLoggerCsvExporter extends
         writeHeader(writer, sessionId);
         
         exportEntries(writer, sessionId, startLap, endLap);
+        
+        writer.flush();
     }
     
     protected abstract void exportEntries(Writer writer, int sessionId,
@@ -62,43 +64,43 @@ public abstract class AbstractSessionToTrackLoggerCsvExporter extends
         writer.write(",");
         writer.write(accelCaptureTimestamp == null ? "" : accelCaptureTimestamp.toString());
         writer.write(",");
-        writer.write(longitudalAccel == null ? "" : longitudalAccel.toString());
+        writer.write(longitudalAccel == null ? "" : formatFloat(longitudalAccel));
         writer.write(",");
-        writer.write(lateralAccel == null ? "" : lateralAccel.toString());
+        writer.write(lateralAccel == null ? "" : formatFloat(lateralAccel));
         writer.write(",");
-        writer.write(verticalAccel == null ? "" : verticalAccel.toString());
+        writer.write(verticalAccel == null ? "" : formatFloat(verticalAccel));
         writer.write(",");
         
         writer.write(locationCaptureTimestamp == null ? "" : locationCaptureTimestamp.toString());
         writer.write(",");
-        writer.write(latitude == null ? "" : latitude.toString());
+        writer.write(latitude == null ? "" : formatDouble(latitude));
         writer.write(",");
-        writer.write(longitude == null ? "" : longitude.toString());
+        writer.write(longitude == null ? "" : formatDouble(longitude));
         writer.write(",");
-        writer.write(altitude == null ? "" : altitude.toString());
+        writer.write(altitude == null ? "" : formatDouble(altitude));
         writer.write(",");
-        writer.write(speed == null ? "" : speed.toString());
+        writer.write(speed == null ? "" : formatFloat(speed));
         writer.write(",");
-        writer.write(bearing == null ? "" : bearing.toString());
+        writer.write(bearing == null ? "" : formatFloat(bearing));
         writer.write(",");
         
         writer.write(ecuCaptureTimestamp == null ? "" : ecuCaptureTimestamp.toString());
         writer.write(",");
         writer.write(rpm == null ? "" : rpm.toString());
         writer.write(",");
-        writer.write(map == null ? "" : map.toString());
+        writer.write(map == null ? "" : formatDouble(map));
         writer.write(",");
-        writer.write(tp == null ? "" : tp.toString());
+        writer.write(tp == null ? "" : formatDouble(tp));
         writer.write(",");
-        writer.write(afr == null ? "" : afr.toString());
+        writer.write(afr == null ? "" : formatDouble(afr));
         writer.write(",");
-        writer.write(mat == null ? "" : mat.toString());
+        writer.write(mat == null ? "" : formatDouble(mat));
         writer.write(",");
-        writer.write(clt == null ? "" : clt.toString());
+        writer.write(clt == null ? "" : formatDouble(clt));
         writer.write(",");
-        writer.write(ignAdv == null ? "" : ignAdv.toString());
+        writer.write(ignAdv == null ? "" : formatDouble(ignAdv));
         writer.write(",");
-        writer.write(batV == null ? "" : batV.toString());
+        writer.write(batV == null ? "" : formatDouble(batV));
         writer.write(",");
         
         writer.write(timingCaptureTimestamp.toString());
@@ -107,6 +109,14 @@ public abstract class AbstractSessionToTrackLoggerCsvExporter extends
         writer.write(",");
         writer.write(Integer.toString(splitIndex));
         writer.write("\r\n");
+    }
+    
+    private String formatFloat(Float value) {
+        return String.format("%.20f", value);
+    }
+    
+    private String formatDouble(Double value) {
+        return String.format("%.20f", value);
     }
     
     private void writeHeader(Writer writer, int sessionId) throws IOException {

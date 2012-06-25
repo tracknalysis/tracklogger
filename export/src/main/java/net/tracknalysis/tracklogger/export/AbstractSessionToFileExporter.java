@@ -38,7 +38,7 @@ public abstract class AbstractSessionToFileExporter implements SessionToFileExpo
     
     private static final Logger LOG = LoggerFactory.getLogger(AbstractSessionToFileExporter.class);
     
-    private DateFormat dateFormat = new SimpleDateFormat("yyyyMMddHHmmss");
+    private DateFormat dateFormat = new SimpleDateFormat("yyyy.MM.dd-HH.mm.ss");
     
     private File exportFile;
     private OutputStream out;
