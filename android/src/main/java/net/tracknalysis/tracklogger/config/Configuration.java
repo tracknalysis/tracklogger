@@ -22,13 +22,42 @@ import org.apache.log4j.Level;
  */
 public interface Configuration {
     
-    Level getDefaultLogLevel();
+    /**
+     * Returns the log level for the root logger in the application.
+     */
+    Level getRootLogLevel();
     
+    /**
+     * Returns true if the application should output log data to a file.
+     */
     boolean isLogToFile();
     
-    boolean isEcuLoggingEnabled();
+    /**
+     * Returns true if ECU data should be captured and logged when logging session data.
+     */
+    boolean isEcuEnabled();
     
+    /**
+     * Returns the address of the BT device representing the ECU.
+     */
     String getEcuBtAddress();
 
+    /**
+     * Returns the address of the BT device representing an NMEA location source.
+     */
     String getLocationBtAddress();
+    
+    /**
+     * Adds a listener for configuration change events if the listener is not already registered.
+     *
+     * @param listener the listener to add
+     */
+    void addConfigurationChangeListenerListener(ConfigurationChangeListener listener);
+    
+    /**
+     * Removes the listener for configuration change events if the listener is registered.
+     * 
+     * @param listener the listener to remove
+     */
+    void removeConfigurationChangeListener(ConfigurationChangeListener listener);
 }

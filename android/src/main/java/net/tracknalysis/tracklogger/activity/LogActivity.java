@@ -323,7 +323,7 @@ public class LogActivity extends Activity implements OnCancelListener {
             WindowManager windowManager = (WindowManager) getSystemService(WINDOW_SERVICE);
             accelDataProvider = new AndroidAccelDataProvider(sensorManager, windowManager);
 
-            if (config.isEcuLoggingEnabled()) {
+            if (config.isEcuEnabled()) {
                 ecuSocketManager = new BtSocketManager(config.getEcuBtAddress(),
                         btAdapter, BtProfile.SPP);
                 ecuDataProvider = new MegasquirtEcuDataProvider(ecuSocketManager);

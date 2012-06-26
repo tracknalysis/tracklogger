@@ -17,10 +17,14 @@ package net.tracknalysis.tracklogger;
 
 import java.io.File;
 
-import net.tracknalysis.tracklogger.config.AndroidConfiguration;
+import org.apache.log4j.Logger;
+
 import net.tracknalysis.tracklogger.config.Configuration;
+import net.tracknalysis.tracklogger.config.ConfigurationChangeEvent;
+import net.tracknalysis.tracklogger.config.ConfigurationChangeListener;
 import net.tracknalysis.tracklogger.config.ConfigurationFactory;
 import net.tracknalysis.tracklogger.config.DefaultConfigurationFactory;
+import net.tracknalysis.tracklogger.config.android.AndroidConfiguration;
 
 import de.mindpipe.android.logging.log4j.LogConfigurator;
 import android.app.Application;
@@ -29,7 +33,7 @@ import android.os.Environment;
 /**
  * @author David Valeri
  */
-public class TrackLogger extends Application {
+public class TrackLogger extends Application implements ConfigurationChangeListener {
     
     private static LogConfigurator LOG_CONFIGURATOR;
     
@@ -43,6 +47,20 @@ public class TrackLogger extends Application {
         DefaultConfigurationFactory.setConfiguration(new AndroidConfiguration(this));
         Configuration configuration = ConfigurationFactory.getInstance().getConfiguration();
         
+        configureLogging(configuration);
+        
+    }
+
+    @Override
+    public void onConfigurationChange(ConfigurationChangeEvent event) {
+        if (event.isLogToFileChanged() || event.isRootLogLevelChanged()) {
+            configureLogging(event.getConfiguration());
+        }
+    }
+    
+    protected synchronized void configureLogging(Configuration configuration) {
+        Logger.getRootLogger().removeAllAppenders();
+        
         File outputDir = new File(Environment.getExternalStorageDirectory(), "TrackLogger");
         if (!outputDir.exists()) {
             if (!outputDir.mkdirs()) {
@@ -52,10 +70,13 @@ public class TrackLogger extends Application {
         
         File logFile = new File(outputDir, "tracklog.log");
         
-        LOG_CONFIGURATOR = new LogConfigurator();
+        if (LOG_CONFIGURATOR == null) {
+            LOG_CONFIGURATOR = new LogConfigurator();
+        }
+        
         LOG_CONFIGURATOR.setUseFileAppender(configuration.isLogToFile());
         LOG_CONFIGURATOR.setFileName(logFile.getAbsolutePath());
-        LOG_CONFIGURATOR.setRootLevel(configuration.getDefaultLogLevel());
+        LOG_CONFIGURATOR.setRootLevel(configuration.getRootLogLevel());
         LOG_CONFIGURATOR.setMaxFileSize(1024 * 1024 * 5);
         LOG_CONFIGURATOR.configure();
     }
