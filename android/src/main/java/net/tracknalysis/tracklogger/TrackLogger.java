@@ -48,7 +48,7 @@ public class TrackLogger extends Application implements ConfigurationChangeListe
         Configuration configuration = ConfigurationFactory.getInstance().getConfiguration();
         
         configureLogging(configuration);
-        
+        configuration.addConfigurationChangeListenerListener(this);
     }
 
     @Override
