@@ -16,4 +16,14 @@
         <item>WARN</item>
         <item>ERROR</item>
     </string-array>
+    
+    <string-array name="preference_log_view_names">
+        <item>Default</item>
+        <item>Raw Data</item>
+    </string-array>
+        
+    <string-array name="preference_log_view_values">
+        <item>net.tracknalysis.tracklogger:layout/log_default</item>
+        <item>net.tracknalysis.tracklogger:layout/log_raw</item>
+    </string-array>
 </resources>

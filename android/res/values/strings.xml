@@ -1,14 +1,57 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">TrackLogger</string>
-    <string name="loggingPreferenceTitle">Logging</string>
-    <string name="logLevel">Log Level</string>
-    <string name="logFileEnable">Enable Log to File</string>
+    <string name="app_name">Tracklogger</string>
     
-    <string name="locationPreferenceTitle">Location Logging</string>
-    <string name="locationBt">Location Bluetooth Device</string>
+    <string name="error_alert_title">Tracklogger Error</string>
+    <string name="error_bt_not_supported">No Bluetooth capabilities detected on this device.</string>
+    <string name="error_bt_not_enabled">Bluetooth is not enabled.  Bluetooth is required for this application to function.</string>
     
-    <string name="ecuPreferenceTitle">ECU Logging</string>
-    <string name="ecuEnable">Enable</string>
-    <string name="ecuBt">ECU Bluetooth Device</string>
+    <string name="log_elapsed_lap_time_title">Elapsed Time</string>
+    <string name="log_lap_number_title">Lap</string>
+    <string name="log_elapsed_session_time_title">Session Time</string>
+    <string name="log_last_split_time_title">Last Split Time</string>
+    <string name="log_last_split_time_delta_title">Delta Best Split Time</string>
+    <string name="log_last_lap_time_title">Last Lap Time</string>
+    <string name="log_last_lap_time_delta_title">Delta Best Lap Time</string>
+    <string name="log_split_index_title">Split Number</string>
+    <string name="log_best_lap_time_title">Best Lap Time</string>
+    <string name="log_best_split_time_title">Best Split Time</string>
+    
+    <string name="log_accel_update_frequency_title">Acceleration Update Freq.</string>
+    <string name="log_lon_accel_title">Longitudinal Acceleration</string>
+    <string name="log_lat_accel_title">Lateral Acceleration</string>
+    <string name="log_vert_accel_title">Vertical Acceleration</string>
+    
+    <string name="log_location_update_frequency_title">Location Update Freq.</string>
+    <string name="log_lat_title">Latitude</string>
+    <string name="log_lon_title">Longitude</string>
+    <string name="log_alt_title">Altitude</string>
+    <string name="log_bearing_title">Bearing</string>
+    <string name="log_speed_title">Speed</string>
+    
+    <string name="log_ecu_update_frequency_title">ECU Update Freq.</string>
+    <string name="log_rpm_title">RPM</string>
+    <string name="log_map_title">MAP</string>
+    <string name="log_tp_title">Throttle Position</string>
+    <string name="log_afr_title">AFR</string>
+    <string name="log_mat_title">IAT</string>
+    <string name="log_clt_title">CLT</string>
+    <string name="log_ign_adv_title">Ignition Advance</string>
+    <string name="log_batv_title">Battery Voltage</string>
+    
+    <string name="permission_session_export">Grants permission to launch the session export action of Tracklogger.</string>
+    
+    <string name="preference_app_log_preference_group_title">Application Logging</string>
+    <string name="preference_app_log_level_title">Log Level</string>
+    <string name="preference_app_log_log_to_file_title">Enable Logging to File</string>
+    
+    <string name="preference_location_preference_group_title">Location Logging</string>
+    <string name="preference_location_bt">Location Bluetooth Device</string>
+    
+    <string name="preference_log_preference_group_title">Logging</string>
+    <string name="preference_log_layout_name">View</string>
+    
+    <string name="preference_ecu_preference_group_title">ECU Logging</string>
+    <string name="preference_ecu_enable">Enable</string>
+    <string name="preference_ecu_bt">ECU Bluetooth Device</string>
 </resources>

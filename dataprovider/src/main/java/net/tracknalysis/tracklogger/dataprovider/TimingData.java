@@ -45,7 +45,7 @@ public class TimingData extends AbstractData {
     }
     
     /**
-     * Returns the zero based index of the current split marker.
+     * Returns the zero based index of the split marker that was just completed.
      */
     public int getSplitIndex() {
         return splitIndex;
@@ -57,7 +57,8 @@ public class TimingData extends AbstractData {
 
     /**
      * Returns the zero based lap counter.  That is, the first timing data
-     * will be for lap 0 and will have no valid time information.
+     * will be for lap 0 and will have no valid time information.  This number
+     * indicates the lap that is in progress or just completed.
      */
     public int getLap() {
         return lap;
@@ -69,7 +70,7 @@ public class TimingData extends AbstractData {
 
     /**
      * Returns the duration, in milliseconds of the completed lap or {@code null} if no
-     * laps have been completed.
+     * laps have been completed.  That is, the first timing event will not contain a lap time.
      */
     public Long getLapTime() {
         return lapTime;
@@ -81,7 +82,7 @@ public class TimingData extends AbstractData {
 
     /**
      * Returns the duration, in milliseconds of the completed segment or {@code null} if no
-     * segments have been completed.
+     * segments have been completed.  That is, the first timing event will not contain a split time.
      */
     public Long getSplitTime() {
         return splitTime;

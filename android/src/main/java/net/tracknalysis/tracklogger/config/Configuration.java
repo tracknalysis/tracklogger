@@ -48,6 +48,11 @@ public interface Configuration {
     String getLocationBtAddress();
     
     /**
+     * Returns the name/id of the view to use when performing logging.
+     */
+    int getLogLayoutId();
+    
+    /**
      * Adds a listener for configuration change events if the listener is not already registered.
      *
      * @param listener the listener to add

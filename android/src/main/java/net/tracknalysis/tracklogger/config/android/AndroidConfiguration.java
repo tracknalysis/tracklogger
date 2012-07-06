@@ -18,6 +18,7 @@ package net.tracknalysis.tracklogger.config.android;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import net.tracknalysis.tracklogger.R;
 import net.tracknalysis.tracklogger.config.Configuration;
 import net.tracknalysis.tracklogger.config.ConfigurationChangeEvent;
 import net.tracknalysis.tracklogger.config.ConfigurationChangeEvent.ConfigurationChangeEventBuilder;
@@ -39,21 +40,25 @@ public class AndroidConfiguration implements Configuration, OnSharedPreferenceCh
     
     private static final Logger LOG = LoggerFactory.getLogger(AndroidConfiguration.class);
     
-    private static final String ROOT_LOG_LEVEL_KEY = "log.level";
-    private static final String LOG_TO_FILE_KEY = "log.file.enable";
+    private static final String ROOT_LOG_LEVEL_KEY = "app.log.level";
+    private static final String LOG_TO_FILE_KEY = "app.log.file.enable";
     private static final String ECU_ENABLED_KEY = "ecu.enabled";
     private static final String ECU_BT_ADDRESS_KEY = "ecu.bt.address";
     private static final String LOCATION_BT_ADDRESS_KEY = "location.bt.address";
+    private static final String LOG_LAYOUT_ID_KEY = "log.layout.id";
     
     private final SharedPreferences sharedPrefs;
     
     private final List<ConfigurationChangeListener> listeners = 
             new CopyOnWriteArrayList<ConfigurationChangeListener>();
     
+    private final Context context;
+    
     public AndroidConfiguration(Context context) {
         super();
         sharedPrefs = PreferenceManager.getDefaultSharedPreferences(context);
         sharedPrefs.registerOnSharedPreferenceChangeListener(this);
+        this.context = context;
     }
     
     
@@ -88,6 +93,14 @@ public class AndroidConfiguration implements Configuration, OnSharedPreferenceCh
     @Override
     public String getLocationBtAddress() {
         return sharedPrefs.getString(LOCATION_BT_ADDRESS_KEY, "");
+    }
+    
+    @Override
+    public int getLogLayoutId() {
+        String name = sharedPrefs.getString(LOG_LAYOUT_ID_KEY, context.getResources()
+                .getResourceName(R.layout.log_default));
+        
+        return context.getResources().getIdentifier(name, null, null); 
     }
 
     @Override

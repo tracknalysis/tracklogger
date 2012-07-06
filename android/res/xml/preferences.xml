@@ -1,33 +1,42 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <PreferenceCategory android:title="@string/loggingPreferenceTitle">
+    <PreferenceCategory android:title="@string/preference_app_log_preference_group_title">
           <ListPreference
             android:entries="@array/loggingLevelNames"
             android:entryValues="@array/loggingLevelValues"
             android:defaultValue="INFO"
-            android:key="log.level"
-            android:title="@string/logLevel" />
+            android:key="app.log.level"
+            android:title="@string/preference_app_log_level_title" />
           <CheckBoxPreference
-            android:key="log.file.enable"
+            android:key="app.log.file.enable"
             android:defaultValue="false"
-            android:title="@string/logFileEnable" />
+            android:title="@string/preference_app_log_log_to_file_title" />
     </PreferenceCategory>
     
-    <PreferenceCategory android:title="@string/locationPreferenceTitle">
+    <PreferenceCategory android:title="@string/preference_location_preference_group_title">
         <net.tracknalysis.tracklogger.preference.BtDeviceListPreference
             android:key="location.bt.address"
-            android:title="@string/locationBt" />
+            android:title="@string/preference_location_bt" />
     </PreferenceCategory>
     
-    <PreferenceCategory android:title="@string/ecuPreferenceTitle">
+    <PreferenceCategory android:title="@string/preference_ecu_preference_group_title">
         <CheckBoxPreference
             android:key="ecu.enable"
             android:defaultValue="false"
-            android:title="@string/ecuEnable" />
+            android:title="@string/preference_ecu_enable" />
         <net.tracknalysis.tracklogger.preference.BtDeviceListPreference
             android:key="ecu.bt.address"
-            android:title="@string/ecuBt" />
+            android:title="@string/preference_ecu_bt" />
+    </PreferenceCategory>
+    
+    <PreferenceCategory android:title="@string/preference_log_preference_group_title">
+          <ListPreference
+            android:entries="@array/preference_log_view_names"
+            android:entryValues="@array/preference_log_view_values"
+            android:defaultValue="@layout/log_default"
+            android:key="log.layout.id"
+            android:title="@string/preference_log_layout_name" />
     </PreferenceCategory>
 
 </PreferenceScreen>

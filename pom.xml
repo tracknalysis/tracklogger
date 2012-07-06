@@ -104,6 +104,7 @@ Authors: David Valeri
   
   <modules>
       <module>android</module>
+      <module>config</module>
       <module>dataprovider</module>
       <module>export</module>
   </modules>

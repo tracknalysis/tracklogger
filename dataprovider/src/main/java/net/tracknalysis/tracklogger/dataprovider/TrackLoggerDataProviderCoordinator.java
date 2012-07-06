@@ -93,6 +93,11 @@ public abstract class TrackLoggerDataProviderCoordinator extends
          */
         TIMING_START_TRIGGER_FIRED,
         /**
+         * Triggered when an update to timing data becomes available.  The notification contains
+         * the new {@link TimingData}.
+         */
+        TIMING_DATA_UPDATE,
+        /**
          * Triggered when there is a failure recording logged data.
          */
         LOGGING_FAILED,
@@ -280,7 +285,6 @@ public abstract class TrackLoggerDataProviderCoordinator extends
                 LOG.error("No space on the data queue.  Discarding current data.");
                 notificationStrategy.sendNotification(NotificationType.LOGGING_FAILED);
             }
-            
         }
         
         if (LOG.isTraceEnabled()) {
