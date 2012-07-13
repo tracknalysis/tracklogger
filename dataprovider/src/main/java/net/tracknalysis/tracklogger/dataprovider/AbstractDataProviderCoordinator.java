@@ -22,36 +22,34 @@ public abstract class AbstractDataProviderCoordinator implements DataProviderCoo
     
     private volatile boolean running;
     
-    private AccelDataProvider accelDataProvider;
-    private LocationDataProvider locationDataProvider;
-    private EcuDataProvider ecuDataProvider;
-    private TimingDataProvider timingDataProvider;
     private DataListener<LocationData> locationListener;
+    private DataListener<AccelData> accelListener;
+    private DataListener<EcuData> ecuListener;
     private DataListener<TimingData> timingListener;
     
-    public AbstractDataProviderCoordinator(AccelDataProvider accelDataProvider,
-            LocationDataProvider locationDataProvider, EcuDataProvider ecuDataProvider,
-            TimingDataProvider timingDataProvider) {
-
-        this.accelDataProvider = accelDataProvider;
-        this.locationDataProvider = locationDataProvider;
-        this.ecuDataProvider = ecuDataProvider;
-        this.timingDataProvider = timingDataProvider;
-    }
-
     @Override
     public synchronized void start() {
         locationListener = new DataListener<LocationData>() {
             
             @Override
             public void receiveData(LocationData data) {
-                AccelData accelData = accelDataProvider.getCurrentData();
-                EcuData ecuData = null;
-                if (ecuDataProvider != null) {
-                    ecuData = ecuDataProvider.getCurrentData();
-                }
-                
-                handleUpdate(data, accelData, ecuData);
+                handleUpdate(data);
+            }
+        };
+        
+        accelListener = new DataListener<AccelData>() {
+            
+            @Override
+            public void receiveData(AccelData data) {
+                handleUpdate(data);
+            }
+        };
+        
+        ecuListener = new DataListener<EcuData>() {
+            
+            @Override
+            public void receiveData(EcuData data) {
+                handleUpdate(data);
             }
         };
         
@@ -63,28 +61,36 @@ public abstract class AbstractDataProviderCoordinator implements DataProviderCoo
             }
         };
         
-        locationDataProvider.addSynchronousListener(locationListener);
-        timingDataProvider.addSynchronousListener(timingListener);
-        
-        locationDataProvider.start();
-        accelDataProvider.start();
-        if (ecuDataProvider != null) {
-            ecuDataProvider.start();
+        getLocationDataProvider().addSynchronousListener(locationListener);
+        getAccelDataProvider().addSynchronousListener(accelListener);
+        if (isEcuDataProviderEnabled()) {
+            getEcuDataProvider().addSynchronousListener(ecuListener);
         }
-        timingDataProvider.start();
+        getTimingDataProvider().addSynchronousListener(timingListener);
+        
+        getLocationDataProvider().start();
+        getAccelDataProvider().start();
+        if (getEcuDataProvider() != null) {
+            getEcuDataProvider().start();
+        }
+        getTimingDataProvider().start();
         
         running = true;
     }
     
     @Override
     public synchronized void stop() {
-        locationDataProvider.removeSynchronousListener(locationListener);
-        timingDataProvider.removeSynchronousListener(timingListener);
-        locationDataProvider.stop();
-        timingDataProvider.stop();
-        accelDataProvider.stop();
-        if (ecuDataProvider != null) {
-            ecuDataProvider.stop();
+        getLocationDataProvider().removeSynchronousListener(locationListener);
+        getAccelDataProvider().removeSynchronousListener(accelListener);
+        if (isEcuDataProviderEnabled()) {
+            getEcuDataProvider().removeSynchronousListener(ecuListener);
+        }
+        getTimingDataProvider().removeSynchronousListener(timingListener);
+        getLocationDataProvider().stop();
+        getTimingDataProvider().stop();
+        getAccelDataProvider().stop();
+        if (getEcuDataProvider() != null) {
+            getEcuDataProvider().stop();
         }
         
         running = false;
@@ -95,11 +101,71 @@ public abstract class AbstractDataProviderCoordinator implements DataProviderCoo
         return running;
     }
     
-    protected final boolean isEcuDataProviderEnabled() {
-        return ecuDataProvider != null;
+    public final LocationData getCurrentLocationData() {
+        return getLocationDataProvider().getCurrentData();
     }
     
-    protected abstract void handleUpdate(LocationData gpsData, AccelData accelData, EcuData ecuData);
+    public final double getLocationDataUpdateFrequency() {
+        return getLocationDataProvider().getUpdateFrequency();
+    }
     
-    protected abstract void handleUpdate(TimingData timingData);
+    public final AccelData getCurrentAccelData() {
+        return getAccelDataProvider().getCurrentData();
+    }
+    
+    public final double getAccelDataUpdateFrequency() {
+        return getAccelDataProvider().getUpdateFrequency();
+    }
+    
+    public final EcuData getCurrentEcuData() {
+        return isEcuDataProviderEnabled() ? getEcuDataProvider().getCurrentData() : null;
+    }
+    
+    public final double getEcuDataUpdateFrequency() {
+        return isEcuDataProviderEnabled() ? getEcuDataProvider().getUpdateFrequency() : 0d;
+    }
+    
+    public final TimingData getCurrentTimingData() {
+        return getTimingDataProvider().getCurrentData();
+    }
+    
+    protected final boolean isEcuDataProviderEnabled() {
+        return getEcuDataProvider() != null;
+    }
+    
+    /**
+     * Called when new location data arrives.
+     *
+     * @param locationData the new location data
+     */
+    protected abstract void handleUpdate(LocationData data);
+    
+    /**
+     * Called when new acceleration data arrives.
+     *
+     * @param data the new acceleration data
+     */
+    protected abstract void handleUpdate(AccelData data);
+    
+    /**
+     * Called when new ECU data arrives.
+     *
+     * @param data the new ECU data
+     */
+    protected abstract void handleUpdate(EcuData data);
+    
+    /**
+     * Called when new timing data arrives.
+     *
+     * @param data the new timing data
+     */
+    protected abstract void handleUpdate(TimingData data);
+    
+    protected abstract AccelDataProvider getAccelDataProvider();
+    
+    protected abstract LocationDataProvider getLocationDataProvider();
+    
+    protected abstract EcuDataProvider getEcuDataProvider();
+    
+    protected abstract TimingDataProvider getTimingDataProvider();
 }

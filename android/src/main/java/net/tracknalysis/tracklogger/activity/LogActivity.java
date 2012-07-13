@@ -15,38 +15,21 @@
  */
 package net.tracknalysis.tracklogger.activity;
 
-import java.util.Arrays;
 import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import net.tracknalysis.common.android.io.BtSocketManager;
-import net.tracknalysis.common.android.io.BtSocketManager.BtProfile;
 import net.tracknalysis.common.concurrent.GracefulShutdownThread;
-import net.tracknalysis.common.io.SocketManager;
-import net.tracknalysis.common.notification.NoOpNotificationStrategy;
 import net.tracknalysis.common.util.TimeUtil;
-import net.tracknalysis.location.LocationManager;
-import net.tracknalysis.location.Route;
-import net.tracknalysis.location.Waypoint;
-import net.tracknalysis.location.nmea.NmeaLocationManager;
 import net.tracknalysis.tracklogger.config.Configuration;
 import net.tracknalysis.tracklogger.config.ConfigurationFactory;
 import net.tracknalysis.tracklogger.dataprovider.AccelData;
-import net.tracknalysis.tracklogger.dataprovider.AccelDataProvider;
 import net.tracknalysis.tracklogger.dataprovider.EcuData;
-import net.tracknalysis.tracklogger.dataprovider.EcuDataProvider;
 import net.tracknalysis.tracklogger.dataprovider.LocationData;
-import net.tracknalysis.tracklogger.dataprovider.LocationDataProvider;
 import net.tracknalysis.tracklogger.dataprovider.TimingData;
-import net.tracknalysis.tracklogger.dataprovider.TimingDataProvider;
 import net.tracknalysis.tracklogger.dataprovider.TrackLoggerDataProviderCoordinator;
-import net.tracknalysis.tracklogger.dataprovider.android.AndroidAccelDataProvider;
-import net.tracknalysis.tracklogger.dataprovider.android.AndroidTrackLoggerDataProviderCoordinator;
-import net.tracknalysis.tracklogger.dataprovider.ecu.MegasquirtEcuDataProvider;
-import net.tracknalysis.tracklogger.dataprovider.location.LocationManagerLocationDataProvider;
-import net.tracknalysis.tracklogger.dataprovider.timing.RouteManagerTimingDataProvider;
+import net.tracknalysis.tracklogger.dataprovider.android.TrackLoggerDataProviderCoordinatorFactory;
 import net.tracknalysis.tracklogger.R;
 
 import android.app.Activity;
@@ -57,13 +40,11 @@ import android.bluetooth.BluetoothAdapter;
 import android.content.DialogInterface;
 import android.content.DialogInterface.OnCancelListener;
 import android.content.Intent;
-import android.hardware.SensorManager;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.os.PowerManager;
 import android.os.PowerManager.WakeLock;
-import android.view.WindowManager;
 import android.widget.TextView;
 
 /**
@@ -80,22 +61,9 @@ public class LogActivity extends Activity implements OnCancelListener {
     
     private BluetoothAdapter btAdapter;
     
-    private Configuration config = ConfigurationFactory.getInstance().getConfiguration();
-    
-    // Accel
-    private AccelDataProvider accelDataProvider;
-    
-    // Location
-    private SocketManager gpsSocketManager;
-    private LocationManager locationManager;
-    private LocationDataProvider locationDataProvider;
-    
-    // ECU
-    private SocketManager ecuSocketManager;
-    private EcuDataProvider ecuDataProvider;
+    private Configuration config = ConfigurationFactory.getInstance().getConfiguration();    
     
     // Timing
-    private TimingDataProvider timingDataProvider;
     private volatile Long lapStartReceivedTime;
     private volatile Long sessionStartReceivedTime;
     private volatile Long previousBestLapTime;
@@ -328,15 +296,12 @@ public class LogActivity extends Activity implements OnCancelListener {
             
             @Override
             public void run() {
-                AccelData accelData = accelDataProvider
-                        .getCurrentData();
-                LocationData locationData = locationDataProvider
-                        .getCurrentData();
+                AccelData accelData = dataProviderCoordinator.getCurrentAccelData();
+                LocationData locationData = dataProviderCoordinator.getCurrentLocationData();
                 EcuData ecuData = null;
                 
-                if (ecuDataProvider != null) {
-                    ecuData = ecuDataProvider.getCurrentData();
-                }
+                
+                ecuData = dataProviderCoordinator.getCurrentEcuData();
                 
                 final long currentTime = System.currentTimeMillis();
                 
@@ -360,7 +325,7 @@ public class LogActivity extends Activity implements OnCancelListener {
                     setTextIfShown(latAccel, "N/A");
                     setTextIfShown(vertAccel, "N/A");
                 } else {
-                    setTextIfShown(accelUpdateFreq, "%.3f", accelDataProvider.getUpdateFrequency());
+                    setTextIfShown(accelUpdateFreq, "%.3f", dataProviderCoordinator.getAccelDataUpdateFrequency());
                     setTextIfShown(lonAccel, "%.3f", accelData.getLongitudinal());
                     setTextIfShown(latAccel, "%.3f", accelData.getLateral());
                     setTextIfShown(vertAccel, "%.3f", accelData.getVertical());
@@ -374,7 +339,8 @@ public class LogActivity extends Activity implements OnCancelListener {
                     setTextIfShown(bearing, "N/A");
                     setTextIfShown(speed, "N/A");
                 } else {
-                    setTextIfShown(locationUpdateFreq, "%.3f", locationDataProvider.getUpdateFrequency());
+                    setTextIfShown(locationUpdateFreq, "%.3f",
+                            dataProviderCoordinator.getLocationDataUpdateFrequency());
                     setTextIfShown(lat, "%.8f", locationData.getLatitude());
                     setTextIfShown(lon, "%.8f", locationData.getLongitude());
                     setTextIfShown(alt, "%.3f", locationData.getAltitude());
@@ -393,7 +359,7 @@ public class LogActivity extends Activity implements OnCancelListener {
                     setTextIfShown(ignAdv, "N/A");
                     setTextIfShown(batV, "N/A");
                 } else {
-                    setTextIfShown(ecuUpdateFreq, "%.3f", ecuDataProvider.getUpdateFrequency());
+                    setTextIfShown(ecuUpdateFreq, "%.3f", dataProviderCoordinator.getEcuDataUpdateFrequency());
                     setTextIfShown(rpm, "%d", ecuData.getRpm());
                     setTextIfShown(map, "%.0f", ecuData.getManifoldAbsolutePressure());
                     setTextIfShown(tp, "%.0f", ecuData.getThrottlePosition() * 100);
@@ -473,6 +439,7 @@ public class LogActivity extends Activity implements OnCancelListener {
     @Override
     public void onCancel(DialogInterface dialog) {
         if (dialog == initDataProviderCoordinatorDialog || dialog == waitingForStartTriggerDialog) {
+            cleanup();
             finish();
         }
     }
@@ -481,28 +448,6 @@ public class LogActivity extends Activity implements OnCancelListener {
         if (dataProviderCoordinator != null) {
             dataProviderCoordinator.stop();
         }
-        
-        if (accelDataProvider != null) {
-            accelDataProvider.stop();
-        }
-        
-        if (locationDataProvider != null) {
-            locationDataProvider.stop();
-        }
-        
-        if (timingDataProvider != null) {
-            timingDataProvider.stop();
-        }
-        
-        if (locationManager != null) {
-            locationManager.stop();
-        }
-        silentSocketManagerDisconnect(gpsSocketManager);
-        
-        if (ecuDataProvider != null) {
-            ecuDataProvider.stop();
-        }
-        silentSocketManagerDisconnect(ecuSocketManager);
         
         if (displayTask != null) {
             displayTask.cancel();
@@ -520,42 +465,13 @@ public class LogActivity extends Activity implements OnCancelListener {
     }
     
     protected void initDataProviderCoordinator() {
-        Configuration config = ConfigurationFactory.getInstance().getConfiguration();
-        
         try {
             DATA_PROVIDER_COORDINATOR_HANDLER.setActivity(this);
             
-            gpsSocketManager = new BtSocketManager(config.getLocationBtAddress(),
-                    btAdapter, BtProfile.SPP);
-            locationManager = new NmeaLocationManager(gpsSocketManager,
-                    new NoOpNotificationStrategy());
-            
-            locationDataProvider = new LocationManagerLocationDataProvider(locationManager);
-
-            SensorManager sensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
-            WindowManager windowManager = (WindowManager) getSystemService(WINDOW_SERVICE);
-            accelDataProvider = new AndroidAccelDataProvider(sensorManager, windowManager);
-
-            if (config.isEcuEnabled()) {
-                ecuSocketManager = new BtSocketManager(config.getEcuBtAddress(),
-                        btAdapter, BtProfile.SPP);
-                ecuDataProvider = new MegasquirtEcuDataProvider(ecuSocketManager);
-            }
-            
-            // TODO route from external source
-            Route route = new Route("My Route", Arrays.asList(
-                    new Waypoint("1", 38.979896545410156d, -77.54102325439453d),
-                    new Waypoint("2", 38.98295974731445d, -77.53973388671875d),
-                    new Waypoint("3", 38.982906341552734d, -77.54007720947266d),
-                    new Waypoint("4", 38.972618103027344d, -77.54145050048828d),
-                    new Waypoint("5", 38.97257995605469d, -77.5412826538086d)));
-            
-            timingDataProvider = new RouteManagerTimingDataProvider(
-                    locationManager.getRouteManager(), route);
-            
-            dataProviderCoordinator = new AndroidTrackLoggerDataProviderCoordinator(
-                    DATA_PROVIDER_COORDINATOR_HANDLER, getApplication(), accelDataProvider, 
-                    locationDataProvider, ecuDataProvider, timingDataProvider);
+            dataProviderCoordinator = TrackLoggerDataProviderCoordinatorFactory
+                    .getInstance().getTrackLoggerDataProviderCoordinator(
+                            DATA_PROVIDER_COORDINATOR_HANDLER,
+                            getApplication(), btAdapter);
             
             initDataProviderCoordinatorDialog.show();
             
@@ -565,10 +481,6 @@ public class LogActivity extends Activity implements OnCancelListener {
             Thread t = new Thread() {
                 public void run() {
                     try {
-                        locationManager.start();
-                        if (ecuDataProvider != null) {
-                            ecuDataProvider.start();
-                        }
                         dataProviderCoordinator.start();
                     } catch (Exception e) {
                         LOG.error("Error starting location manager and data provider coordinator.", e);
@@ -646,16 +558,6 @@ public class LogActivity extends Activity implements OnCancelListener {
         
         if (!isFinishing()) {
             builder.create().show();
-        }
-    }
-    
-    protected void silentSocketManagerDisconnect(SocketManager socketManager) {
-        if (socketManager != null) {
-            try {
-                socketManager.disconnect();
-            } catch (Exception e1) {
-                LOG.warn("Error disconnecting BlueTooth connection with manager.", e1);
-            }
         }
     }
     

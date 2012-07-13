@@ -19,9 +19,6 @@ import static org.easymock.EasyMock.*;
 import static org.junit.Assert.*;
 
 import java.util.Arrays;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import net.tracknalysis.common.notification.NotificationStrategy;
 import net.tracknalysis.tracklogger.dataprovider.AccelData.AccelDataBuilder;
@@ -38,10 +35,7 @@ import org.junit.Test;
  */
 public class TrackLoggerDataProviderCoordinatorTest {
 
-    TrackLoggerDataProviderCoordinator dpc;
-    private AtomicInteger sessionCounter = new AtomicInteger();
-    private List<TrackLoggerDataProviderCoordinator.LogEntry> logEntries;
-    private List<TimingData> timingDatas;
+    private TestTrackLoggerDataProviderCoordinator dpc;
     
     private NotificationStrategy mockNotificationStrategy;
     private LocationDataProvider mockLocationDataProvider;
@@ -51,9 +45,6 @@ public class TrackLoggerDataProviderCoordinatorTest {
     
     @Before
     public void setup() throws Exception {
-        logEntries = new LinkedList<TrackLoggerDataProviderCoordinator.LogEntry>();
-        timingDatas = new LinkedList<TimingData>();
-        
         mockNotificationStrategy = createMock(NotificationStrategy.class);
         mockLocationDataProvider = createMock(LocationDataProvider.class);
         mockEcuDataProvider = createMock(EcuDataProvider.class);
@@ -61,7 +52,7 @@ public class TrackLoggerDataProviderCoordinatorTest {
         mockTimingDataProvider = createMock(TimingDataProvider.class);
         
         
-        dpc = new TrackLoggerDataProviderCoordinatorTestHarness(
+        dpc = new TestTrackLoggerDataProviderCoordinator(
                 mockNotificationStrategy,
                 mockAccelDataProvider,
                 mockLocationDataProvider,
@@ -216,7 +207,7 @@ public class TrackLoggerDataProviderCoordinatorTest {
         
         // startLogging()
         dpc.startLogging();
-        assertEquals(1, sessionCounter.get());
+        assertEquals(1, dpc.getSessionCount());
         
         // receiveData(LocationData) - 4
         locationListenerCapture.getValue().receiveData(locationDataBuilder.build());
@@ -224,12 +215,12 @@ public class TrackLoggerDataProviderCoordinatorTest {
         // receiveData(TimingData) - 1
         timingListenerCapture.getValue().receiveData(timingDataBuilder.build());
         Thread.sleep(500l);  // Wait for asynchronous logging
-        assertEquals(1, timingDatas.size());
+        assertEquals(1, dpc.getTimingDatas().size());
         
         // receiveData(LocationData) - 5
         locationListenerCapture.getValue().receiveData(locationDataBuilder.build());
         Thread.sleep(500l);  // Wait for asynchronous logging
-        assertEquals(2, logEntries.size());
+        assertEquals(2, dpc.getLogEntries().size());
         
         // receiveData(TimingData) - 2
         timingDataBuilder.setLap(1);
@@ -239,7 +230,7 @@ public class TrackLoggerDataProviderCoordinatorTest {
         
         timingListenerCapture.getValue().receiveData(timingDataBuilder.build());
         Thread.sleep(500l);  // Wait for asynchronous logging
-        assertEquals(2, timingDatas.size());
+        assertEquals(2, dpc.getTimingDatas().size());
         
         // stop()
         dpc.stop();
@@ -257,37 +248,5 @@ public class TrackLoggerDataProviderCoordinatorTest {
     @Test
     public void testFailedStop() {
         // TODO test failed stop
-    }
-    
-    private final class TrackLoggerDataProviderCoordinatorTestHarness extends TrackLoggerDataProviderCoordinator {
-
-        public TrackLoggerDataProviderCoordinatorTestHarness(
-                NotificationStrategy notificationStrategy,
-                AccelDataProvider accelDataProvider,
-                LocationDataProvider gpsDataProvider,
-                EcuDataProvider ecuDataProvider,
-                TimingDataProvider timingDataProvider) {
-            super(notificationStrategy, accelDataProvider, gpsDataProvider,
-                    ecuDataProvider, timingDataProvider);
-        }
-
-        @Override
-        protected int createSession() {
-            return sessionCounter.incrementAndGet();
-        }
-
-        @Override
-        protected void openSession(int sessionId) {
-        }
-
-        @Override
-        protected void storeLogEntry(int sessionId, LogEntry logEntry) {
-            logEntries.add(logEntry);
-        }
-
-        @Override
-        protected void storeTimingEntry(int sessionId, TimingData timingData) {
-            timingDatas.add(timingData);            
-        }
     }
 }

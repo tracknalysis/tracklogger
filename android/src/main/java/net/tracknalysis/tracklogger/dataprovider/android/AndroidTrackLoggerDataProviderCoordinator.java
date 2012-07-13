@@ -15,22 +15,42 @@
  */
 package net.tracknalysis.tracklogger.dataprovider.android;
 
+import java.util.Arrays;
 import java.util.Date;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import net.tracknalysis.common.android.io.BtSocketManager;
+import net.tracknalysis.common.android.io.BtSocketManager.BtProfile;
 import net.tracknalysis.common.android.notification.AndroidNotificationStrategy;
+import net.tracknalysis.common.io.SocketManager;
+import net.tracknalysis.common.notification.NoOpNotificationStrategy;
+import net.tracknalysis.location.LocationManager;
+import net.tracknalysis.location.Route;
+import net.tracknalysis.location.Waypoint;
+import net.tracknalysis.location.nmea.NmeaLocationManager;
+import net.tracknalysis.tracklogger.config.Configuration;
+import net.tracknalysis.tracklogger.config.ConfigurationFactory;
 import net.tracknalysis.tracklogger.dataprovider.AccelDataProvider;
 import net.tracknalysis.tracklogger.dataprovider.EcuDataProvider;
 import net.tracknalysis.tracklogger.dataprovider.LocationDataProvider;
 import net.tracknalysis.tracklogger.dataprovider.TimingData;
 import net.tracknalysis.tracklogger.dataprovider.TimingDataProvider;
 import net.tracknalysis.tracklogger.dataprovider.TrackLoggerDataProviderCoordinator;
+import net.tracknalysis.tracklogger.dataprovider.ecu.MegasquirtEcuDataProvider;
+import net.tracknalysis.tracklogger.dataprovider.location.LocationManagerLocationDataProvider;
+import net.tracknalysis.tracklogger.dataprovider.timing.RouteManagerTimingDataProvider;
 import net.tracknalysis.tracklogger.provider.TrackLoggerData;
+import android.bluetooth.BluetoothAdapter;
 import android.content.ContentResolver;
 import android.content.ContentUris;
 import android.content.ContentValues;
 import android.content.Context;
+import android.hardware.SensorManager;
 import android.net.Uri;
 import android.os.Handler;
+import android.view.WindowManager;
 
 /**
  * @author David Valeri
@@ -38,15 +58,151 @@ import android.os.Handler;
 public class AndroidTrackLoggerDataProviderCoordinator extends
         TrackLoggerDataProviderCoordinator {
     
+    private static final Logger LOG = LoggerFactory.getLogger(AndroidTrackLoggerDataProviderCoordinator.class);
+    
     private final Context context;
+    
+    // Accel
+    private AccelDataProvider accelDataProvider;
+    
+    // Location
+    private SocketManager gpsSocketManager;
+    private LocationManager locationManager;
+    private LocationDataProvider locationDataProvider;
+    
+    // ECU
+    private SocketManager ecuSocketManager;
+    private EcuDataProvider ecuDataProvider;
+    
+    // Timing
+    private TimingDataProvider timingDataProvider;
 
-    public AndroidTrackLoggerDataProviderCoordinator(Handler handler, Context context,
-            AccelDataProvider accelDataProvider,
-            LocationDataProvider gpsDataProvider, EcuDataProvider ecuDataProvider,
-            TimingDataProvider timingDataProvider) {
-        super(new AndroidNotificationStrategy(handler), accelDataProvider,
-                gpsDataProvider, ecuDataProvider, timingDataProvider);
+    public AndroidTrackLoggerDataProviderCoordinator(Handler handler, Context context, BluetoothAdapter btAdapter) {
+        super(new AndroidNotificationStrategy(handler));
+        
         this.context = context;
+
+        Configuration config = ConfigurationFactory.getInstance().getConfiguration();
+        
+        
+        try {
+            gpsSocketManager = new BtSocketManager(config.getLocationBtAddress(),
+                    btAdapter, BtProfile.SPP);
+            locationManager = new NmeaLocationManager(gpsSocketManager,
+                    new NoOpNotificationStrategy());
+            
+            locationDataProvider = new LocationManagerLocationDataProvider(locationManager);
+
+            SensorManager sensorManager = (SensorManager) context.getSystemService(Context.SENSOR_SERVICE);
+            WindowManager windowManager = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
+            accelDataProvider = new AndroidAccelDataProvider(sensorManager, windowManager);
+
+            if (config.isEcuEnabled()) {
+                ecuSocketManager = new BtSocketManager(config.getEcuBtAddress(),
+                        btAdapter, BtProfile.SPP);
+                ecuDataProvider = new MegasquirtEcuDataProvider(ecuSocketManager);
+            }
+            
+            // TODO route from external source
+            Route route = new Route("My Route", Arrays.asList(
+                    new Waypoint("1", 38.979896545410156d, -77.54102325439453d),
+                    new Waypoint("2", 38.98295974731445d, -77.53973388671875d),
+                    new Waypoint("3", 38.982906341552734d, -77.54007720947266d),
+                    new Waypoint("4", 38.972618103027344d, -77.54145050048828d),
+                    new Waypoint("5", 38.97257995605469d, -77.5412826538086d)));
+            
+            timingDataProvider = new RouteManagerTimingDataProvider(
+                    locationManager.getRouteManager(), route);
+        } catch (RuntimeException e) {
+            cleanup();
+            throw e;
+        }
+    }
+    
+    @Override
+    protected void preStart() {
+        locationManager.start();
+    }
+    
+    @Override
+    protected void postStop() {
+        locationManager.stop();
+    }
+    
+    protected void cleanup() {
+        try {
+            if (accelDataProvider != null) {
+                accelDataProvider.stop();
+            }
+        } catch (Exception e) {
+            LOG.error("Error cleaning up accel data provider.", e);
+        }
+        
+        try {
+            if (locationDataProvider != null) {
+                locationDataProvider.stop();
+            }
+        } catch (Exception e) {
+            LOG.error("Error cleaning up location data provider.", e);
+        }
+        
+        try {
+            if (timingDataProvider != null) {
+                timingDataProvider.stop();
+            }
+        } catch (Exception e) {
+            LOG.error("Error cleaning up timing data provider.", e);
+        }
+        
+        try {
+            if (locationManager != null) {
+                locationManager.stop();
+            }
+        } catch(Exception e) {
+            LOG.error("Error cleaning up location manager.", e);
+        } finally {
+            silentSocketManagerDisconnect(gpsSocketManager);
+        }
+        
+        try {
+            if (ecuDataProvider != null) {
+                ecuDataProvider.stop();
+            }
+        } catch (Exception e) {
+            LOG.error("Error cleaning up ecu data provider.", e);
+        } finally {
+            silentSocketManagerDisconnect(ecuSocketManager);
+        }
+    }
+    
+    protected void silentSocketManagerDisconnect(SocketManager socketManager) {
+        if (socketManager != null) {
+            try {
+                socketManager.disconnect();
+            } catch (Exception e1) {
+                LOG.warn("Error disconnecting BlueTooth connection with manager.", e1);
+            }
+        }
+    }
+    
+    @Override
+    protected AccelDataProvider getAccelDataProvider() {
+        return accelDataProvider;
+    }
+    
+    @Override
+    protected LocationDataProvider getLocationDataProvider() {
+        return locationDataProvider;
+    }
+    
+    @Override
+    protected EcuDataProvider getEcuDataProvider() {
+        return ecuDataProvider;
+    }
+    
+    @Override
+    protected TimingDataProvider getTimingDataProvider() {
+        return timingDataProvider;
     }
 
     @Override

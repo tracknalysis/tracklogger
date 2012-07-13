@@ -31,11 +31,8 @@ import net.tracknalysis.common.concurrent.GracefulShutdownThread;
 import net.tracknalysis.common.notification.NotificationStrategy;
 import net.tracknalysis.tracklogger.dataprovider.AbstractDataProviderCoordinator;
 import net.tracknalysis.tracklogger.dataprovider.AccelData;
-import net.tracknalysis.tracklogger.dataprovider.AccelDataProvider;
 import net.tracknalysis.tracklogger.dataprovider.EcuData;
-import net.tracknalysis.tracklogger.dataprovider.EcuDataProvider;
 import net.tracknalysis.tracklogger.dataprovider.LocationData;
-import net.tracknalysis.tracklogger.dataprovider.LocationDataProvider;
 
 /**
  * @author David Valeri
@@ -56,10 +53,6 @@ public abstract class TrackLoggerDataProviderCoordinator extends
     
     private final SimpleDateFormat sqlDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
     private final BlockingQueue<Object> dataQueue = new ArrayBlockingQueue<Object>(100);
-    
-    public static class Test {
-        
-    }
     
     /**
      * Enumeration of notification types that this implementation may generate.
@@ -138,17 +131,14 @@ public abstract class TrackLoggerDataProviderCoordinator extends
         }
     }
 
-    public TrackLoggerDataProviderCoordinator(NotificationStrategy notificationStrategy,
-            AccelDataProvider accelDataProvider,
-            LocationDataProvider gpsDataProvider, EcuDataProvider ecuDataProvider,
-            TimingDataProvider timingDataProvider) {
-        super(accelDataProvider, gpsDataProvider, ecuDataProvider, timingDataProvider);
+    public TrackLoggerDataProviderCoordinator(NotificationStrategy notificationStrategy) {
         this.notificationStrategy = notificationStrategy;
     }
     
     @Override
     public final synchronized void start() {
         notificationStrategy.sendNotification(NotificationType.STARTING);
+        preStart();
         try {
             ready = false;
             super.start();
@@ -180,9 +170,10 @@ public abstract class TrackLoggerDataProviderCoordinator extends
             LOG.error("Error during shutdown.", e);
             notificationStrategy.sendNotification(NotificationType.STOP_FAILED, e);
         }
+        postStop();
         notificationStrategy.sendNotification(NotificationType.STOPPED);
     }
-    
+
     public final boolean isReady() {
         return ready && isRunning();
     }
@@ -238,9 +229,47 @@ public abstract class TrackLoggerDataProviderCoordinator extends
         }
     }
     
+    protected final void handleReady() {
+        if (!ready) {
+        
+            LocationData locationData = getLocationDataProvider().getCurrentData();
+            AccelData accelData = getAccelDataProvider().getCurrentData();
+            EcuData ecuData = isEcuDataProviderEnabled() ? getEcuDataProvider().getCurrentData() : null;
+            
+            if (!ready && locationData != null && accelData != null
+                    && (!isEcuDataProviderEnabled() || ecuData != null)) {
+                LOG.debug("Ready condition met.  Received non-null data from all data providers.");
+                ready = true;
+                
+                notificationStrategy.sendNotification(
+                        NotificationType.READY_PROGRESS, new Object[] {
+                                locationData, accelData, ecuData});
+                
+                notificationStrategy.sendNotification(
+                        NotificationType.READY);
+            } else if (!ready) {
+                notificationStrategy.sendNotification(
+                        NotificationType.READY_PROGRESS, new Object[] {
+                                locationData, accelData, ecuData });
+            }
+        }
+    }
+    
     @Override
-    protected final synchronized void handleUpdate(LocationData gpsData,
-            AccelData accelData, EcuData ecuData) {
+    protected final synchronized void handleUpdate(AccelData data) {
+        handleReady();
+    }
+    
+    @Override
+    protected void handleUpdate(EcuData data) {
+        handleReady();
+    }
+    
+    @Override
+    protected final synchronized void handleUpdate(LocationData locationData) {
+        
+        AccelData accelData = getAccelDataProvider().getCurrentData();
+        EcuData ecuData = getEcuDataProvider() == null ? null : getEcuDataProvider().getCurrentData();
     	
     	long startTime = System.currentTimeMillis();
         
@@ -252,22 +281,7 @@ public abstract class TrackLoggerDataProviderCoordinator extends
                                     isLoggingStartTriggerFired()});
         }
         
-        if (!ready && gpsData != null && accelData != null
-                && (!isEcuDataProviderEnabled() || ecuData != null)) {
-            LOG.debug("Ready condition met.  Received non-null data from all data providers.");
-            ready = true;
-            
-            notificationStrategy.sendNotification(
-                    NotificationType.READY_PROGRESS, new Object[] {
-                            gpsData, accelData, ecuData});
-            
-            notificationStrategy.sendNotification(
-                    NotificationType.READY);
-        } else if (!ready) {
-            notificationStrategy.sendNotification(
-                    NotificationType.READY_PROGRESS, new Object[] {
-                            gpsData, accelData, ecuData });
-        }
+        handleReady();
         
         if (ready && logging) {
             
@@ -278,7 +292,7 @@ public abstract class TrackLoggerDataProviderCoordinator extends
             	
             LogEntry logEntry = new LogEntry();
             logEntry.accelData = accelData;
-            logEntry.locationData = gpsData;
+            logEntry.locationData = locationData;
             logEntry.ecuData = ecuData;
             
             if (!dataQueue.offer(logEntry)) {
@@ -341,6 +355,18 @@ public abstract class TrackLoggerDataProviderCoordinator extends
      * @param timingData the data to store
      */
     protected abstract void storeTimingEntry(int sessionId, TimingData timingData);
+    
+    /**
+     * Hook to allow sub-classes to do extra initialization before the main startup.
+     */
+    protected void preStart() {
+    }
+    
+    /**
+     * Hook to allow sub-classes to do extra cleanup after the main shutdown.
+     */
+    protected void postStop() {
+    }
     
     protected final synchronized String formatAsSqlDate(Date date) {
         return sqlDateFormat.format(date);
