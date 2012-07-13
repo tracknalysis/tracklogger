@@ -16,6 +16,7 @@
 package net.tracknalysis.tracklogger.activity;
 
 import net.tracknalysis.tracklogger.R;
+import net.tracknalysis.tracklogger.provider.TrackLoggerData;
 import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
@@ -40,6 +41,9 @@ public class HomeActivity extends Activity implements OnClickListener {
         Button logButton = (Button) findViewById(R.id.launchLog);
         logButton.setOnClickListener(this);
         
+        Button splitMarkerSetManagementButton = (Button) findViewById(R.id.launchSplitMarkerSetManagement);
+        splitMarkerSetManagementButton.setOnClickListener(this);
+        
         Button configButton = (Button) findViewById(R.id.launchConfig);
         configButton.setOnClickListener(this);
     }
@@ -48,10 +52,13 @@ public class HomeActivity extends Activity implements OnClickListener {
     public void onClick(View v) {
         switch(v.getId()) {
             case R.id.launchSessionList:
-                startActivity(new Intent(this, SessionListActivity.class));
+                startActivity(new Intent(Intent.ACTION_VIEW, TrackLoggerData.Session.CONTENT_URI));
                 break;
             case R.id.launchLog:
                 startActivity(new Intent(this, LogActivity.class));
+                break;
+            case R.id.launchSplitMarkerSetManagement:
+                startActivity(new Intent(Intent.ACTION_VIEW, TrackLoggerData.SplitMarkerSet.CONTENT_URI));
                 break;
             case R.id.launchConfig:
                 startActivity(new Intent(this, ConfigActivity.class));

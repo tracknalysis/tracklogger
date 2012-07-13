@@ -27,21 +27,19 @@ Authors: David Valeri
 
   <artifactId>tracklogger-android</artifactId>
   <packaging>apk</packaging>
-  
+
   <name>Tracknalysis :: TrackLogger :: Android</name>
   <description>TrackLogger application for the Android platform.</description>
   <inceptionYear>2012</inceptionYear>
-  
-  <properties>
-    <platform.version>2.2.1</platform.version>
-  </properties>
   
   <dependencies>
     <dependency>
       <groupId>com.google.android</groupId>
       <artifactId>android</artifactId>
-      <version>${platform.version}</version>
-      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.google.android.maps</groupId>
+      <artifactId>maps</artifactId>
     </dependency>
     <dependency>
       <groupId>de.mindpipe.android</groupId>
@@ -69,12 +67,23 @@ Authors: David Valeri
     </dependency>
     <dependency>
       <groupId>net.tracknalysis.tracklogger</groupId> 
+      <artifactId>android-filechooser</artifactId>
+      <version>${project.version}</version>
+      <type>apklib</type>
+    </dependency>
+    <dependency>
+      <groupId>net.tracknalysis.tracklogger</groupId> 
       <artifactId>tracklogger-dataprovider</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>net.tracknalysis.tracklogger</groupId> 
       <artifactId>tracklogger-export</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>net.tracknalysis.tracklogger</groupId> 
+      <artifactId>tracklogger-import</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
@@ -88,6 +97,10 @@ Authors: David Valeri
       <plugin>
         <groupId>com.jayway.maven.plugins.android.generation2</groupId>
         <artifactId>android-maven-plugin</artifactId>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-remote-resources-plugin</artifactId>
       </plugin>
     </plugins>
   </build>

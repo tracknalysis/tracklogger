@@ -15,7 +15,10 @@
  */
 package net.tracknalysis.tracklogger.dataprovider;
 
+import java.lang.ref.WeakReference;
 import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
@@ -26,10 +29,14 @@ import org.slf4j.LoggerFactory;
 
 import net.tracknalysis.common.concurrent.GracefulShutdownThread;
 import net.tracknalysis.common.notification.NotificationStrategy;
+import net.tracknalysis.common.notification.NotificationType;
 import net.tracknalysis.tracklogger.dataprovider.AbstractDataProviderCoordinator;
-import net.tracknalysis.tracklogger.dataprovider.AccelData;
-import net.tracknalysis.tracklogger.dataprovider.EcuData;
-import net.tracknalysis.tracklogger.dataprovider.LocationData;
+import net.tracknalysis.tracklogger.model.AccelData;
+import net.tracknalysis.tracklogger.model.EcuData;
+import net.tracknalysis.tracklogger.model.LocationData;
+import net.tracknalysis.tracklogger.model.LogEntry;
+import net.tracknalysis.tracklogger.model.TimingData;
+import net.tracknalysis.tracklogger.model.TimingEntry;
 
 /**
  * Implements data collection and coordination logic, delegating to sub-classes only for persistence and
@@ -45,39 +52,31 @@ public abstract class TrackLoggerDataProviderCoordinator extends
     
     private static final AtomicInteger logThreadCounter = new AtomicInteger();
     
-    private final NotificationStrategy<NotificationType> notificationStrategy;
+    private final List<WeakReference<NotificationStrategy<DataProviderCoordinatorNotificationType>>> notificationStrategies =
+            new LinkedList<WeakReference<NotificationStrategy<DataProviderCoordinatorNotificationType>>>();
+    
     private volatile boolean ready;
     private volatile int sessionId;
     private volatile boolean logging;
     private volatile int currentSessionId;
     private volatile boolean loggingStartTriggerFired;
+    private volatile DataProviderCoordinatorNotificationType lastNotificationType = 
+            DataProviderCoordinatorNotificationType.STOPPED;
+    private volatile Object lastNotificationBody;
     private LogThread logThread;
     
     private final BlockingQueue<Object> dataQueue = new ArrayBlockingQueue<Object>(100);
     private volatile int logEntriesOffered;
     private volatile int timingEntriesOffered;
     
-    public TrackLoggerDataProviderCoordinator(NotificationStrategy<NotificationType> notificationStrategy) {
-        this.notificationStrategy = notificationStrategy;
-    }
-    
     @Override
     public final synchronized void start() {
         if (logThread == null) {
-            notificationStrategy.sendNotification(DataProviderCoordinator.NotificationType.STARTING);
+            sendNotification(DataProviderCoordinatorNotificationType.STARTING);
             logThread = new LogThread();
             
             preStart();
             try {
-                
-                if (sessionId == 0) {
-                    currentSessionId = createSession();
-                } else {
-                    currentSessionId = sessionId;
-                    
-                    openSession(sessionId);
-                }
-                
                 dataQueue.clear();
                 logEntriesOffered = 0;
                 timingEntriesOffered = 0;
@@ -89,10 +88,10 @@ public abstract class TrackLoggerDataProviderCoordinator extends
                 
                 super.start();
                 postStart();
-                notificationStrategy.sendNotification(DataProviderCoordinator.NotificationType.STARTED);
+                sendNotification(DataProviderCoordinator.DataProviderCoordinatorNotificationType.STARTED);
             } catch (RuntimeException e) {
                 LOG.error("Error during startup.", e);
-                notificationStrategy.sendNotification(DataProviderCoordinator.NotificationType.START_FAILED, e);
+                sendNotification(DataProviderCoordinator.DataProviderCoordinatorNotificationType.START_FAILED, e);
                 
                 try {
                     stop();
@@ -107,7 +106,7 @@ public abstract class TrackLoggerDataProviderCoordinator extends
     @Override
     public final synchronized void stop() {
         if (logThread != null) {
-            notificationStrategy.sendNotification(DataProviderCoordinator.NotificationType.STOPPING);
+            sendNotification(DataProviderCoordinatorNotificationType.STOPPING);
             try {
                 // Call super first so we stop receiving updates immediately.  Otherwise
                 // if we shutdown logging first, the state gets out of whack because we
@@ -125,11 +124,11 @@ public abstract class TrackLoggerDataProviderCoordinator extends
                         logEntriesOffered, timingEntriesOffered);
                 
                 postStop();
-                notificationStrategy.sendNotification(DataProviderCoordinator.NotificationType.STOPPED);
+                sendNotification(DataProviderCoordinatorNotificationType.STOPPED);
             } catch (RuntimeException e) {
                 logThread = null;
                 LOG.error("Error during shutdown.", e);
-                notificationStrategy.sendNotification(DataProviderCoordinator.NotificationType.STOP_FAILED, e);
+                sendNotification(DataProviderCoordinator.DataProviderCoordinatorNotificationType.STOP_FAILED, e);
             }
         }
     }
@@ -159,7 +158,58 @@ public abstract class TrackLoggerDataProviderCoordinator extends
     public int getCurrentSessionId() {
         return currentSessionId;
     }
-
+    
+    @Override
+    public final void register(
+            NotificationStrategy<DataProviderCoordinatorNotificationType> notificationStrategy) {
+        
+        synchronized (notificationStrategies) {
+            scrubStrategies(notificationStrategies);
+            
+            int index = findInWeakReferenceList(notificationStrategies, notificationStrategy);
+            
+            if (index == -1) {
+                notificationStrategies.add(
+                        new WeakReference<NotificationStrategy<DataProviderCoordinatorNotificationType>>(
+                                notificationStrategy));
+                
+                if (lastNotificationBody != null) {
+                    notificationStrategy.sendNotification(lastNotificationType, lastNotificationBody);
+                } else {
+                    notificationStrategy.sendNotification(lastNotificationType);
+                }
+            }
+        }
+    }
+    
+    @Override
+    public final void unRegister(
+            NotificationStrategy<DataProviderCoordinatorNotificationType> notificationStrategy) {
+        
+        synchronized (notificationStrategies) {
+            scrubStrategies(notificationStrategies);
+                
+            int index = findInWeakReferenceList(notificationStrategies, notificationStrategy);
+                
+            if (index > -1) {
+                notificationStrategies.remove(index);
+            }
+        }
+    }
+    
+    protected final void sendNotification(DataProviderCoordinatorNotificationType notificationType) {
+        sendNotification(notificationType, null);
+    }
+    
+    protected final void sendNotification(DataProviderCoordinatorNotificationType notificationType, Object body) {
+        synchronized (notificationStrategies) {
+            lastNotificationType = notificationType;
+            lastNotificationBody = body;
+            
+            sendNotificationInternal(notificationType, body);
+        }
+    }
+    
     protected final void handleReady() {
         if (!ready) {
         
@@ -170,22 +220,33 @@ public abstract class TrackLoggerDataProviderCoordinator extends
             if (!ready && locationData != null && accelData != null
                     && (!isEcuDataProviderEnabled() || ecuData != null)) {
                 LOG.debug("Ready condition met.  Received non-null data from all data providers.");
+                
+                // Create/open session only once we are ready so that we don't get a session recorded
+                // with no data in it.
+                if (sessionId == 0) {
+                    currentSessionId = createSession();
+                } else {
+                    currentSessionId = sessionId;
+                    
+                    openSession(sessionId);
+                }
+                
                 ready = true;
                 
-                notificationStrategy.sendNotification(
-                        DataProviderCoordinator.NotificationType.READY_PROGRESS, new Object[] {
-                                locationData, accelData, ecuData});
+                sendNotification(
+                        DataProviderCoordinatorNotificationType.READY_PROGRESS,
+                        new Object[] {locationData, accelData, ecuData});
                 
                 // Start only once everyone is ready so we don't get timing events before
                 // the other data providers are ready.
                 getTimingDataProvider().start();
                 
-                notificationStrategy.sendNotification(
-                        DataProviderCoordinator.NotificationType.READY);
+                sendNotification(
+                        DataProviderCoordinatorNotificationType.READY);
             } else if (!ready) {
-                notificationStrategy.sendNotification(
-                        DataProviderCoordinator.NotificationType.READY_PROGRESS, new Object[] {
-                                locationData, accelData, ecuData });
+                sendNotification(
+                        DataProviderCoordinatorNotificationType.READY_PROGRESS,
+                        new Object[] {locationData, accelData, ecuData });
             }
         }
     }
@@ -224,15 +285,12 @@ public abstract class TrackLoggerDataProviderCoordinator extends
             // can be asynchronous from the other data logging events and
             // we need to already be logging those events when the first timing
             // event triggers.
-            	
-            LogEntry logEntry = new LogEntry();
-            logEntry.accelData = accelData;
-            logEntry.locationData = locationData;
-            logEntry.ecuData = ecuData;
+            LogEntry logEntry = new LogEntry(locationData.getTime(),
+                    currentSessionId, accelData, locationData, ecuData);
             
             if (!dataQueue.offer(logEntry)) {
                 LOG.error("No space on the data queue.  Discarding current data.");
-                notificationStrategy.sendNotification(DataProviderCoordinator.NotificationType.LOGGING_FAILED);
+                sendNotification(DataProviderCoordinatorNotificationType.LOGGING_FAILED);
             } else {
                 logEntriesOffered++;
             }
@@ -257,19 +315,19 @@ public abstract class TrackLoggerDataProviderCoordinator extends
                 // TODO This is split marker based.  Handle start based on configuration options for immediately, movement, etc.
                 LOG.debug("Log trigger start condition met.");
                 loggingStartTriggerFired = true;
-                notificationStrategy
-                        .sendNotification(DataProviderCoordinator.NotificationType.TIMING_START_TRIGGER_FIRED);
+                sendNotification(DataProviderCoordinatorNotificationType.TIMING_START_TRIGGER_FIRED);
             }
             
             if (loggingStartTriggerFired) {
-                notificationStrategy
-                        .sendNotification(
-                                DataProviderCoordinator.NotificationType.TIMING_DATA_UPDATE,
+                TimingEntry timingEntry = new TimingEntry(timingData.getTime(), currentSessionId, timingData);
+                
+                sendNotification(
+                                DataProviderCoordinatorNotificationType.TIMING_DATA_UPDATE,
                                 timingData);
                 
-                if (!dataQueue.offer(timingData)) {
+                if (!dataQueue.offer(timingEntry)) {
                     LOG.error("No space on the data queue.  Discarding current data.");
-                    notificationStrategy.sendNotification(DataProviderCoordinator.NotificationType.LOGGING_FAILED);
+                    sendNotification(DataProviderCoordinatorNotificationType.LOGGING_FAILED);
                 } else {
                     timingEntriesOffered++;
                 }
@@ -290,18 +348,16 @@ public abstract class TrackLoggerDataProviderCoordinator extends
     /**
      * Store a log entry in the data store.
      *
-     * @param sessionId the ID of the session that the log entry belongs to
      * @param logEntry the data to store
      */
-    protected abstract void storeLogEntry(int sessionId, LogEntry logEntry);
+    protected abstract void storeLogEntry(LogEntry logEntry);
 
     /**
      * Store timing data in the data store.
      *
-     * @param sessionId the ID of the session that the data belongs to
-     * @param timingData the data to store
+     * @param timingEntry the data to store
      */
-    protected abstract void storeTimingEntry(int sessionId, TimingData timingData);
+    protected abstract void storeTimingEntry(TimingEntry timingEntry);
     
     /**
      * Hook to allow sub-classes to do extra initialization before the main startup.
@@ -321,12 +377,70 @@ public abstract class TrackLoggerDataProviderCoordinator extends
     protected void postStop() {
     }
     
-    protected static final class LogEntry {
-        public AccelData accelData;
-        public LocationData locationData;
-        public EcuData ecuData;
+    /**
+     * Searches a list of references for a reference that points to {@code notificationStrategy}.
+     *
+     * @param strategies the list to search
+     * @param notificationStrategy the strategy to look for in the list
+     *
+     * @return -1 if no matching entry was found or the index of the matching reference in the list
+     */
+    private int findInWeakReferenceList(
+            List<? extends WeakReference<? extends NotificationStrategy<? extends NotificationType>>> strategies,
+            NotificationStrategy<?> notificationStrategy) {
+        
+        int index = 0;
+        
+        for (WeakReference<? extends NotificationStrategy<?>> existingStrategy : strategies) {
+            if (existingStrategy.get() == notificationStrategy) {
+                return index;
+            }
+            
+            index++;
+        }
+        
+        return -1;
     }
-
+    
+    /**
+     * Culls any references from the list which have had their target garbage collected.
+     *
+     * @param strategies the list to inspect for stale references
+     */
+    private void scrubStrategies(
+            List<? extends WeakReference<? extends NotificationStrategy<? extends NotificationType>>> strategies) {
+        
+        Iterator<? extends WeakReference<? extends NotificationStrategy<? extends NotificationType>>> iterator =
+                strategies.iterator();
+        
+        while (iterator.hasNext()) {
+            WeakReference<?> strategyRef = iterator.next();
+            if (strategyRef.get() == null) {
+                iterator.remove();
+            }
+        }
+    }
+    
+    /**
+     * Sends notifications to registered listeners.  Callers must synchronize on {@link #notificationStrategies}
+     * externally.
+     */
+    private void sendNotificationInternal(DataProviderCoordinatorNotificationType notificationType, Object body) {
+        for (WeakReference<NotificationStrategy<DataProviderCoordinatorNotificationType>> ref 
+                : notificationStrategies) {
+            
+            NotificationStrategy<DataProviderCoordinatorNotificationType> strategy = ref.get();
+            
+            if (strategy != null) {
+                if (body != null) {
+                    strategy.sendNotification(notificationType, body);
+                } else {
+                    strategy.sendNotification(notificationType);
+                }
+            }
+        }
+    }
+    
     private class LogThread extends GracefulShutdownThread {
         
         private int logEntriesWritten = 0;
@@ -358,12 +472,12 @@ public abstract class TrackLoggerDataProviderCoordinator extends
                         if (o instanceof LogEntry) {
                             LogEntry logEntry = (LogEntry) o;
                             
-                            storeLogEntry(currentSessionId, logEntry);
+                            storeLogEntry(logEntry);
                             logEntriesWritten++;
-                        } else if (o instanceof TimingData) {
-                            TimingData timingData = (TimingData) o;
+                        } else if (o instanceof TimingEntry) {
+                            TimingEntry timingEntry = (TimingEntry) o;
                             
-                            storeTimingEntry(currentSessionId, timingData);
+                            storeTimingEntry(timingEntry);
                             timingEntriesWritten++;
                         } else {
                             LOG.warn("Error while logging data.  Unknown data type {}.", o.getClass());
@@ -388,10 +502,10 @@ public abstract class TrackLoggerDataProviderCoordinator extends
             } catch (Exception e) {
                 String logMessage = "Exception while logging data.  Data queue depth is '" + dataQueue.size()
                         + "' running is " + run + ".";
-                
+
                 if (run) {
                     LOG.error(logMessage, e);
-                    notificationStrategy.sendNotification(DataProviderCoordinator.NotificationType.LOGGING_FAILED);
+                    sendNotification(DataProviderCoordinatorNotificationType.LOGGING_FAILED);
                 } else {
                     LOG.info(logMessage, e);
                 }

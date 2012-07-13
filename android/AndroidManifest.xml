@@ -2,25 +2,27 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
   package="net.tracknalysis.tracklogger" android:versionCode="1" android:versionName="0.1-SNAPSHOT">
   
-  <uses-sdk android:minSdkVersion="8" android:targetSdkVersion="8" />
+  <uses-sdk android:minSdkVersion="8" android:targetSdkVersion="16" />
     
   <uses-permission android:name="android.permission.BLUETOOTH" />
   <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
   <uses-permission android:name="android.permission.WAKE_LOCK" />
   <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+  <uses-permission android:name="android.permission.INTERNET"/>
   
-  <permission  android:protectionLevel="normal" android:name="tracklogger.permission.session.export"
-      android:description="@string/permission_session_export"/>
-
   <application android:icon="@drawable/icon" android:label="@string/app_name"
       android:name=".TrackLogger">
       
+    <uses-library android:name="com.google.android.maps"/>
+      
     <provider 
       android:name=".provider.TrackLoggerDataProvider"
-      android:authorities="net.tracknalysis.TrackLogger.provider"
+      android:authorities="net.tracknalysis.trackLogger"
       android:exported="false">
       <grant-uri-permission android:pathPattern=".*" />
     </provider>
+    
+    <!-- Activities -->
     
     <activity android:name=".activity.HomeActivity">
       <intent-filter>
@@ -28,27 +30,121 @@
         <category android:name="android.intent.category.LAUNCHER" />
       </intent-filter>
     </activity>
-    <activity android:name=".activity.LogActivity" android:theme="@android:style/Theme.Black.NoTitleBar"
+    
+    <activity android:name=".activity.LogActivity"
+        android:theme="@android:style/Theme.DeviceDefault.NoActionBar"
         android:launchMode="singleTask"/>
-    <activity android:name=".activity.SessionListActivity"/>
-    <activity android:name=".activity.SessionExportActivity"
-      android:permission="tracklogger.permission.session.export">
+    
+    
+    <activity android:name=".activity.SessionListActivity" android:exported="false">
+      <intent-filter>
+        <action android:name="android.intent.action.VIEW" />
+        <category android:name="android.intent.category.DEFAULT" />
+        <data android:mimeType="vnd.android.cursor.dir/net.tracknalysis.tracklogger.session" />
+      </intent-filter> 
+    </activity>
+    
+    <activity android:name=".activity.SessionConfigureExportActivity" android:exported="false">
       <intent-filter>
         <action android:name="net.tracknalysis.tracklogger.SESSION_EXPORT_CONFIG_ACTION" />
         <category android:name="android.intent.category.DEFAULT" />
         <data android:mimeType="vnd.android.cursor.item/net.tracknalysis.tracklogger.session" />
       </intent-filter>  
     </activity>
+    
+    
+    <!-- ########## Split Marker Set ########## -->
+    
+    <activity android:name=".activity.SplitMarkerSetListActivity" android:exported="false">
+      <intent-filter>
+        <action android:name="android.intent.action.VIEW" />
+        <category android:name="android.intent.category.DEFAULT" />
+        <data android:mimeType="vnd.android.cursor.dir/net.tracknalysis.tracklogger.splitmarkerset" />
+      </intent-filter>
+      <intent-filter>
+        <action android:name="android.intent.action.PICK" />
+        <category android:name="android.intent.category.DEFAULT" />
+        <data android:mimeType="vnd.android.cursor.dir/net.tracknalysis.tracklogger.splitmarkerset" />
+      </intent-filter>
+    </activity>
+
+    <activity android:name=".activity.SplitMarkerSetConfigureImportActivity" android:exported="false">
+      <intent-filter>
+        <action android:name="net.tracknalysis.tracklogger.SPLIT_MARKER_SET_CONFIGURE_IMPORT" />
+        <category android:name="android.intent.category.DEFAULT" />
+      </intent-filter>
+    </activity>
+    
+    <activity android:name=".activity.SplitMarkerSetRenameActivity" android:exported="false"
+      android:theme="@android:style/Theme.DeviceDefault.Dialog">
+      <intent-filter>
+        <action android:name="net.tracknalysis.tracklogger.RENAME" />
+        <category android:name="android.intent.category.DEFAULT" />
+        <data android:mimeType="vnd.android.cursor.item/net.tracknalysis.tracklogger.splitmarkerset" />
+      </intent-filter>
+    </activity>
+    
+    <activity android:name=".activity.SplitMarkerSetViewActivity" android:exported="false">
+      <intent-filter>
+        <action android:name="android.intent.action.VIEW" />
+        <category android:name="android.intent.category.DEFAULT" />
+        <data android:mimeType="vnd.android.cursor.item/net.tracknalysis.tracklogger.splitmarkerset" />
+      </intent-filter>
+      <intent-filter>
+        <action android:name="android.intent.action.EDIT" />
+        <category android:name="android.intent.category.DEFAULT" />
+        <data android:mimeType="vnd.android.cursor.item/net.tracknalysis.tracklogger.splitmarkerset" />
+      </intent-filter>
+      <intent-filter>
+        <action android:name="android.intent.action.INSERT" />
+        <category android:name="android.intent.category.DEFAULT" />
+        <data android:mimeType="vnd.android.cursor.dir/net.tracknalysis.tracklogger.splitmarkerset" />
+      </intent-filter>
+    </activity>
+    
+    
+    <!-- ########## Split Marker ########## -->
+    
+    <activity android:name=".activity.SplitMarkerEditActivity" android:exported="false"
+      android:theme="@android:style/Theme.DeviceDefault.Dialog">
+      <intent-filter>
+        <action android:name="android.intent.action.EDIT" />
+        <category android:name="android.intent.category.DEFAULT" />
+        <data android:mimeType="vnd.android.cursor.item/net.tracknalysis.tracklogger.splitmarker" />
+      </intent-filter>
+    </activity>
+    
+    
     <activity android:name=".activity.ConfigActivity"/>
     
-    <service android:name=".dataprovider.android.DataProviderCoordinatorService" android:exported="false"/>
-    <service android:name=".export.android.SessionExporterServiceImpl" android:exported="false">
+    
+    <activity android:name="group.pals.android.lib.ui.filechooser.FileChooserActivity"
+      android:configChanges="orientation|keyboardHidden"
+      android:theme="@android:style/Theme.Dialog"/>
+    
+    <!-- Services -->
+    
+    <service android:name=".dataprovider.android.DataProviderCoordinatorManagerService"
+      android:exported="false"/>
+    
+    <service android:name=".export.android.SessionExporterService" android:exported="false">
        <intent-filter>
         <action android:name="net.tracknalysis.tracklogger.SESSION_EXPORT_ACTION" />
         <category android:name="android.intent.category.DEFAULT" />
         <data android:mimeType="vnd.android.cursor.item/net.tracknalysis.tracklogger.session" />
       </intent-filter>
     </service>
+    
+    <service android:name="._import.android.SplitMarkerSetImporterService" android:exported="false">
+       <intent-filter>
+        <action android:name="net.tracknalysis.tracklogger.SPLIT_MARKER_SET_IMPORT" />
+        <category android:name="android.intent.category.DEFAULT" />
+        <data android:scheme="file"/>
+      </intent-filter>
+    </service>
+    
+    <service android:name="group.pals.android.lib.ui.filechooser.services.LocalFileProvider"
+      android:exported="false"/>
   </application>
   
   

@@ -41,6 +41,12 @@ Authors: David Valeri
             android:text="Sessions" />
         
         <Button
+            android:id="@+id/launchSplitMarkerSetManagement"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:text="Split Markers" />
+        
+        <Button
             android:id="@+id/launchConfig"
             android:layout_width="fill_parent"
             android:layout_height="wrap_content"

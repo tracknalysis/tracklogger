@@ -35,8 +35,8 @@ import net.tracknalysis.ecu.ms.io.DirectMegasquirtIoManager;
 import net.tracknalysis.ecu.ms.io.MegasquirtIoManager;
 import net.tracknalysis.ecu.ms.log.Log;
 import net.tracknalysis.tracklogger.dataprovider.AbstractDataProvider;
-import net.tracknalysis.tracklogger.dataprovider.EcuData;
 import net.tracknalysis.tracklogger.dataprovider.EcuDataProvider;
+import net.tracknalysis.tracklogger.model.EcuData;
 
 /**
  * @author David Valeri

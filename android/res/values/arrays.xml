@@ -44,4 +44,12 @@ Authors: David Valeri
         <item>net.tracknalysis.tracklogger:layout/log_default</item>
         <item>net.tracknalysis.tracklogger:layout/log_raw</item>
     </string-array>
+    
+    <string-array name="split_marker_set_import_format_names">
+        <item>CSV 1.0</item>
+    </string-array>
+    
+    <string-array name="split_marker_set_import_format_descriptions">
+        <item>CSV 1.0 - Each split marker is represented on a single line with three columns.  The columns are separated by a comma.  Column one contains the split marker name.  Column two contains the marker latitude in decimal dregrees.  Column three contains teh marker longitude in decimal degrees.</item>
+    </string-array>
 </resources>

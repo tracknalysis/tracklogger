@@ -16,8 +16,8 @@
 package net.tracknalysis.tracklogger.dataprovider.location;
 
 import net.tracknalysis.tracklogger.dataprovider.AbstractDataProvider;
-import net.tracknalysis.tracklogger.dataprovider.LocationData;
 import net.tracknalysis.tracklogger.dataprovider.LocationDataProvider;
+import net.tracknalysis.tracklogger.model.LocationData;
 import net.tracknalysis.location.Location;
 import net.tracknalysis.location.LocationListener;
 import net.tracknalysis.location.LocationManager;

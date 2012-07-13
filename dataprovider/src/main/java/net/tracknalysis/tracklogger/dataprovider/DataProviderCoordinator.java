@@ -18,6 +18,13 @@ package net.tracknalysis.tracklogger.dataprovider;
 import java.util.HashMap;
 import java.util.Map;
 
+import net.tracknalysis.common.notification.NotificationStrategy;
+import net.tracknalysis.common.notification.NotificationType;
+import net.tracknalysis.tracklogger.model.AccelData;
+import net.tracknalysis.tracklogger.model.EcuData;
+import net.tracknalysis.tracklogger.model.LocationData;
+import net.tracknalysis.tracklogger.model.TimingData;
+
 /**
  * @author David Valeri
  */
@@ -26,7 +33,7 @@ public interface DataProviderCoordinator {
     /**
      * Enumeration of notification types that this implementation may generate.
      */
-    public static enum NotificationType implements net.tracknalysis.common.notification.NotificationType {
+    public static enum DataProviderCoordinatorNotificationType implements NotificationType {
         /**
          * Triggered when the the startup of the coordinator is begins.
          */
@@ -77,16 +84,16 @@ public interface DataProviderCoordinator {
          */
         STOP_FAILED;
         
-        private static final Map<Integer, NotificationType> intToTypeMap = new HashMap<Integer, NotificationType>();
+        private static final Map<Integer, DataProviderCoordinatorNotificationType> intToTypeMap = new HashMap<Integer, DataProviderCoordinatorNotificationType>();
         
         static {
-            for (NotificationType type : NotificationType.values()) {
+            for (DataProviderCoordinatorNotificationType type : DataProviderCoordinatorNotificationType.values()) {
                 intToTypeMap.put(type.ordinal(), type);
             }
         }
     
-        public static NotificationType fromInt(int i) {
-            NotificationType type = intToTypeMap.get(Integer.valueOf(i));
+        public static DataProviderCoordinatorNotificationType fromInt(int i) {
+            DataProviderCoordinatorNotificationType type = intToTypeMap.get(Integer.valueOf(i));
             if (type == null) {
                 throw new IllegalArgumentException(
                         "No enum const " + i);
@@ -125,4 +132,17 @@ public interface DataProviderCoordinator {
     boolean isLoggingStartTriggerFired();
 
     boolean isReady();
+    
+    /**
+     * Register a listener for notifications regarding the overall state of the coordinator.  When the listener is
+     * registered, it will immediately receive the last known notification sent by the coordinator.  Following
+     * notifications will be delivered as they are produced by the coordinator.  This behavior allows for listeners
+     * to synchronize immediately on registration.
+     */
+    void register(NotificationStrategy<DataProviderCoordinatorNotificationType> notificationStrategy);
+    
+    /**
+     * Unregister a listener for notifications regarding the overall state of the service.
+     */
+    void unRegister(NotificationStrategy<DataProviderCoordinatorNotificationType> notificationStrategy);
 }

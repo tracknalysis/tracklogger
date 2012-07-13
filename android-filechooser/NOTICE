@@ -1,0 +1,175 @@
+android-filechooser
+Copyright 2012 Hai Bison
+
+Version: 4.2
+
+This product includes software developed at
+http://code.google.com/p/android-filechooser/
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+===============================================================
+
+History:
+
++++ Version 4.2 +++
+ - Release: May 15, 2012
+
+ - due to this bug: http://code.google.com/p/android/issues/detail?id=30622,
+   so we prefix all resource names with 'afc_';
+ - add small text view below location bar, to show current location's full name
+   if it is truncated by the view's ellipsize property;
+ - save and restore state after screen orientation changed (except selected items
+   in multi-selection mode);
+ - add menu Reload;
+ - some UI fixes/ updates;
+
++++ Version 4.2 beta +++
+ - Initialization: May 13, 2012
+
++++ Version 4.1 +++
+ - Release: May 12, 2012
+
+ - update UI messages;
+ - if the app does not have permission WRITE_EXTERNAL_STORAGE, notify user
+   when he creates or deletes folder/ file;
+ - make location bar hold buttons of directories, which user can click to
+   go to;
+
++++ Version 4.1 beta +++
+ - Initialization: May 11, 2012
+
++++ Version 4.0 - Tablet +++
+ - Release: May 11, 2012
+
+ - add Home button;
+ - add grid view/ list view mode;
+ - allow creating new directory;
+ - allow deleting a single file/ directory by flinging its name;
+ - use android-support-v13.jar:
+   + show menu items as actions from API 11 and up;
+   + support new Android layout;
+ - change to new icons;
+ - some minor changes;
+
++++ Version 4.0 beta +++
+ - Initialization: May 08, 2012
+
++++ Version 3.5 +++
+ - Release: May 01, 2012
+
+ - remove button Cancel (use default Back button of system)
+ - hello May Day  :-)
+
++++ Version 3.4 +++
+ - Release: March 23, 2012
+
+ - fix serious bug: hardcode service action name of local file provider;
+   the service will be called as a remote service, which will raise
+   fatal exception if there are multiple instances of the library installed
+   on the device;
+
++++ Version 3.3 +++
+ - Release: March 22, 2012
+
+ - fix bug in LoadingDialog: if the user finishes the owner activity,
+   the application can crash if the dialog is going to show up or dismiss;
+ - improve FileChooserActivity: make its height and width always fit the
+   screen size in dialog theme;
+
++++ Version 3.2 +++
+ - Release: March 16, 2012
+
+ - add package io: IFile and LocalFile;
+ - use IFile instead of java.io.File;
+ - remove FileContainer and package bean;
+
++++ Version 3.1 +++
+ - Release: March 15, 2012
+
+ - add FileProviderService;
+
++++ Version 3.0 +++
+ - Release: March 15, 2012
+
+ - move file listing functions to external service;
+ - change project name from FileChooser to android-filechooser  :-D
+ - some minor changes:
+   + UI messages;
+   + icons;
+   + make LoadingDialog use AsyncTask instead of Thread;
+   + ...
+
++++ Version 2.0 +++
+ - Release: Feb 22, 2012
+
+ - change default date format to "yyyy.MM.dd hh:mm a";
+ - try using sdcard as rootpath if it is not specified; if sdcard is not available, use "/";
+ - add sorter (by name/ size/ date);
+ - show directories' date (last modified);
+
++++ Version 1.91 +++
+ - Release: Feb 06, 2012
+
+ - Add: show file time (last modified);
+
++++ Version 1.9 +++
+ - Release: Feb 06, 2012
+
+ - Fix: crash if cast footer of listview to DataModel;
+
++++ Version 1.8.2 +++
+ - Release: Feb 06, 2012
+
+ - enable fast scroll of the list view;
+
++++ Version 1.8.1 +++
+ - Release: Feb 05, 2012
+
+ - Fix: it doesn't remember the first path (rootpath) in history;
+
++++ Version 1.8 +++
+ - Release: Feb 05, 2012
+
+ - Shows progress dialog while listing files of a directory;
+ - Adds flag max file count allowed, in case the directory has thousands of files,
+   the application can harm memory. Default value is 1,024;
+ - TODO: let the user cancel the method java.io.File.listFiles().
+   It seems this is up to Android developers  :-)
+
++++ Version 1.7 +++
+ - Release: Jan 22, 2012
+
+ - add function to check if filename (in save dialog mode) is valid or not;
+ - change name FilesAdapter to FileAdapter;
+
++++ Version 1.6 +++
+ - Release: Jan 13, 2012
+
+ - check and warn user if save as filename is a directory;
+ - when finish, return some flags for further use (in case the
+   caller needs);
+
++++ Version 1.5 +++
+ - Release: Jan 13, 2012
+
+ - apply Apache License 2.0;
+ - set result code to RESULT_CANCELED when user clicks button Cancel;
+
++++ Version 1.4 +++
+ - Release: Jan 08, 2012
+
+ - first publishing;
+ - choose file(s) dialog;
+ - choose file(s) and/or directory(ies) dialog;
+ - save as dialog;

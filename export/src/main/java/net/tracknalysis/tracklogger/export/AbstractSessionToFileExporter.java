@@ -25,7 +25,6 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
-import net.tracknalysis.common.notification.NoOpNotificationStrategy;
 import net.tracknalysis.common.notification.NotificationStrategy;
 
 import org.slf4j.Logger;
@@ -34,7 +33,7 @@ import org.slf4j.LoggerFactory;
 /**
  * @author David Valeri
  */
-public abstract class AbstractSessionToFileExporter implements SessionToFileExporter {
+public abstract class AbstractSessionToFileExporter extends AbstractSessionExporter implements SessionToFileExporter {
     
     private static final Logger LOG = LoggerFactory.getLogger(AbstractSessionToFileExporter.class);
     
@@ -43,16 +42,12 @@ public abstract class AbstractSessionToFileExporter implements SessionToFileExpo
     private File exportFile;
     private OutputStream out;
     private File exportDir;
-    private NotificationStrategy<SessionExporterNotificationType> notificationStrategy;
-    
-    public AbstractSessionToFileExporter(File exportDir, NotificationStrategy<SessionExporterNotificationType> notificationStrategy) {
-        super();
+
+    public AbstractSessionToFileExporter(
+            File exportDir,
+            NotificationStrategy<SessionExporterNotificationType> notificationStrategy) {
+        super(notificationStrategy);
         this.exportDir = exportDir;
-        if (notificationStrategy == null) {
-            notificationStrategy = new NoOpNotificationStrategy<SessionExporterNotificationType>();
-        } else {
-            this.notificationStrategy = notificationStrategy;
-        }
     }
     
     @Override
@@ -95,16 +90,6 @@ public abstract class AbstractSessionToFileExporter implements SessionToFileExpo
      * Returns the file extension to append to the default file name.
      */
     protected abstract String getFileExtension();
-    
-    protected final NotificationStrategy<SessionExporterNotificationType> getNotificationStrategy() {
-        return notificationStrategy;
-    }
-    
-    protected final void sendExportProgressNotification(int currentRecord, int totalRecords) {
-        getNotificationStrategy().sendNotification(
-                SessionExporterNotificationType.EXPORT_PROGRESS,
-                new ExportProgress(currentRecord, totalRecords));
-    }
     
     private void runExport(int sessionId, Integer startLap, Integer endLap) {
         try {

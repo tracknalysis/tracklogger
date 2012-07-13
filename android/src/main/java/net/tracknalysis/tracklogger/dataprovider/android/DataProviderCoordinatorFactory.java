@@ -17,9 +17,8 @@ package net.tracknalysis.tracklogger.dataprovider.android;
 
 import android.bluetooth.BluetoothAdapter;
 import android.content.Context;
-import net.tracknalysis.common.notification.NotificationStrategy;
+import android.net.Uri;
 import net.tracknalysis.tracklogger.dataprovider.DataProviderCoordinator;
-import net.tracknalysis.tracklogger.dataprovider.DataProviderCoordinator.NotificationType;
 
 /**
  * A simple abstract factory to enable testing of activities.
@@ -46,7 +45,6 @@ public abstract class DataProviderCoordinatorFactory {
     }
     
     public abstract DataProviderCoordinator createDataProviderCoordinator(
-            DataProviderCoordinatorService dataProviderCoordinatorService,
-            NotificationStrategy<NotificationType> notificationStrategy,
-            Context context, BluetoothAdapter btAdapter);
+            DataProviderCoordinatorManagerService dataProviderCoordinatorService,
+            Context context, BluetoothAdapter btAdapter, Uri splitMarkerSetUri);
 }

@@ -11,5 +11,7 @@ target
 
 android/bin
 android/gen
+android-filechooser/bin
+android-filechooser/gen
 android-test/bin
 android-test/gen

@@ -25,9 +25,9 @@ import net.tracknalysis.location.Route;
 import net.tracknalysis.location.RouteListener;
 import net.tracknalysis.location.RouteManager;
 import net.tracknalysis.tracklogger.dataprovider.AbstractDataProvider;
-import net.tracknalysis.tracklogger.dataprovider.TimingData;
-import net.tracknalysis.tracklogger.dataprovider.TimingData.TimingDataBuilder;
 import net.tracknalysis.tracklogger.dataprovider.TimingDataProvider;
+import net.tracknalysis.tracklogger.model.TimingData;
+import net.tracknalysis.tracklogger.model.TimingData.TimingDataBuilder;
 
 /**
  * @author David Valeri
@@ -45,6 +45,10 @@ public class RouteManagerTimingDataProvider extends AbstractDataProvider<TimingD
     private volatile long lastSplitStartTime;
     private volatile Long bestLapTime;
     private volatile Long[] bestSplitTimes;
+    
+    private long initialLapStartDataReceivedTime;
+    private long lastLapStartDataReceivedTime;
+    private long lastSplitStartDataReceivedTime;
     
     public RouteManagerTimingDataProvider(RouteManager routeManager, Route segmentsRoute) {
         super();
@@ -83,14 +87,20 @@ public class RouteManagerTimingDataProvider extends AbstractDataProvider<TimingD
             long deltaSplit = getLocationBasedElapsedTime(lastSplitStartTime, locationTime);
             
             if (lap == 0 && waypointIndex == 0) {
+                // Beginning of first lap
                 builder.setLap(lap++);
                 builder.setSplitIndex(bestSplitTimes.length - 1);
                 lastLapStartTime = lastSplitStartTime = locationTime;
+                // All three are the same for the first timing event
+                initialLapStartDataReceivedTime = systemTime;
+                lastLapStartDataReceivedTime = systemTime;
+                lastSplitStartDataReceivedTime = systemTime;
             } else {
                 
                 int splitIndex;
                 
                 if (waypointIndex == 0) {
+                    // End of a lap
                     splitIndex = bestSplitTimes.length - 1;
                     
                     if (bestLapTime == null || deltaLap < bestLapTime) {
@@ -101,7 +111,9 @@ public class RouteManagerTimingDataProvider extends AbstractDataProvider<TimingD
                     builder.setBestLapTime(bestLapTime);
                     builder.setLap(lap++);
                     lastLapStartTime = locationTime;
+                    lastLapStartDataReceivedTime = systemTime;
                 } else {
+                    // Hit a split marker other than start/finish
                     splitIndex = waypointIndex - 1;
                     builder.setLap(lap);
                 }
@@ -110,15 +122,18 @@ public class RouteManagerTimingDataProvider extends AbstractDataProvider<TimingD
                     bestSplitTimes[splitIndex] = deltaSplit;
                 }
                 
-                
                 builder.setSplitIndex(splitIndex);
                 
                 builder.setSplitTime(deltaSplit);
                 
                 lastSplitStartTime = locationTime;
+                lastSplitStartDataReceivedTime = systemTime;
             }
             
             builder.setBestSplitTimes(Arrays.asList(bestSplitTimes));
+            builder.setInitialLapStartDataReceivedTime(initialLapStartDataReceivedTime);
+            builder.setLastLapStartDataReceivedTime(lastLapStartDataReceivedTime);
+            builder.setLastSplitStartDataReceivedTime(lastSplitStartDataReceivedTime);
             
             TimingData newTimingData = builder.build();
             currentTimingData = newTimingData;

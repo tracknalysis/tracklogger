@@ -20,14 +20,16 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.log4j.Logger;
 
+import net.tracknalysis.tracklogger._import.android.SplitMarkerSetFileFormat;
+import net.tracknalysis.tracklogger._import.android.SplitMarkerSetImporterService;
 import net.tracknalysis.tracklogger.config.Configuration;
 import net.tracknalysis.tracklogger.config.ConfigurationChangeEvent;
 import net.tracknalysis.tracklogger.config.ConfigurationChangeListener;
 import net.tracknalysis.tracklogger.config.ConfigurationFactory;
 import net.tracknalysis.tracklogger.config.DefaultConfigurationFactory;
 import net.tracknalysis.tracklogger.config.android.AndroidConfiguration;
-import net.tracknalysis.tracklogger.dataprovider.android.DataProviderCoordinatorService;
-import net.tracknalysis.tracklogger.export.android.SessionExporterServiceImpl;
+import net.tracknalysis.tracklogger.dataprovider.android.DataProviderCoordinatorManagerService;
+import net.tracknalysis.tracklogger.export.android.SessionExporterService;
 import net.tracknalysis.tracklogger.provider.TrackLoggerData;
 
 import de.mindpipe.android.logging.log4j.LogConfigurator;
@@ -57,7 +59,7 @@ public class TrackLogger extends Application implements ConfigurationChangeListe
             .getPackage().getName() + "." + "SESSION_EXPORT_CONFIG_ACTION";
     
     /**
-     * Start the export process in the background.
+     * Start the export process for a session in the background.
      * 
      * <p>
      * Input: {@link Intent#getData} is the session URI from which to export data. See
@@ -65,13 +67,46 @@ public class TrackLogger extends Application implements ConfigurationChangeListe
      * <p>Output: nothing.
      * <p>Extras:
      * <ul>
-     *   <li>{@link SessionExporterServiceImpl#EXTRA_EXPORT_FORMAT} - (String) The optional identifier for the desired export format.</li>
-     *   <li>{@link SessionExporterServiceImpl#EXTRA_EXPORT_START_LAP} - (int) The optional value for the lap to start exporting from.</li>
-     *   <li>{@link SessionExporterServiceImpl#EXTRA_EXPORT_STOP_LAP} - (int) The optional value for the lap to stop exporting on.</li>
+     *   <li>{@link SessionExporterService#EXTRA_EXPORT_FORMAT} - (String) The optional identifier for the desired export format.</li>
+     *   <li>{@link SessionExporterService#EXTRA_EXPORT_START_LAP} - (int) The optional value for the lap to start exporting from.</li>
+     *   <li>{@link SessionExporterService#EXTRA_EXPORT_STOP_LAP} - (int) The optional value for the lap to stop exporting on.</li>
      * </ul> 
      */
     public static final String ACTION_SESSION_EXPORT = TrackLogger.class
             .getPackage().getName() + "." + "SESSION_EXPORT_ACTION";
+    
+    /**
+     * Start the import process for a split marker set in the background.
+     * 
+     * <p>
+     * Input: {@link Intent#getData} is the URI from which to import data.
+     * <p>Output: nothing.
+     * <p>Extras:
+     * <ul>
+     *   <li>{@link SplitMarkerSetImporterService#EXTRA_IMPORT_FORMAT} - (int) The identifier for the format of the import file.  See {@link SplitMarkerSetFileFormat}.</li>
+     *   <li>{@link SplitMarkerSetImporterService#EXTRA_NAME} - (String) The optional value for the name of the imported split marker set.</li>
+     * </ul> 
+     */
+    public static final String ACTION_SPLIT_MARKER_SET_IMPORT = TrackLogger.class
+            .getPackage().getName() + "." + "SPLIT_MARKER_SET_IMPORT";
+    
+    /**
+     * Start the activity that configures the import of a split marker set.
+     *
+     * <p>Input: nothing.
+     * <p>Output: nothing.
+     */
+    public static final String ACTION_SPLIT_MARKER_SET_CONFIGURE_IMPORT = TrackLogger.class
+            .getPackage().getName() + "." + "SPLIT_MARKER_SET_CONFIGURE_IMPORT";
+    
+    /**
+     * Start the activity that renames an entity.
+     *
+     * <p>Input: {@link Intent#getData} is the URI for the data entity to rename.
+     * <p>Output: nothing.
+     */
+    public static final String ACTION_RENAME = TrackLogger.class
+            .getPackage().getName() + "." + "RENAME";
     
     public static int getUniqueNotificationId() {
         return NOTIFICATION_COUNTER.getAndIncrement();
@@ -90,7 +125,7 @@ public class TrackLogger extends Application implements ConfigurationChangeListe
     
     @Override
     public void onTerminate() {
-        stopService(new Intent(this, DataProviderCoordinatorService.class));
+        stopService(new Intent(this, DataProviderCoordinatorManagerService.class));
         super.onTerminate();
     }
 

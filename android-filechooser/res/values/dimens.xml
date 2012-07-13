@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="afc_dim_15dp">15dp</dimen>
+    <dimen name="afc_dim_10dp">10dp</dimen>
+    <dimen name="afc_dim_5dp">5dp</dimen>
+    <dimen name="afc_button_location_max_width">256sp</dimen>
+</resources>

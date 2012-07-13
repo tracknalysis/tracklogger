@@ -19,12 +19,12 @@ import android.net.Uri;
 import android.provider.BaseColumns;
 
 /**
- * Defines a contract between the Track Log content provider and its clients.
+ * Defines a contract between the TrackLogger content provider and its clients.
  * 
  * @author David Valeri
  */
 public final class TrackLoggerData {
-    public static final String AUTHORITY = "net.tracknalysis.TrackLogger.provider";
+    public static final String AUTHORITY = "net.tracknalysis.trackLogger";
 
     /**
      * Hidden in non-instantiable class.
@@ -80,7 +80,7 @@ public final class TrackLoggerData {
         /**
          * 0-relative position of a Session ID segment in the path part of a Session ID URI.
          */
-        public static final int SESSION_ID_PATH_POSITION = 1;
+        public static final int ID_PATH_POSITION = 1;
 
         /**
          * The content:// style URL for this table.
@@ -119,6 +119,12 @@ public final class TrackLoggerData {
          * <P>Type: DATE</P>
          */
         public static final String COLUMN_NAME_LAST_MODIFIED_DATE = "last_modified_date";
+        
+        /**
+         * Column name for the split marker set ID of the split marker set in use with the session.
+         * <P>Type: INTEGER</P>
+         */
+        public static final String COLUMN_NAME_SPLIT_MARKER_SET_ID = "split_marker_set_id";
     }
     
     /**
@@ -169,7 +175,7 @@ public final class TrackLoggerData {
         /**
          * 0-relative position of a LogEntry ID segment in the path part of a LogEntry ID URI.
          */
-        public static final int LOG_ENTRY_ID_PATH_POSITION = 1;
+        public static final int ID_PATH_POSITION = 1;
 
 
         /**
@@ -242,6 +248,13 @@ public final class TrackLoggerData {
          * <P>Type: BIGINT</P>
          */
         public static final String COLUMN_NAME_LOCATION_CAPTURE_TIMESTAMP = "location_capture_timestamp";
+        
+        /**
+         * Column name for the millisecond offset into the day of the location data capture in
+         * UTC time.
+         * <P>Type: BIGINT</P>
+         */
+        public static final String COLUMN_NAME_LOCATION_TIME_IN_DAY = "location_time_in_day";
         
         /**
          * Column name for latitude in degrees.
@@ -338,23 +351,23 @@ public final class TrackLoggerData {
         private TimingEntry() {}
 
         /**
-         * The table name for LogEntry.
+         * The table name.
          */
         public static final String TABLE_NAME = "timing_entry";
         
         // MIME ////////////
         
         /**
-         * The MIME type of {@link #CONTENT_URI} providing a directory of timing entries.
+         * The MIME type of {@link #CONTENT_URI} providing a directory of instances.
          */
-        public static final String TIMING_ENTRY_TYPE = 
+        public static final String TYPE = 
                 "vnd.android.cursor.dir/net.tracknalysis.tracklogger.timingentry";
 
         /**
          * The MIME type of a {@link #CONTENT_URI} sub-directory of a single
-         * timing entry.
+         * instance.
          */
-        public static final String TIMING_ENTRY_ITEM_TYPE = 
+        public static final String ITEM_TYPE = 
                 "vnd.android.cursor.item/net.tracknalysis.tracklogger.timingentry";
         
         // URI ////////////
@@ -365,39 +378,39 @@ public final class TrackLoggerData {
         private static final String SCHEME = "content://";
 
         /**
-         * Path part for the LogEntry URI.
+         * Path part for the instance URI.
          */
-        private static final String PATH_TIMING_ENTRY = "/timingentry";
+        private static final String PATH = "/timingentry";
 
         /**
-         * Path part for the LogEntry ID URI.
+         * Path part for the instance ID URI.
          */
-        private static final String PATH_TIMING_ENTRY_ID = "/timingentry/";
+        private static final String PATH_ID = "/timingentry/";
 
         /**
-         * 0-relative position of a timing entry ID segment in the path part of a timing entry ID URI.
+         * 0-relative position of a instance ID segment in the path part of a instance ID URI.
          */
-        public static final int TIMING_ENTRY_ID_PATH_POSITION = 1;
+        public static final int ID_PATH_POSITION = 1;
 
 
         /**
          * The content:// style URL for this table.
          */
-        public static final Uri CONTENT_URI =  Uri.parse(SCHEME + AUTHORITY + PATH_TIMING_ENTRY);
+        public static final Uri CONTENT_URI =  Uri.parse(SCHEME + AUTHORITY + PATH);
 
         /**
-         * The content URI base for a single LogEntry. Callers must
-         * append a numeric LogEntry ID to this URI to retrieve a LogEntry.
+         * The content URI base for a single instance. Callers must
+         * append a numeric instance ID to this URI to retrieve an instance.
          */
         public static final Uri CONTENT_ID_URI_BASE
-            = Uri.parse(SCHEME + AUTHORITY + PATH_TIMING_ENTRY_ID);
+            = Uri.parse(SCHEME + AUTHORITY + PATH_ID);
 
         /**
-         * The content URI match pattern for a single LogEntry, specified by its ID. Use this
+         * The content URI match pattern for a single instance, specified by its ID. Use this
          * to match incoming URIs or to construct an Intent.
          */
         public static final Uri CONTENT_ID_URI_PATTERN
-            = Uri.parse(SCHEME + AUTHORITY + PATH_TIMING_ENTRY_ID + "/#");
+            = Uri.parse(SCHEME + AUTHORITY + PATH_ID + "/#");
 
         /**
          * The default sort order for this table.
@@ -427,6 +440,13 @@ public final class TrackLoggerData {
         public static final String COLUMN_NAME_CAPTURE_TIMESTAMP = "capture_timestamp";
         
         /**
+         * Column name for the millisecond offset into the day of the timing data capture in
+         * UTC time.
+         * <P>Type: BIGINT</P>
+         */
+        public static final String COLUMN_NAME_TIME_IN_DAY = "time_in_day";
+        
+        /**
          * Column name for the lap number.
          * <P>Type: INTEGER</P>
          */
@@ -449,5 +469,197 @@ public final class TrackLoggerData {
          * <P>Type: BIGINT</P>
          */
         public static final String COLUMN_NAME_SPLIT_TIME = "split_time";
+    }
+    
+    /**
+     * Split Marker Set table contract.
+     */
+    public static final class SplitMarkerSet implements BaseColumns {
+
+        // This class cannot be instantiated
+        private SplitMarkerSet() {}
+
+        /**
+         * The table name.
+         */
+        public static final String TABLE_NAME = "split_marker_set";
+        
+        // MIME ////////////
+        
+        /**
+         * The MIME type of {@link #CONTENT_URI} providing a directory of instances.
+         */
+        public static final String TYPE = 
+                "vnd.android.cursor.dir/net.tracknalysis.tracklogger.splitmarkerset";
+
+        /**
+         * The MIME type of a {@link #CONTENT_URI} sub-directory of a single
+         * instance.
+         */
+        public static final String ITEM_TYPE = 
+                "vnd.android.cursor.item/net.tracknalysis.tracklogger.splitmarkerset";
+        
+        // URI ////////////
+
+        /**
+         * The scheme part for this provider's URI.
+         */
+        private static final String SCHEME = "content://";
+
+        /**
+         * Path part for the Split Marker Set URI.
+         */
+        private static final String PATH = "/splitmarkerset";
+
+        /**
+         * Path part for the Split Marker Set ID URI.
+         */
+        private static final String PATH_ID = "/splitmarkerset/";
+
+        /**
+         * 0-relative position of the ID segment in the path part of an ID URI.
+         */
+        public static final int ID_PATH_POSITION = 1;
+
+
+        /**
+         * The content:// style URL for this table.
+         */
+        public static final Uri CONTENT_URI =  Uri.parse(SCHEME + AUTHORITY + PATH);
+
+        /**
+         * The content URI base for a single instance. Callers must
+         * append a numeric ID to this URI to retrieve an instance.
+         */
+        public static final Uri CONTENT_ID_URI_BASE
+            = Uri.parse(SCHEME + AUTHORITY + PATH_ID);
+
+        /**
+         * The content URI match pattern for a single instance, specified by its ID. Use this
+         * to match incoming URIs or to construct an Intent.
+         */
+        public static final Uri CONTENT_ID_URI_PATTERN
+            = Uri.parse(SCHEME + AUTHORITY + PATH_ID + "/#");
+
+        /**
+         * The default sort order for this table.
+         */
+        public static final String DEFAULT_SORT_ORDER = "_id ASC";
+
+        // Columns ////////////
+        
+        /**
+         * Column name for the name of this instance.
+         * <P>Type: VARCHAR(50)</P>
+         */
+        public static final String COLUMN_NAME_NAME = "name";
+    }
+    
+    /**
+     * Split Marker table contract.
+     */
+    public static final class SplitMarker implements BaseColumns {
+
+        // This class cannot be instantiated
+        private SplitMarker() {}
+
+        /**
+         * The table name.
+         */
+        public static final String TABLE_NAME = "split_marker";
+        
+        // MIME ////////////
+        
+        /**
+         * The MIME type of {@link #CONTENT_URI} providing a directory of instances.
+         */
+        public static final String TYPE = 
+                "vnd.android.cursor.dir/net.tracknalysis.tracklogger.splitmarker";
+
+        /**
+         * The MIME type of a {@link #CONTENT_URI} sub-directory of a single
+         * instance.
+         */
+        public static final String ITEM_TYPE = 
+                "vnd.android.cursor.item/net.tracknalysis.tracklogger.splitmarker";
+        
+        // URI ////////////
+
+        /**
+         * The scheme part for this provider's URI.
+         */
+        private static final String SCHEME = "content://";
+
+        /**
+         * Path part for the Split Marker URI.
+         */
+        private static final String PATH = "/splitmarker";
+
+        /**
+         * Path part for the Split Maker ID URI.
+         */
+        private static final String PATH_ID = "/splitmarker/";
+
+        /**
+         * 0-relative position of the ID segment in the path part of an ID URI.
+         */
+        public static final int ID_PATH_POSITION = 1;
+
+
+        /**
+         * The content:// style URL for this table.
+         */
+        public static final Uri CONTENT_URI =  Uri.parse(SCHEME + AUTHORITY + PATH);
+
+        /**
+         * The content URI base for a single instance. Callers must
+         * append a numeric ID to this URI to retrieve an instance.
+         */
+        public static final Uri CONTENT_ID_URI_BASE
+            = Uri.parse(SCHEME + AUTHORITY + PATH_ID);
+
+        /**
+         * The content URI match pattern for a single instance, specified by its ID. Use this
+         * to match incoming URIs or to construct an Intent.
+         */
+        public static final Uri CONTENT_ID_URI_PATTERN
+            = Uri.parse(SCHEME + AUTHORITY + PATH_ID + "/#");
+
+        /**
+         * The default sort order for this table.
+         */
+        public static final String DEFAULT_SORT_ORDER = "order_index ASC";
+
+        // Columns ////////////
+        
+        /**
+         * Column name for the {@link SplitMarkerSet} ID that this split marker belongs to.
+         * <P>Type: INTEGER</P>
+         */
+        public static final String COLUMN_NAME_SPLIT_MARKER_SET_ID = "split_marker_set_id";
+        
+        /**
+         * Column name for the name of this instance.
+         * <P>Type: VARCHAR(50)</P>
+         */
+        public static final String COLUMN_NAME_NAME = "name";
+        
+        /**
+         * Column name for the index of this split marker in the route.
+         * <P>Type: INTEGER</P>
+         */
+        public static final String COLUMN_NAME_ORDER_INDEX = "order_index";
+        
+        /**
+         * Column name for the latitude of this instance.
+         * <P>Type: DOUBLE</P>
+         */
+        public static final String COLUMN_NAME_LATITUDE = "latitude";
+        
+        /**
+         * Column name for the longitude of this instance.
+         * <P>Type: DOUBLE</P>
+         */
+        public static final String COLUMN_NAME_LONGITUDE = "longitude";
     }
 }

@@ -22,21 +22,24 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import net.tracknalysis.common.android.notification.AndroidNotificationStrategy;
 import net.tracknalysis.common.concurrent.GracefulShutdownThread;
+import net.tracknalysis.common.notification.NotificationStrategy;
 import net.tracknalysis.common.util.TimeUtil;
 import net.tracknalysis.tracklogger.config.Configuration;
 import net.tracknalysis.tracklogger.config.ConfigurationFactory;
-import net.tracknalysis.tracklogger.dataprovider.AccelData;
 import net.tracknalysis.tracklogger.dataprovider.DataProviderCoordinator;
-import net.tracknalysis.tracklogger.dataprovider.EcuData;
-import net.tracknalysis.tracklogger.dataprovider.LocationData;
-import net.tracknalysis.tracklogger.dataprovider.TimingData;
-import net.tracknalysis.tracklogger.dataprovider.android.DataProviderCoordinatorService;
-import net.tracknalysis.tracklogger.dataprovider.android.DataProviderCoordinatorService.LocalBinder;
+import net.tracknalysis.tracklogger.dataprovider.DataProviderCoordinator.DataProviderCoordinatorNotificationType;
+import net.tracknalysis.tracklogger.dataprovider.android.DataProviderCoordinatorManagerService;
+import net.tracknalysis.tracklogger.dataprovider.android.DataProviderCoordinatorManagerService.LocalBinder;
+import net.tracknalysis.tracklogger.model.AccelData;
+import net.tracknalysis.tracklogger.model.EcuData;
+import net.tracknalysis.tracklogger.model.LocationData;
+import net.tracknalysis.tracklogger.model.TimingData;
+import net.tracknalysis.tracklogger.provider.TrackLoggerData;
 import net.tracknalysis.tracklogger.R;
 
 import android.app.Activity;
-import android.app.AlertDialog;
 import android.app.Dialog;
 import android.app.ProgressDialog;
 import android.bluetooth.BluetoothAdapter;
@@ -45,12 +48,18 @@ import android.content.DialogInterface;
 import android.content.DialogInterface.OnCancelListener;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.content.SharedPreferences.Editor;
+import android.database.Cursor;
 import android.graphics.Color;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
+import android.view.View;
+import android.view.View.OnClickListener;
 import android.view.WindowManager;
+import android.widget.Button;
 import android.widget.TextView;
 
 /**
@@ -60,9 +69,12 @@ public class LogActivity extends Activity implements OnCancelListener {
     
     private static final Logger LOG = LoggerFactory.getLogger(LogActivity.class);
     
-    private static final int ACTION_REQUEST_BT_ENABLE = 1;
+    public static final int ACTION_REQUEST_BT_ENABLE = 1;
+    public static final int ACTION_REQUEST_PICK_SPLIT_MARKER_SET = 2;
     
     private static final AtomicInteger displayTaskCounter = new AtomicInteger();
+    
+    private static final String SPLIT_MARKER_SET_URI_PREF_KEY = "SPLIT_MARKER_SET_URI_PREF_KEY";
     
     private BluetoothAdapter btAdapter;
     
@@ -70,6 +82,12 @@ public class LogActivity extends Activity implements OnCancelListener {
     
     private volatile ServiceConnection serviceConnection;
     private volatile boolean bound;
+    
+    private volatile boolean ignoreStopLogging = false;
+    
+    private NotificationStrategy<DataProviderCoordinatorNotificationType> notificationStrategy;
+    
+    private Uri splitMarkerSetUri = null;
     
     // Timing
     private volatile long lapNumberCounter = 1;
@@ -79,12 +97,15 @@ public class LogActivity extends Activity implements OnCancelListener {
     private volatile List<Long> previousBestSplitTimes;
     
     // Data Coordinator
-    private DataProviderCoordinatorService dataProviderCoordinatorService;
+    private DataProviderCoordinatorManagerService dpcManagerService;
     
     // Display
     private DisplayTask displayTask;
+    private Dialog setupSessionDialog;
+    private TextView splitMarkerSetNameTextView;
     private Dialog initDataProviderCoordinatorDialog;
     private ProgressDialog waitingForStartTriggerDialog;
+    private Dialog errorDialog;
         
     /**
      *  Elapsed time in the current lap.
@@ -241,6 +262,22 @@ public class LogActivity extends Activity implements OnCancelListener {
     Runnable periodicUiUpdateRunnable;
     
     /**
+     * Sets if {@code stopLogging} is ignored on {@link #cleanup(boolean)}.  Added to support
+     * lifecycle testing.
+     */
+    public void setIgnoreStopLogging(boolean ignoreStopLogging) {
+        this.ignoreStopLogging = ignoreStopLogging;
+    }
+    
+    /**
+     * Returns the dialog for configuring the session.  Used in testing
+     * to interrogate the content of the dialog in response to events.
+     */
+    public Dialog getSetupSessionDialog() {
+        return setupSessionDialog;
+    }
+    
+    /**
      * Returns the dialog for initializing the data provider coordinator.  Used in testing
      * to interrogate the content of the dialog in response to events.
      */
@@ -255,12 +292,56 @@ public class LogActivity extends Activity implements OnCancelListener {
     public ProgressDialog getWaitingForStartTriggerDialog() {
         return waitingForStartTriggerDialog;
     }
+    
+    /**
+     * Returns the notification strategy used by the activity. Used in testing.
+     */
+    public NotificationStrategy<DataProviderCoordinatorNotificationType> getNotificationStrategy() {
+        return notificationStrategy;
+    }
+    
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        switch (requestCode) {
+            case ACTION_REQUEST_BT_ENABLE:
+                if (resultCode == Activity.RESULT_OK) {
+                    initDataProviderCoordinator();
+                } else {
+                    onTerminalError(R.string.error_bt_not_enabled);
+                }
+                break;
+            case ACTION_REQUEST_PICK_SPLIT_MARKER_SET:
+                if (resultCode == Activity.RESULT_OK) {
+                    splitMarkerSetUri = data.getData();
+                    updateSplitMarkerSetNameTextView();
+                }
+                break;
+            default:
+                LOG.error(
+                        "Got activity result that the LogActivity did not initiate.  "
+                                + "Request code {}, result code {}, intent {}.",
+                        new Object[] {requestCode, resultCode, data});
+        }
+    }
+    
+    @Override
+    public void onCancel(DialogInterface dialog) {
+        if (dialog == initDataProviderCoordinatorDialog
+                || dialog == waitingForStartTriggerDialog
+                || dialog == setupSessionDialog) {
+            finish();
+        }
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         
+        ignoreStopLogging = false;
+        
         btAdapter = BluetoothAdapter.getDefaultAdapter();
+        
+        initSetupSessionDialog();
         
         initDataProviderCoordinatorDialog = new Dialog(this);
         initDataProviderCoordinatorDialog.setContentView(R.layout.log_wait_for_ready);
@@ -276,6 +357,270 @@ public class LogActivity extends Activity implements OnCancelListener {
         
         setContentView(config.getLogLayoutId());
         
+        initDisplayViews();
+        
+        periodicUiUpdateRunnable = new Runnable() {
+            
+            @Override
+            public void run() {
+                
+                try {
+                    DataProviderCoordinator dpcService = dpcManagerService.getInstance();
+                    
+                    AccelData accelData = dpcService.getCurrentAccelData();
+                    LocationData locationData = dpcService.getCurrentLocationData();
+                    EcuData ecuData = null;
+                    
+                    
+                    ecuData = dpcService.getCurrentEcuData();
+                    
+                    final long currentTime = System.currentTimeMillis();
+                    
+                    if (sessionStartReceivedTime != null) {
+                        long sessionElapsedTime = currentTime - sessionStartReceivedTime;
+                        setTextIfShown(elapsedSessionTime,
+                                TimeUtil.formatDuration(sessionElapsedTime,
+                                        false, false));
+                        
+                    }
+                    
+                    if (lapStartReceivedTime != null) {
+                        long lapElapsedTime = currentTime - lapStartReceivedTime;
+                        setTextIfShown(elapsedLapTime, TimeUtil.formatDuration(
+                                lapElapsedTime, false, true));
+                    }
+                    
+                    if (accelData == null) {
+                        setTextIfShown(accelUpdateFreq, "N/A");
+                        setTextIfShown(lonAccel, "N/A");
+                        setTextIfShown(latAccel, "N/A");
+                        setTextIfShown(vertAccel, "N/A");
+                    } else {
+                        setTextIfShown(accelUpdateFreq, "%.3f", dpcService.getAccelDataUpdateFrequency());
+                        setTextIfShown(lonAccel, "%.3f", accelData.getLongitudinal());
+                        setTextIfShown(latAccel, "%.3f", accelData.getLateral());
+                        setTextIfShown(vertAccel, "%.3f", accelData.getVertical());
+                    }
+                    
+                    if (locationData == null) {
+                        setTextIfShown(locationUpdateFreq, "N/A");
+                        setTextIfShown(lat, "N/A");
+                        setTextIfShown(lon, "N/A");
+                        setTextIfShown(alt, "N/A");
+                        setTextIfShown(bearing, "N/A");
+                        setTextIfShown(speed, "N/A");
+                    } else {
+                        setTextIfShown(locationUpdateFreq, "%.3f",
+                                dpcService.getLocationDataUpdateFrequency());
+                        setTextIfShown(lat, "%.8f", locationData.getLatitude());
+                        setTextIfShown(lon, "%.8f", locationData.getLongitude());
+                        setTextIfShown(alt, "%.3f", locationData.getAltitude());
+                        setTextIfShown(bearing, "%.3f", locationData.getBearing());
+                        setTextIfShown(speed, "%.3f", locationData.getSpeed());
+                    }
+                    
+                    if (ecuData == null) {
+                        setTextIfShown(ecuUpdateFreq, "N/A");
+                        setTextIfShown(rpm, "N/A");
+                        setTextIfShown(map, "N/A");
+                        setTextIfShown(tp, "N/A");
+                        setTextIfShown(afr, "N/A");
+                        setTextIfShown(mat, "N/A");
+                        setTextIfShown(clt, "N/A");
+                        setTextIfShown(ignAdv, "N/A");
+                        setTextIfShown(batV, "N/A");
+                    } else {
+                        setTextIfShown(ecuUpdateFreq, "%.3f", dpcService.getEcuDataUpdateFrequency());
+                        setTextIfShown(rpm, "%d", ecuData.getRpm());
+                        setTextIfShown(map, "%.0f", ecuData.getManifoldAbsolutePressure());
+                        setTextIfShown(tp, "%.0f", ecuData.getThrottlePosition() * 100);
+                        setTextIfShown(afr, "%.1f", ecuData.getAirFuelRatio());
+                        setTextIfShown(mat, "%.1f", ecuData.getManifoldAirTemperature());
+                        setTextIfShown(clt, "%.1f", ecuData.getCoolantTemperature());
+                        setTextIfShown(ignAdv, "%.1f", ecuData.getIgnitionAdvance());
+                        setTextIfShown(batV, "%.1f", ecuData.getBatteryVoltage());
+                    }
+                } catch (IllegalStateException e) {
+                    LOG.warn(
+                            "Scheduled runnable on UI thread was still executing when the data "
+                                    + "provider coordinator service was destroyed.  This is likely just a timing"
+                                    + " issue; however, this still warrants a look as a possible cause of errors if the"
+                                    + " exception was triggered outside of the data provider coordinator.",
+                            e);
+                } catch (RuntimeException e) {
+                    LOG.error("Error updating LogActivity UI components.", e);
+                    throw e;
+                }
+            }
+        };
+        
+        notificationStrategy = new AndroidNotificationStrategy<DataProviderCoordinator.DataProviderCoordinatorNotificationType>(
+                new DataProviderCoordinatorHandler(this));
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        
+        displayTask = new DisplayTask();
+        
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        
+        // Setup the service connection.  This guy will trigger the remaining UI setup / updates on
+        // the successful bind.
+        serviceConnection = new ServiceConnection() {
+            @Override
+            public void onServiceConnected(ComponentName name, IBinder service) {
+                // TODO deal with rebinding.
+                bound = true;
+                LocalBinder binder = (LocalBinder) service;
+                dpcManagerService = binder.getService();
+                
+                if (btAdapter == null) {
+                    onTerminalError(R.string.error_bt_not_supported, R.string.error_alert_title);
+                } else {
+                    if (!btAdapter.isEnabled()) {
+                        // BT is off so the coordinator cannot possibly be working.  We will uninit it
+                        // and then rebuild it after turning BT back on.
+                        if (dpcManagerService.isInitialized()) {
+                            dpcManagerService.uninitialize();
+                            dpcManagerService = null;
+                        }
+                        startActivityForResult(
+                                new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE),
+                                ACTION_REQUEST_BT_ENABLE);
+                    } else {
+                        if (dpcManagerService.isInitialized()) {
+                            initDataProviderCoordinator();
+                        } else {
+                            setupSessionDialog.show();
+                        }
+                    }
+                }
+            }
+
+            @Override
+            public void onServiceDisconnected(ComponentName arg0) {
+                bound = false;
+            }
+        };
+        
+        if (!bindService(
+                new Intent(getApplicationContext(), DataProviderCoordinatorManagerService.class),
+                serviceConnection,
+                BIND_AUTO_CREATE)) {
+            LOG.error("Could not bind to DataProviderCoordinatorManagerService.");
+            onInitDataProviderCoordinatorError();
+        }
+    }
+
+    @Override
+    protected void onPause() {
+        Editor editor = getPreferences(MODE_PRIVATE).edit();
+        if (splitMarkerSetUri == null) {
+            editor.remove(SPLIT_MARKER_SET_URI_PREF_KEY);
+        } else {
+            editor.putString(SPLIT_MARKER_SET_URI_PREF_KEY, splitMarkerSetUri.toString());
+        }
+        editor.commit();
+        
+        cleanup(false);
+        super.onPause();
+    }
+
+    @Override
+    protected void onDestroy() {
+        // Always cleanup, but also only stop logging if the activity is finishing rather than
+        // being destroyed by the OS for resource reasons.
+        cleanup(isFinishing());
+        super.onDestroy();
+    }
+
+    private void cleanup(boolean stopLogging) {
+        getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        
+        if (displayTask != null) {
+            displayTask.cancel();
+        }
+        
+        if (setupSessionDialog != null) {
+            setupSessionDialog.dismiss();
+        }
+        
+        if (initDataProviderCoordinatorDialog != null) {
+            initDataProviderCoordinatorDialog.dismiss();
+        }
+        
+        if (waitingForStartTriggerDialog != null) {
+            waitingForStartTriggerDialog.dismiss();
+        }
+        
+        if (errorDialog != null) {
+            errorDialog.dismiss();
+        }
+        
+        if (dpcManagerService != null && dpcManagerService.isInitialized()) {
+            
+            dpcManagerService.getInstance().unRegister(notificationStrategy);
+            
+            if (stopLogging && !ignoreStopLogging) {
+                dpcManagerService.uninitialize();
+                stopService(new Intent(getApplicationContext(), DataProviderCoordinatorManagerService.class));
+            }
+        }
+        
+        if (bound) {
+            unbindService(serviceConnection);
+            bound = false;
+        }
+    }
+    
+    private void initSetupSessionDialog() {
+        setupSessionDialog = new Dialog(this);
+        setupSessionDialog.setContentView(R.layout.log_setup_session);
+        setupSessionDialog.setTitle("Configure Session");
+        setupSessionDialog.setCancelable(true);
+        setupSessionDialog.setOnCancelListener(this);
+        
+        Button chooseSplitMarkerSetButton = (Button) setupSessionDialog
+                .findViewById(R.id.log_setup_session_split_marker_set_name_choose_button);
+        chooseSplitMarkerSetButton.setOnClickListener(new OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                startActivityForResult(new Intent(Intent.ACTION_PICK,
+                        TrackLoggerData.SplitMarkerSet.CONTENT_URI),
+                        ACTION_REQUEST_PICK_SPLIT_MARKER_SET);     
+            }
+        });
+        
+        Button startButton = (Button) setupSessionDialog
+                .findViewById(R.id.log_setup_session_start_button);
+        startButton.setOnClickListener(new OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (splitMarkerSetUri == null) {
+                    onNonTerminalError(R.string.log_setup_session_error_split_marker_set);
+                } else {
+                    initDataProviderCoordinator();
+                }
+            }
+        });
+        
+        splitMarkerSetNameTextView = (TextView) setupSessionDialog
+                .findViewById(R.id.log_setup_session_split_marker_set_name_text_view);
+        
+        String splitMarkerSetUriString = getPreferences(MODE_PRIVATE)
+                .getString(SPLIT_MARKER_SET_URI_PREF_KEY, null);
+        
+        if (splitMarkerSetUriString == null) {
+            splitMarkerSetUri = null;
+        } else {
+            splitMarkerSetUri = Uri.parse(splitMarkerSetUriString);
+        }
+        updateSplitMarkerSetNameTextView();
+    }
+    
+    private void initDisplayViews() {
         elapsedLapTime = (TextView) findViewById(R.id.log_elapsed_lap_time_value);
         lapNumber = (TextView) findViewById(R.id.log_lap_number_value);
         elapsedSessionTime = (TextView) findViewById(R.id.log_elapsed_session_time_value);
@@ -308,226 +653,42 @@ public class LogActivity extends Activity implements OnCancelListener {
         clt = (TextView) findViewById(R.id.log_clt_value);
         ignAdv = (TextView) findViewById(R.id.log_ign_adv_value);
         batV = (TextView) findViewById(R.id.log_batv_value);
-        
-        periodicUiUpdateRunnable = new Runnable() {
-            
-            @Override
-            public void run() {
-                
-                try {
-                    // Last ditch effort to catch missed events on resume.
-                    if (dataProviderCoordinatorService
-                                    .isLoggingStartTriggerFired()) {
-                        initDataProviderCoordinatorDialog.dismiss();
-                        waitingForStartTriggerDialog.dismiss();
-                    }
-                    
-                    AccelData accelData = dataProviderCoordinatorService.getCurrentAccelData();
-                    LocationData locationData = dataProviderCoordinatorService.getCurrentLocationData();
-                    EcuData ecuData = null;
-                    
-                    
-                    ecuData = dataProviderCoordinatorService.getCurrentEcuData();
-                    
-                    final long currentTime = System.currentTimeMillis();
-                    
-                    if (sessionStartReceivedTime != null) {
-                        long sessionElapsedTime = currentTime - sessionStartReceivedTime;
-                        setTextIfShown(elapsedSessionTime,
-                                TimeUtil.formatDuration(sessionElapsedTime,
-                                        false, false));
-                        
-                    }
-                    
-                    if (lapStartReceivedTime != null) {
-                        long lapElapsedTime = currentTime - lapStartReceivedTime;
-                        setTextIfShown(elapsedLapTime, TimeUtil.formatDuration(
-                                lapElapsedTime, false, true));
-                    }
-                    
-                    if (accelData == null) {
-                        setTextIfShown(accelUpdateFreq, "N/A");
-                        setTextIfShown(lonAccel, "N/A");
-                        setTextIfShown(latAccel, "N/A");
-                        setTextIfShown(vertAccel, "N/A");
-                    } else {
-                        setTextIfShown(accelUpdateFreq, "%.3f", dataProviderCoordinatorService.getAccelDataUpdateFrequency());
-                        setTextIfShown(lonAccel, "%.3f", accelData.getLongitudinal());
-                        setTextIfShown(latAccel, "%.3f", accelData.getLateral());
-                        setTextIfShown(vertAccel, "%.3f", accelData.getVertical());
-                    }
-                    
-                    if (locationData == null) {
-                        setTextIfShown(locationUpdateFreq, "N/A");
-                        setTextIfShown(lat, "N/A");
-                        setTextIfShown(lon, "N/A");
-                        setTextIfShown(alt, "N/A");
-                        setTextIfShown(bearing, "N/A");
-                        setTextIfShown(speed, "N/A");
-                    } else {
-                        setTextIfShown(locationUpdateFreq, "%.3f",
-                                dataProviderCoordinatorService.getLocationDataUpdateFrequency());
-                        setTextIfShown(lat, "%.8f", locationData.getLatitude());
-                        setTextIfShown(lon, "%.8f", locationData.getLongitude());
-                        setTextIfShown(alt, "%.3f", locationData.getAltitude());
-                        setTextIfShown(bearing, "%.3f", locationData.getBearing());
-                        setTextIfShown(speed, "%.3f", locationData.getSpeed());
-                    }
-                    
-                    if (ecuData == null) {
-                        setTextIfShown(ecuUpdateFreq, "N/A");
-                        setTextIfShown(rpm, "N/A");
-                        setTextIfShown(map, "N/A");
-                        setTextIfShown(tp, "N/A");
-                        setTextIfShown(afr, "N/A");
-                        setTextIfShown(mat, "N/A");
-                        setTextIfShown(clt, "N/A");
-                        setTextIfShown(ignAdv, "N/A");
-                        setTextIfShown(batV, "N/A");
-                    } else {
-                        setTextIfShown(ecuUpdateFreq, "%.3f", dataProviderCoordinatorService.getEcuDataUpdateFrequency());
-                        setTextIfShown(rpm, "%d", ecuData.getRpm());
-                        setTextIfShown(map, "%.0f", ecuData.getManifoldAbsolutePressure());
-                        setTextIfShown(tp, "%.0f", ecuData.getThrottlePosition() * 100);
-                        setTextIfShown(afr, "%.1f", ecuData.getAirFuelRatio());
-                        setTextIfShown(mat, "%.1f", ecuData.getManifoldAirTemperature());
-                        setTextIfShown(clt, "%.1f", ecuData.getCoolantTemperature());
-                        setTextIfShown(ignAdv, "%.1f", ecuData.getIgnitionAdvance());
-                        setTextIfShown(batV, "%.1f", ecuData.getBatteryVoltage());
-                    }
-                } catch (IllegalStateException e) {
-                    LOG.warn(
-                            "Scheduled runnable on UI thread was still executing when the data "
-                                    + "provider coordinator service was destroyed.  This is likely just a timing"
-                                    + " issue; however, this still warrants a look as a possible cause of errors if the"
-                                    + " exception was triggered outside of the data provider coordinator.",
-                            e);
-                } catch (RuntimeException e) {
-                    LOG.error("Error updating LogActivity UI components.", e);
-                    throw e;
-                }
-            }
-        };
-        
-        displayTask = new DisplayTask();
     }
     
-    @Override
-    protected void onResume() {
-        super.onResume();
-        
-        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-        
-        serviceConnection = new ServiceConnection() {
-            @Override
-            public void onServiceConnected(ComponentName name, IBinder service) {
-                // TODO deal with rebinding.
-                bound = true;
-                LocalBinder binder = (LocalBinder) service;
-                dataProviderCoordinatorService = binder.getService();
-                
-                if (btAdapter == null) {
-                    onError(R.string.error_bt_not_supported, R.string.error_alert_title);
+    /**
+     * Initializes the {@link DataProviderCoordinator} through the
+     * {@link DataProviderCoordinatorManagerService} if not already initialized
+     * and registers for notifications. 
+     */
+    private void initDataProviderCoordinator() {
+        try {
+            if (!dpcManagerService.isInitialized()) {
+                if (splitMarkerSetUri != null) {
+                    startService(new Intent(getApplicationContext(), DataProviderCoordinatorManagerService.class));
+                    dpcManagerService.initialize(getApplication(), btAdapter,
+                            splitMarkerSetUri);
+                    dpcManagerService.getInstance().register(notificationStrategy);
+                    dpcManagerService.getInstance().startAsynch();
                 } else {
-                    if (!btAdapter.isEnabled()) {
-                        if (dataProviderCoordinatorService.isInitialized()) {
-                            dataProviderCoordinatorService.uninitialize();
-                            dataProviderCoordinatorService = null;
-                        }
-                        startActivityForResult(
-                                new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE),
-                                ACTION_REQUEST_BT_ENABLE);
-                    } else {
-                        initDataProviderCoordinator();
-                    }
+                    LOG.error("Missing split marker set URI while initializing data providers and coordinator.");
+                    onInitDataProviderCoordinatorError();
                 }
+            } else {
+                // Register for notifications. As soon as we do this, we will
+                // receive a notification of the coordinator's current state. 
+                // From there we launch into the next phase of initialization.
+                dpcManagerService.getInstance().register(notificationStrategy);
             }
-
-            @Override
-            public void onServiceDisconnected(ComponentName arg0) {
-                bound = false;
-            }
-        };
-        
-        if (!bindService(
-                new Intent(getApplicationContext(), DataProviderCoordinatorService.class),
-                serviceConnection,
-                BIND_AUTO_CREATE)) {
-            LOG.error("Could not bind to DataProviderCoordinatorService.");
+        } catch (Exception e) {
+            LOG.error("Fatal error while initializing data providers and coordinator.", e);
             onInitDataProviderCoordinatorError();
         }
     }
     
-    @Override
-    protected void onPause() {
-        cleanup(false);
-        super.onPause();
-    }
-
-    @Override
-    protected void onDestroy() {
-        // Always cleanup, but also only stop logging if the activity is finishing rather than
-        // being destroyed by the OS for resource reasons.
-        cleanup(isFinishing());
-        super.onDestroy();
-    }
-
-    @Override
-    public void onActivityResult(int requestCode, int resultCode, Intent data) {
-        switch (requestCode) {
-            case ACTION_REQUEST_BT_ENABLE:
-                if (resultCode == Activity.RESULT_OK) {
-                    initDataProviderCoordinator();
-                } else {
-                    onError(R.string.error_bt_not_enabled, R.string.error_alert_title);
-                }
-                break;
-            default:
-                LOG.error(
-                        "Got activity result that the LogActivity did not initiate.  "
-                                + "Request code {}, result code {}, intent {}.",
-                        new Object[] {requestCode, resultCode, data});
-                finish();
-        }
-    }
-    
-    @Override
-    public void onCancel(DialogInterface dialog) {
-        if (dialog == initDataProviderCoordinatorDialog || dialog == waitingForStartTriggerDialog) {
-            finish();
-        }
-    }
-    
-    protected void cleanup(boolean stopLogging) {
-        getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-        
-        if (displayTask != null) {
-            displayTask.cancel();
-        }
-        
-        if (initDataProviderCoordinatorDialog != null) {
-            initDataProviderCoordinatorDialog.dismiss();
-        }
-        
-        if (waitingForStartTriggerDialog != null) {
-            initDataProviderCoordinatorDialog.dismiss();
-        }
-        
-        if (dataProviderCoordinatorService != null && stopLogging && dataProviderCoordinatorService.isInitialized()) {
-            dataProviderCoordinatorService.uninitialize();
-        }
-        
-        if (dataProviderCoordinatorService != null) {
-            dataProviderCoordinatorService.clearHandler();
-        }
-        
-        if (bound) {
-            unbindService(serviceConnection);
-            bound = false;
-        }
-    }
-    
-    protected void initDataProviderCoordinator() {
+    /**
+     * Reset and show {@link #initDataProviderCoordinatorDialog}.
+     */
+    private void showInitDataProviderCoordinatorDialog() {
         ((TextView) initDataProviderCoordinatorDialog
                 .findViewById(R.id.log_wait_for_ready_location_status))
                 .setText(R.string.log_wait_for_ready_text_waiting);
@@ -540,89 +701,108 @@ public class LogActivity extends Activity implements OnCancelListener {
                 .findViewById(R.id.log_wait_for_ready_ecu_status))
                 .setText(R.string.log_wait_for_ready_text_waiting);
         
+        initDataProviderCoordinatorDialog.show();
+    }
+    
+    /**
+     * Displays an error dialog that on dismissal does not terminate the activity.
+     *
+     * @param errorMessage the resource ID of the error message text
+     */
+    private void onNonTerminalError(int errorMessage) {
+        onNonTerminalError(R.string.app_name, errorMessage, new Object[0]);
+    }
+    
+    /**
+     * Displays an error dialog that on dismissal does not terminate the activity.
+     *
+     * @param errorMessage the resource ID of the error message text
+     * @param args optional arguments for the error message template text
+     */
+    private void onNonTerminalError(int errorMessage, Object... args) {
+        if (errorDialog != null) {
+            errorDialog.dismiss();
+        }
+        
+        ActivityUtil.showErrorDialog(this, false, R.string.error_alert_title,
+                errorMessage, args);
+    }
+    
+    /**
+     * Displays an error dialog that on dismissal terminates the activity.
+     *
+     * @param errorMessage the resource ID of the error message text
+     */
+    private void onTerminalError(int errorMessage) {
+        onTerminalError(errorMessage, new Object[0]);
+    }
+    
+    /**
+     * Displays an error dialog that on dismissal terminates the activity.
+     *
+     * @param errorMessage the resource ID of the error message text
+     * @param args optional arguments for the error message template text
+     */
+    private void onTerminalError(int errorMessage, Object... args) {
+        cleanup(true);
+        
+        if (errorDialog != null) {
+            errorDialog.dismiss();
+        }
+        
+        errorDialog = ActivityUtil.showErrorDialog(this, true, R.string.error_alert_title,
+                errorMessage, args);
+    }
+    
+    private void onInitDataProviderCoordinatorError() {     
+        cleanup(true);
+        onTerminalError(R.string.log_error_init);
+    }
+    
+    private void onDataProviderCoordinatorLoggingError() {      
+        cleanup(true);
+        onTerminalError(R.string.log_error_recording);
+    }
+    
+    /**
+     * Refreshes the split marker set name field in the setup dialog based on the current
+     * value of {@link #splitMarkerSetUri}.
+     */
+    private void updateSplitMarkerSetNameTextView() {
+        String splitMarkerSetName = null;
+        
+        if (splitMarkerSetUri != null) {
+            splitMarkerSetName = getSplitMarkerSetName(splitMarkerSetUri);
+        }
+        
+        if (splitMarkerSetName == null) {
+            splitMarkerSetName = getString(R.string.log_setup_session_split_marker_set_name_prompt);
+        }
+        
+        splitMarkerSetNameTextView.setText(splitMarkerSetName);
+    }
+    
+    /**
+     * Returns the name of the split marker set or {@code null} if the split marker set cannot be found.
+     *
+     * @param splitMarkerSetUri the URI of the set to get the name of
+     */
+    private String getSplitMarkerSetName(Uri splitMarkerSetUri) {
+        Cursor cursor = null;
+        
         try {
-            if (!dataProviderCoordinatorService.isInitialized()) {
-                dataProviderCoordinatorService.initialize(new DataProviderCoordinatorHandler(this),
-                        getApplication(), btAdapter);
-                initDataProviderCoordinatorDialog.show();
-                
-                // Do the start(s) in another thread so that we don't block the UI thread.  Notifications
-                // are used to apprise the UI of the progress.
-                dataProviderCoordinatorService.startAsynch();
+            cursor = getContentResolver().query(splitMarkerSetUri, null, null, null, null);
+            
+            if (cursor.getCount() != 1) {
+                return null;
             } else {
-                dataProviderCoordinatorService.replaceHandler(new DataProviderCoordinatorHandler(this));
-                
-                if (!dataProviderCoordinatorService.isReady()) {
-                    initDataProviderCoordinatorDialog.show();
-                    if (!dataProviderCoordinatorService.isRunning()) {
-                        // Do the start(s) in another thread so that we don't block the UI thread.  Notifications
-                        // are used to apprise the UI of the progress.
-                        dataProviderCoordinatorService.startAsynch();
-                    }
-                } else if (!dataProviderCoordinatorService.isLoggingStartTriggerFired()) {
-                    waitingForStartTriggerDialog.show();
-                }
+                cursor.moveToFirst();
+                return cursor.getString(cursor.getColumnIndex(TrackLoggerData.SplitMarkerSet.COLUMN_NAME_NAME));
             }
-        } catch (Exception e) {
-            LOG.error("Fatal error while initializing data providers and coordinator.", e);
-            onInitDataProviderCoordinatorError();
-        }
-    }
-    
-    protected void onError(int errorMessage, int title) {
-        cleanup(true);
-        
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder
-                .setMessage(errorMessage)
-                .setTitle(title)
-                .setPositiveButton(R.string.general_ok, new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog, int id) {
-                        dialog.dismiss();
-                        finish();
-                    }
-                });
-        
-        if (!isFinishing()) {
-            builder.create().show();
-        }
-    }
-    
-    protected void onInitDataProviderCoordinatorError() {     
-        cleanup(true);
-        
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder
-                .setMessage("Error initializing data providers.  Check the logs for more details.")
-                .setTitle("TrackLogger Error")
-                .setPositiveButton(R.string.general_ok, new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog, int id) {
-                        dialog.dismiss();
-                        finish();
-                    }
-                });
-        
-        if (!isFinishing()) {
-            builder.create().show();
-        }
-    }
-    
-    protected void onDataProviderCoordinatorLoggingError() {      
-        cleanup(true);
-        
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder
-                .setMessage("Error recording log data.  Check the logs for more details.")
-                .setTitle("TrackLogger Error")
-                .setPositiveButton(R.string.general_ok, new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog, int id) {
-                        dialog.dismiss();
-                        finish();
-                    }
-                });
-        
-        if (!isFinishing()) {
-            builder.create().show();
+        } finally {
+            if (cursor != null) {
+                cursor.close();
+            }
         }
     }
     
@@ -641,27 +821,32 @@ public class LogActivity extends Activity implements OnCancelListener {
         }
     }
     
+    /**
+     * Sets the color the view if it is not {@code null}.
+     *
+     * @param view the view to set the color of
+     * @param color the color to set
+     */
     protected void setColorIfShown(TextView view, Integer color) {
         if (view != null) {
             view.setTextColor(color);
         }
     }
     
-    protected void updateNonEventBasedUiFields() {
+    /**
+     * Updates the UI fields that are driven by a periodic timer.
+     */
+    private void updateNonEventBasedUiFields() {
         runOnUiThread(periodicUiUpdateRunnable);
     }
     
-    protected void updateEventBasedUiFields(TimingData timingData) {
-        if (timingData.getLap() == 0) {
-            sessionStartReceivedTime = timingData.getDataRecivedTime();
-            lapStartReceivedTime = timingData.getDataRecivedTime();
-        }
+    private void updateEventBasedUiFields(TimingData timingData) {
+        sessionStartReceivedTime = timingData.getInitialLapStartDataReceivedTime();
+        lapStartReceivedTime = timingData.getLastLapStartDataReceivedTime();
         
         if (timingData.getLapTime() != null) {
-            // All subsequent timing events for a lap completion will
-            // have a non-null lap time.  The timing start is handled
-            // above.
-            lapStartReceivedTime = timingData.getDataRecivedTime();
+            // After the first lap, all subsequent timing events for a lap completion will
+            // have a non-null lap time.
             setTextIfShown(lastLapTime, TimeUtil.formatDuration(timingData.getLapTime(),
                     false, true));
             
@@ -729,7 +914,7 @@ public class LogActivity extends Activity implements OnCancelListener {
      * (that is not timing data).  We don't use the activity thread from Android here because we
      * want to take advantage of the graceful shutdown logic in {@link GracefulShutdownThread}.
      */
-    protected class DisplayTask extends GracefulShutdownThread {
+    private class DisplayTask extends GracefulShutdownThread {
         
         public DisplayTask() {
             setName("LogActivity-DisplayTask-" + displayTaskCounter.getAndIncrement());
@@ -757,7 +942,7 @@ public class LogActivity extends Activity implements OnCancelListener {
         }
     }
     
-    protected static class DataProviderCoordinatorHandler extends Handler {
+    private static class DataProviderCoordinatorHandler extends Handler {
         
         private final WeakReference<LogActivity>  logActivityRef;
         
@@ -765,6 +950,7 @@ public class LogActivity extends Activity implements OnCancelListener {
             logActivityRef = new WeakReference<LogActivity>(logActivity);
         }
         
+        @SuppressWarnings("incomplete-switch")
         @Override
         public synchronized void handleMessage(Message msg) {
             LogActivity logActivity = logActivityRef.get();
@@ -773,48 +959,64 @@ public class LogActivity extends Activity implements OnCancelListener {
             
                 LOG.debug("Handling data provider coordinator message: {}.", msg);
                 
-                DataProviderCoordinator.NotificationType type = 
-                        DataProviderCoordinator.NotificationType.fromInt(msg.what);
+                DataProviderCoordinator.DataProviderCoordinatorNotificationType type = 
+                        DataProviderCoordinator.DataProviderCoordinatorNotificationType.fromInt(msg.what);
                 
                 try {
                     switch (type) {
+                        case STARTING:
+                            logActivity.getSetupSessionDialog().dismiss();
+                            logActivity.showInitDataProviderCoordinatorDialog();
+                            break;
                         case START_FAILED:
                             logActivity.onInitDataProviderCoordinatorError();
                             break;
                         case READY_PROGRESS:
                             Object[] data = (Object[]) msg.obj;
                             if (data[0] != null) {
-                                TextView locationStatusView = (TextView) logActivity.initDataProviderCoordinatorDialog
-                                        .findViewById(R.id.log_wait_for_ready_location_status);
+                                TextView locationStatusView = (TextView) logActivity
+                                        .getInitDataProviderCoordinatorDialog()
+                                        .findViewById(
+                                                R.id.log_wait_for_ready_location_status);
                                 
                                 locationStatusView.setText(R.string.log_wait_for_ready_text_ready);
                             }
                             
                             if(data[1] != null) {
-                                TextView accelStatusView = (TextView) logActivity.initDataProviderCoordinatorDialog
-                                        .findViewById(R.id.log_wait_for_ready_accel_status);
+                                TextView accelStatusView = (TextView) logActivity
+                                        .getInitDataProviderCoordinatorDialog()
+                                        .findViewById(
+                                                R.id.log_wait_for_ready_accel_status);
                                 
                                 accelStatusView.setText(R.string.log_wait_for_ready_text_ready);
                             }
                             
                             if(data[2] != null) {
-                                TextView ecuStatusView = (TextView) logActivity.initDataProviderCoordinatorDialog
-                                        .findViewById(R.id.log_wait_for_ready_ecu_status);
+                                TextView ecuStatusView = (TextView) logActivity
+                                        .getInitDataProviderCoordinatorDialog()
+                                        .findViewById(
+                                                R.id.log_wait_for_ready_ecu_status);
                                 
                                 ecuStatusView.setText(R.string.log_wait_for_ready_text_ready);
                             }
                             
                             break;
                         case READY:
-                            logActivity.initDataProviderCoordinatorDialog.dismiss();
-                            logActivity.waitingForStartTriggerDialog.show();
+                            logActivity.getInitDataProviderCoordinatorDialog().dismiss();
+                            logActivity.getWaitingForStartTriggerDialog().show();
                             logActivity.displayTask.start();
                             break;
                         case TIMING_START_TRIGGER_FIRED:
-                            logActivity.initDataProviderCoordinatorDialog.dismiss();
+                            logActivity.getInitDataProviderCoordinatorDialog().dismiss();
                             logActivity.waitingForStartTriggerDialog.dismiss();
+                            if (!logActivity.displayTask.isAlive()) {
+                                logActivity.displayTask.start();
+                            }
                             break;
                         case TIMING_DATA_UPDATE:
+                            if (!logActivity.displayTask.isAlive()) {
+                                logActivity.displayTask.start();
+                            }
                             TimingData timingData = (TimingData) msg.obj;
                             logActivity.updateEventBasedUiFields(timingData);
                             break;

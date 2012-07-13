@@ -15,22 +15,17 @@
  */
 package net.tracknalysis.tracklogger.test;
 
-import org.apache.log4j.Level;
-
 import net.tracknalysis.common.notification.NoOpNotificationStrategy;
-import net.tracknalysis.common.notification.NotificationStrategy;
 import net.tracknalysis.location.LocationManagerNotificationType;
 import net.tracknalysis.location.nmea.NmeaLocationManager;
 import net.tracknalysis.location.nmea.NmeaTestSocketManager;
-import net.tracknalysis.tracklogger.R;
 import net.tracknalysis.tracklogger.activity.LogActivity;
 import net.tracknalysis.tracklogger.config.Configuration;
-import net.tracknalysis.tracklogger.config.ConfigurationFactory;
 import net.tracknalysis.tracklogger.dataprovider.DataProviderCoordinator;
-import net.tracknalysis.tracklogger.dataprovider.android.AndroidTrackLoggerDataProviderCoordinator;
+import net.tracknalysis.tracklogger.dataprovider.android.DataProviderCoordinatorManagerService;
+import net.tracknalysis.tracklogger.dataprovider.android.DataProviderCoordinatorManagerService.LocalBinder;
+import net.tracknalysis.tracklogger.dataprovider.android.ServiceBasedTrackLoggerDataProviderCoordinator;
 import net.tracknalysis.tracklogger.dataprovider.android.DataProviderCoordinatorFactory;
-import net.tracknalysis.tracklogger.dataprovider.android.DataProviderCoordinatorService;
-import net.tracknalysis.tracklogger.dataprovider.android.DataProviderCoordinatorService.LocalBinder;
 import net.tracknalysis.tracklogger.provider.TrackLoggerData;
 import android.bluetooth.BluetoothAdapter;
 import android.content.ComponentName;
@@ -41,44 +36,19 @@ import android.content.Intent;
 import android.content.ServiceConnection;
 import android.database.Cursor;
 import android.net.Uri;
-import android.os.IBinder;
-import android.test.ActivityInstrumentationTestCase2;
-import android.widget.TextView;
 
 /**
  * @author David Valeri
  */
-public class LogActivityIntegrationTest extends ActivityInstrumentationTestCase2<LogActivity> {
+public class LogActivityIntegrationTest extends AbstractLogActivityTest {
     
     private NmeaTestSocketManager ntsm;
-    private Context context;
     private ServiceConnection serviceConnection;
-    private DataProviderCoordinatorService dpcs;
-    private AndroidTrackLoggerDataProviderCoordinator dpcsDelegate;
-    private Configuration configuration;
-    
-    private TextView elapsedLapTime;
-    private TextView lapNumber;
-    private TextView elapsedSessionTime;
-    private TextView lastSplitTime;
-    private TextView lastSplitTimeDelta;
-    private TextView lastLapTime;
-    private TextView lastLapTimeDelta;
-    
-    public LogActivityIntegrationTest() {
-        super(LogActivity.class);
-    }
+    private DataProviderCoordinatorManagerService dpcms;
+    private ServiceBasedTrackLoggerDataProviderCoordinator dpcsDelegate;
     
     @Override
-    protected void setUp() throws Exception {
-        super.setUp();
-        
-        context = this.getInstrumentation().getTargetContext().getApplicationContext();
-        
-        configuration = ConfigurationFactory.getInstance().getConfiguration();
-        configuration.setRootLogLevel(Level.INFO);
-        configuration.setLogToFile(false);
-        
+    protected void init() throws Exception {
         ntsm = new NmeaTestSocketManager(
                 getClass().getResourceAsStream(
                         "/NMEA-Test-Data.txt"), null);
@@ -90,12 +60,12 @@ public class LogActivityIntegrationTest extends ActivityInstrumentationTestCase2
                 new DataProviderCoordinatorFactory() {
                     @Override
                     public DataProviderCoordinator createDataProviderCoordinator(
-                            DataProviderCoordinatorService dataProviderCoordinatorService,
-                            NotificationStrategy<DataProviderCoordinator.NotificationType> notificationStrategy,
-                            Context context, BluetoothAdapter btAdapter) {
+                            DataProviderCoordinatorManagerService dataProviderCoordinatorService,
+                            Context context, BluetoothAdapter btAdapter,
+                            Uri splitMarkerSetUri) {
                         
-                        dpcsDelegate = new AndroidTrackLoggerDataProviderCoordinator(
-                                dataProviderCoordinatorService, notificationStrategy, context, btAdapter) {
+                        dpcsDelegate = new ServiceBasedTrackLoggerDataProviderCoordinator(
+                                dataProviderCoordinatorService, context, btAdapter, splitMarkerSetUri) {
                             
                             @Override
                             protected void initLocationManager(Configuration config, BluetoothAdapter btAdapter) {
@@ -112,9 +82,9 @@ public class LogActivityIntegrationTest extends ActivityInstrumentationTestCase2
         
         serviceConnection = new ServiceConnection() {
             @Override
-            public void onServiceConnected(ComponentName name, IBinder service) {
+            public void onServiceConnected(ComponentName name, android.os.IBinder service) {
                 LocalBinder binder = (LocalBinder) service;
-                dpcs = binder.getService();
+                dpcms = binder.getService();
             }
 
             @Override
@@ -123,19 +93,10 @@ public class LogActivityIntegrationTest extends ActivityInstrumentationTestCase2
         };
     }
     
-    @Override
-    protected void tearDown() throws Exception {
-        super.tearDown();
-        if (context != null) {
-            context.unbindService(serviceConnection);
-        }
-    }
-    
     public void testDefaultView() throws Throwable {
         
-        configuration.setLogLayoutId(R.layout.log_default);
-        
         LogActivity logActivity = initActivity();
+        triggerStart(logActivity);
         
         ContentResolver cr = logActivity.getApplication().getContentResolver();
         
@@ -151,13 +112,13 @@ public class LogActivityIntegrationTest extends ActivityInstrumentationTestCase2
                 assertFalse(getActivity().getInitDataProviderCoordinatorDialog().isShowing());
                 assertFalse(getActivity().getWaitingForStartTriggerDialog().isShowing());
                 
-                assertFalse("".equals(elapsedLapTime));
+                assertFalse("".equals(elapsedLapTime.getText()));
                 assertEquals("", lastLapTime.getText());
                 assertEquals("", lastLapTimeDelta.getText());
                 assertEquals("", lastSplitTime.getText());
                 assertEquals("", lastSplitTimeDelta.getText());
                 assertEquals("1", lapNumber.getText());
-                assertFalse("".equals(elapsedSessionTime));
+                assertFalse("".equals(elapsedSessionTime.getText()));
             }
         });
         
@@ -173,13 +134,13 @@ public class LogActivityIntegrationTest extends ActivityInstrumentationTestCase2
                 assertFalse(getActivity().getInitDataProviderCoordinatorDialog().isShowing());
                 assertFalse(getActivity().getWaitingForStartTriggerDialog().isShowing());
                 
-                assertFalse("".equals(elapsedLapTime));
+                assertFalse("".equals(elapsedLapTime.getText()));
                 assertEquals("", lastLapTime.getText());
                 assertEquals("", lastLapTimeDelta.getText());
                 assertEquals("0:16.359", lastSplitTime.getText());
                 assertEquals("0:00.000", lastSplitTimeDelta.getText());
                 assertEquals("1", lapNumber.getText());
-                assertFalse("".equals(elapsedSessionTime));
+                assertFalse("".equals(elapsedSessionTime.getText()));
             }
         });
         
@@ -193,13 +154,13 @@ public class LogActivityIntegrationTest extends ActivityInstrumentationTestCase2
                 assertFalse(getActivity().getInitDataProviderCoordinatorDialog().isShowing());
                 assertFalse(getActivity().getWaitingForStartTriggerDialog().isShowing());
                 
-                assertFalse("".equals(elapsedLapTime));
+                assertFalse("".equals(elapsedLapTime.getText()));
                 assertEquals("", lastLapTime.getText());
                 assertEquals("", lastLapTimeDelta.getText());
                 assertEquals("0:12.822", lastSplitTime.getText());
                 assertEquals("0:00.000", lastSplitTimeDelta.getText());
                 assertEquals("1", lapNumber.getText());
-                assertFalse("".equals(elapsedSessionTime));
+                assertFalse("".equals(elapsedSessionTime.getText()));
             }
         });
         
@@ -220,13 +181,13 @@ public class LogActivityIntegrationTest extends ActivityInstrumentationTestCase2
                 assertFalse(getActivity().getInitDataProviderCoordinatorDialog().isShowing());
                 assertFalse(getActivity().getWaitingForStartTriggerDialog().isShowing());
                 
-                assertFalse("".equals(elapsedLapTime));
+                assertFalse("".equals(elapsedLapTime.getText()));
                 assertEquals("", lastLapTime.getText());
                 assertEquals("", lastLapTimeDelta.getText());
                 assertEquals("0:45.077", lastSplitTime.getText());
                 assertEquals("0:00.000", lastSplitTimeDelta.getText());
                 assertEquals("1", lapNumber.getText());
-                assertFalse("".equals(elapsedSessionTime));
+                assertFalse("".equals(elapsedSessionTime.getText()));
             }
         });
         
@@ -241,13 +202,13 @@ public class LogActivityIntegrationTest extends ActivityInstrumentationTestCase2
                 assertFalse(getActivity().getInitDataProviderCoordinatorDialog().isShowing());
                 assertFalse(getActivity().getWaitingForStartTriggerDialog().isShowing());
                 
-                assertFalse("".equals(elapsedLapTime));
+                assertFalse("".equals(elapsedLapTime.getText()));
                 assertEquals("", lastLapTime.getText());
                 assertEquals("", lastLapTimeDelta.getText());
                 assertEquals("0:11.296", lastSplitTime.getText());
                 assertEquals("0:00.000", lastSplitTimeDelta.getText());
                 assertEquals("1", lapNumber.getText());
-                assertFalse("".equals(elapsedSessionTime));
+                assertFalse("".equals(elapsedSessionTime.getText()));
             }
         });
         
@@ -266,25 +227,25 @@ public class LogActivityIntegrationTest extends ActivityInstrumentationTestCase2
                 assertFalse(getActivity().getInitDataProviderCoordinatorDialog().isShowing());
                 assertFalse(getActivity().getWaitingForStartTriggerDialog().isShowing());
                 
-                assertFalse("".equals(elapsedLapTime));
+                assertFalse("".equals(elapsedLapTime.getText()));
                 assertEquals("2:01.570", lastLapTime.getText());
                 assertEquals("0:00.000", lastLapTimeDelta.getText());
                 assertEquals("0:36.016", lastSplitTime.getText());
                 assertEquals("0:00.000", lastSplitTimeDelta.getText());
                 assertEquals("2", lapNumber.getText());
-                assertFalse("".equals(elapsedSessionTime));
+                assertFalse("".equals(elapsedSessionTime.getText()));
             }
         });
         
         Thread.sleep(5000);
         
         // Finish the activity
-        logActivity.finish();
+        getActivity().finish();
         
         Thread.sleep(2000);
         
         // Ensure that the thing was shut down properly when the activity ended
-        assertFalse(dpcs.isInitialized());
+        assertFalse(dpcms.isInitialized());
         assertFalse(dpcsDelegate.isRunning());
                 
         // After all data is sent, we will want to check that the data ended up in the DB as appropriate.
@@ -332,19 +293,10 @@ public class LogActivityIntegrationTest extends ActivityInstrumentationTestCase2
         initializeUiFields(logActivity);
         
         assertTrue(context.bindService(
-                new Intent(logActivity, DataProviderCoordinatorService.class),
+                new Intent(logActivity, DataProviderCoordinatorManagerService.class),
                 serviceConnection,
                 Context.BIND_NOT_FOREGROUND));
         return logActivity;
     }
-    
-    protected void initializeUiFields(LogActivity logActivity) {
-        elapsedLapTime = (TextView) logActivity.findViewById(R.id.log_elapsed_lap_time_value);
-        lapNumber = (TextView) logActivity.findViewById(R.id.log_lap_number_value);
-        elapsedSessionTime = (TextView) logActivity.findViewById(R.id.log_elapsed_session_time_value);
-        lastSplitTime = (TextView) logActivity.findViewById(R.id.log_last_split_time_value);
-        lastSplitTimeDelta = (TextView) logActivity.findViewById(R.id.log_last_split_time_delta_value);
-        lastLapTime = (TextView) logActivity.findViewById(R.id.log_last_lap_time_value);
-        lastLapTimeDelta = (TextView) logActivity.findViewById(R.id.log_last_lap_time_delta_value);
-    }
+
 }

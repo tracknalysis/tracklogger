@@ -16,8 +16,11 @@
 package net.tracknalysis.tracklogger.provider;
 
 import android.content.ContentProvider;
+import android.content.ContentProviderOperation;
+import android.content.ContentProviderResult;
 import android.content.ContentUris;
 import android.content.ContentValues;
+import android.content.OperationApplicationException;
 import android.content.UriMatcher;
 import android.database.Cursor;
 import android.database.SQLException;
@@ -26,13 +29,14 @@ import android.database.sqlite.SQLiteQueryBuilder;
 import android.net.Uri;
 import android.text.TextUtils;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Provides access to a database of Track Log data.
+ * Provides access to a database of TrackLogger data.
  * 
  * @author David Valeri
  */
@@ -47,6 +51,8 @@ public class TrackLoggerDataProvider extends ContentProvider {
     private static final HashMap<String, String> SESSION_PROJECTION_MAP;
     private static final HashMap<String, String> LOG_ENTRY_PROJECTION_MAP;
     private static final HashMap<String, String> TIMING_ENTRY_PROJECTION_MAP;
+    private static final HashMap<String, String> SPLIT_MARKER_SET_PROJECTION_MAP;
+    private static final HashMap<String, String> SPLIT_MARKER_PROJECTION_MAP;
 
     private static final int SESSION = 1;
     private static final int SESSION_ID = 2;
@@ -54,6 +60,10 @@ public class TrackLoggerDataProvider extends ContentProvider {
     private static final int LOG_ENTRY_ID = 4;
     private static final int TIMING_ENTRY = 5;
     private static final int TIMING_ENTRY_ID = 6;
+    private static final int SPLIT_MARKER_SET = 7;
+    private static final int SPLIT_MARKER_SET_ID = 8;
+    private static final int SPLIT_MARKER = 9;
+    private static final int SPLIT_MARKER_ID = 10;
 
     private static final UriMatcher URI_MATCHER;
 
@@ -69,7 +79,13 @@ public class TrackLoggerDataProvider extends ContentProvider {
         
         URI_MATCHER.addURI(TrackLoggerData.AUTHORITY, "timingentry/", TIMING_ENTRY);
         URI_MATCHER.addURI(TrackLoggerData.AUTHORITY, "timingentry/#", TIMING_ENTRY_ID);
-
+        
+        URI_MATCHER.addURI(TrackLoggerData.AUTHORITY, "splitmarkerset/", SPLIT_MARKER_SET);
+        URI_MATCHER.addURI(TrackLoggerData.AUTHORITY, "splitmarkerset/#", SPLIT_MARKER_SET_ID);
+        
+        URI_MATCHER.addURI(TrackLoggerData.AUTHORITY, "splitmarker/", SPLIT_MARKER);
+        URI_MATCHER.addURI(TrackLoggerData.AUTHORITY, "splitmarker/#", SPLIT_MARKER_ID);
+        
         SESSION_PROJECTION_MAP = new HashMap<String, String>();
         SESSION_PROJECTION_MAP.put(TrackLoggerData.Session._ID,
                 TrackLoggerData.Session._ID);
@@ -103,6 +119,9 @@ public class TrackLoggerDataProvider extends ContentProvider {
         LOG_ENTRY_PROJECTION_MAP.put(
                 TrackLoggerData.LogEntry.COLUMN_NAME_LOCATION_CAPTURE_TIMESTAMP,
                 TrackLoggerData.LogEntry.COLUMN_NAME_LOCATION_CAPTURE_TIMESTAMP);
+        LOG_ENTRY_PROJECTION_MAP.put(
+                TrackLoggerData.LogEntry.COLUMN_NAME_LOCATION_TIME_IN_DAY,
+                TrackLoggerData.LogEntry.COLUMN_NAME_LOCATION_TIME_IN_DAY);
         LOG_ENTRY_PROJECTION_MAP.put(
                 TrackLoggerData.LogEntry.COLUMN_NAME_LATITUDE,
                 TrackLoggerData.LogEntry.COLUMN_NAME_LATITUDE);
@@ -160,6 +179,9 @@ public class TrackLoggerDataProvider extends ContentProvider {
                 TrackLoggerData.TimingEntry.COLUMN_NAME_CAPTURE_TIMESTAMP,
                 TrackLoggerData.TimingEntry.COLUMN_NAME_CAPTURE_TIMESTAMP);
         TIMING_ENTRY_PROJECTION_MAP.put(
+                TrackLoggerData.TimingEntry.COLUMN_NAME_TIME_IN_DAY,
+                TrackLoggerData.TimingEntry.COLUMN_NAME_TIME_IN_DAY);
+        TIMING_ENTRY_PROJECTION_MAP.put(
                 TrackLoggerData.TimingEntry.COLUMN_NAME_LAP,
                 TrackLoggerData.TimingEntry.COLUMN_NAME_LAP);
         TIMING_ENTRY_PROJECTION_MAP.put(
@@ -171,6 +193,34 @@ public class TrackLoggerDataProvider extends ContentProvider {
         TIMING_ENTRY_PROJECTION_MAP.put(
                 TrackLoggerData.TimingEntry.COLUMN_NAME_SPLIT_TIME,
                 TrackLoggerData.TimingEntry.COLUMN_NAME_SPLIT_TIME);
+        
+        SPLIT_MARKER_SET_PROJECTION_MAP = new HashMap<String, String>();
+        SPLIT_MARKER_SET_PROJECTION_MAP.put(
+                TrackLoggerData.SplitMarkerSet._ID,
+                TrackLoggerData.SplitMarkerSet._ID);
+        SPLIT_MARKER_SET_PROJECTION_MAP.put(
+                TrackLoggerData.SplitMarkerSet.COLUMN_NAME_NAME,
+                TrackLoggerData.SplitMarkerSet.COLUMN_NAME_NAME);
+        
+        SPLIT_MARKER_PROJECTION_MAP = new HashMap<String, String>();
+        SPLIT_MARKER_PROJECTION_MAP.put(
+                TrackLoggerData.SplitMarker._ID,
+                TrackLoggerData.SplitMarker._ID);
+        SPLIT_MARKER_PROJECTION_MAP.put(
+                TrackLoggerData.SplitMarker.COLUMN_NAME_SPLIT_MARKER_SET_ID,
+                TrackLoggerData.SplitMarker.COLUMN_NAME_SPLIT_MARKER_SET_ID);
+        SPLIT_MARKER_PROJECTION_MAP.put(
+                TrackLoggerData.SplitMarker.COLUMN_NAME_ORDER_INDEX,
+                TrackLoggerData.SplitMarker.COLUMN_NAME_ORDER_INDEX);
+        SPLIT_MARKER_PROJECTION_MAP.put(
+                TrackLoggerData.SplitMarker.COLUMN_NAME_NAME,
+                TrackLoggerData.SplitMarker.COLUMN_NAME_NAME);
+        SPLIT_MARKER_PROJECTION_MAP.put(
+                TrackLoggerData.SplitMarker.COLUMN_NAME_LATITUDE,
+                TrackLoggerData.SplitMarker.COLUMN_NAME_LATITUDE);
+        SPLIT_MARKER_PROJECTION_MAP.put(
+                TrackLoggerData.SplitMarker.COLUMN_NAME_LONGITUDE,
+                TrackLoggerData.SplitMarker.COLUMN_NAME_LONGITUDE);
     }
 
     private TrackLoggerDatabaseHelper databaseHelper;
@@ -179,6 +229,24 @@ public class TrackLoggerDataProvider extends ContentProvider {
     public boolean onCreate() {
         databaseHelper = new TrackLoggerDatabaseHelper(getContext());
         return true;
+    }
+    
+    @Override
+    public ContentProviderResult[] applyBatch(
+            ArrayList<ContentProviderOperation> operations)
+            throws OperationApplicationException {
+        
+        SQLiteDatabase db = databaseHelper.getWritableDatabase();
+        
+        db.beginTransaction();
+        
+        try {
+            ContentProviderResult[] result = super.applyBatch(operations);
+            db.setTransactionSuccessful();
+            return result;
+        } finally {
+            db.endTransaction();
+        }
     }
 
     /**
@@ -193,41 +261,47 @@ public class TrackLoggerDataProvider extends ContentProvider {
         SQLiteQueryBuilder qb = new SQLiteQueryBuilder();
         int uriType = URI_MATCHER.match(uri); 
         switch (uriType) {
+            case SESSION_ID:
+                qb.appendWhere(TrackLoggerData.Session._ID + "="
+                        + uri.getPathSegments().get(
+                                TrackLoggerData.Session.ID_PATH_POSITION));
             case SESSION:
                 qb.setTables(TrackLoggerData.Session.TABLE_NAME);
                 qb.setProjectionMap(SESSION_PROJECTION_MAP);
                 break;
-            case SESSION_ID:
-                qb.setTables(TrackLoggerData.Session.TABLE_NAME);
-                qb.setProjectionMap(SESSION_PROJECTION_MAP);
-                qb.appendWhere(TrackLoggerData.Session._ID + "="
+            case LOG_ENTRY_ID:
+                qb.appendWhere(TrackLoggerData.LogEntry._ID + "="
                         + uri.getPathSegments().get(
-                                TrackLoggerData.Session.SESSION_ID_PATH_POSITION));
-                break;
+                                TrackLoggerData.LogEntry.ID_PATH_POSITION));
             case LOG_ENTRY:
                 qb.setTables(TrackLoggerData.LogEntry.TABLE_NAME);
                 qb.setProjectionMap(LOG_ENTRY_PROJECTION_MAP);
                 break;
-            case LOG_ENTRY_ID:
-                qb.setTables(TrackLoggerData.LogEntry.TABLE_NAME);
-                qb.setProjectionMap(LOG_ENTRY_PROJECTION_MAP);
+            case TIMING_ENTRY_ID:
                 qb.appendWhere(TrackLoggerData.LogEntry._ID + "="
                         + uri.getPathSegments().get(
-                                TrackLoggerData.LogEntry.LOG_ENTRY_ID_PATH_POSITION));
-                break;
-                
+                                TrackLoggerData.TimingEntry.ID_PATH_POSITION));    
             case TIMING_ENTRY:
                 qb.setTables(TrackLoggerData.TimingEntry.TABLE_NAME);
                 qb.setProjectionMap(TIMING_ENTRY_PROJECTION_MAP);
                 break;
-            case TIMING_ENTRY_ID:
-                qb.setTables(TrackLoggerData.TimingEntry.TABLE_NAME);
-                qb.setProjectionMap(TIMING_ENTRY_PROJECTION_MAP);
-                qb.appendWhere(TrackLoggerData.LogEntry._ID + "="
+            case SPLIT_MARKER_SET_ID:
+                qb.appendWhere(TrackLoggerData.SplitMarkerSet._ID + "="
                         + uri.getPathSegments().get(
-                                TrackLoggerData.TimingEntry.TIMING_ENTRY_ID_PATH_POSITION));
+                                TrackLoggerData.SplitMarkerSet.ID_PATH_POSITION));
+            case SPLIT_MARKER_SET:
+                qb.setTables(TrackLoggerData.SplitMarkerSet.TABLE_NAME);
+                qb.setProjectionMap(SPLIT_MARKER_SET_PROJECTION_MAP);
                 break;
-                
+            case SPLIT_MARKER_ID:
+                qb.appendWhere(TrackLoggerData.SplitMarker._ID + "="
+                        + uri.getPathSegments().get(
+                                TrackLoggerData.SplitMarker.ID_PATH_POSITION));
+            case SPLIT_MARKER:
+                qb.setTables(TrackLoggerData.SplitMarker.TABLE_NAME);
+                qb.setProjectionMap(SPLIT_MARKER_PROJECTION_MAP);
+                break;
+           
             default:
                 throw new IllegalArgumentException("Unknown URI " + uri);
         }
@@ -267,9 +341,17 @@ public class TrackLoggerDataProvider extends ContentProvider {
             case LOG_ENTRY_ID:
                 return TrackLoggerData.LogEntry.LOG_ENTRY_ITEM_TYPE;
             case TIMING_ENTRY:
-                return TrackLoggerData.TimingEntry.TIMING_ENTRY_TYPE;
+                return TrackLoggerData.TimingEntry.TYPE;
             case TIMING_ENTRY_ID:
-                return TrackLoggerData.TimingEntry.TIMING_ENTRY_ITEM_TYPE;
+                return TrackLoggerData.TimingEntry.ITEM_TYPE;
+            case SPLIT_MARKER_SET:
+                return TrackLoggerData.SplitMarkerSet.TYPE;
+            case SPLIT_MARKER_SET_ID:
+                return TrackLoggerData.SplitMarkerSet.ITEM_TYPE;
+            case SPLIT_MARKER:
+                return TrackLoggerData.SplitMarker.TYPE;
+            case SPLIT_MARKER_ID:
+                return TrackLoggerData.SplitMarker.ITEM_TYPE;
             default:
                 throw new IllegalArgumentException("Unknown URI " + uri);
         }
@@ -293,35 +375,36 @@ public class TrackLoggerDataProvider extends ContentProvider {
 
         SQLiteDatabase db = databaseHelper.getWritableDatabase();
         long rowId;
-        Uri newUri = null;
+        Uri baseUri = null;
         
         switch (URI_MATCHER.match(uri)) {
             case SESSION:
                 rowId = db.insert(TrackLoggerData.Session.TABLE_NAME, null, values);
-                if (rowId > 0) {
-                    newUri = ContentUris.withAppendedId(
-                            TrackLoggerData.Session.CONTENT_ID_URI_BASE, rowId);
-                }
+                baseUri = TrackLoggerData.Session.CONTENT_ID_URI_BASE;
                 break;
             case LOG_ENTRY:
                 rowId = db.insert(TrackLoggerData.LogEntry.TABLE_NAME, null, values);
-                if (rowId > 0) {
-                    newUri = ContentUris.withAppendedId(
-                            TrackLoggerData.LogEntry.CONTENT_ID_URI_BASE, rowId);
-                }
+                baseUri = TrackLoggerData.LogEntry.CONTENT_ID_URI_BASE;
                 break;
             case TIMING_ENTRY:
                 rowId = db.insert(TrackLoggerData.TimingEntry.TABLE_NAME, null, values);
-                if (rowId > 0) {
-                    newUri = ContentUris.withAppendedId(
-                            TrackLoggerData.TimingEntry.CONTENT_ID_URI_BASE, rowId);
-                }
+                baseUri = TrackLoggerData.TimingEntry.CONTENT_ID_URI_BASE;
+                break;
+            case SPLIT_MARKER_SET:
+                rowId = db.insert(TrackLoggerData.SplitMarkerSet.TABLE_NAME, null, values);
+                baseUri = TrackLoggerData.SplitMarkerSet.CONTENT_ID_URI_BASE;
+                break;
+            case SPLIT_MARKER:
+                rowId = db.insert(TrackLoggerData.SplitMarker.TABLE_NAME, null, values);
+                baseUri = TrackLoggerData.SplitMarker.CONTENT_ID_URI_BASE;
                 break;
             default:
                 throw new IllegalArgumentException("Unknown URI " + uri);
         }
 
         if (rowId > 0) {
+            Uri newUri = ContentUris.withAppendedId(
+                    baseUri, rowId);
             getContext().getContentResolver().notifyChange(newUri, null);
             return newUri;
         } else {
@@ -349,7 +432,7 @@ public class TrackLoggerDataProvider extends ContentProvider {
                 break;
             case SESSION_ID:
                 count = doSingleDelete(TrackLoggerData.Session._ID,
-                        uri.getPathSegments().get(TrackLoggerData.Session.SESSION_ID_PATH_POSITION),
+                        uri.getPathSegments().get(TrackLoggerData.Session.ID_PATH_POSITION),
                         TrackLoggerData.Session.TABLE_NAME, where, whereArgs);
                 break;
             case LOG_ENTRY:
@@ -358,7 +441,7 @@ public class TrackLoggerDataProvider extends ContentProvider {
                         whereArgs);
             case LOG_ENTRY_ID:
                 count = doSingleDelete(TrackLoggerData.LogEntry._ID,
-                        uri.getPathSegments().get(TrackLoggerData.LogEntry.LOG_ENTRY_ID_PATH_POSITION),
+                        uri.getPathSegments().get(TrackLoggerData.LogEntry.ID_PATH_POSITION),
                         TrackLoggerData.LogEntry.TABLE_NAME, where, whereArgs);
                 break;
             case TIMING_ENTRY:
@@ -367,8 +450,28 @@ public class TrackLoggerDataProvider extends ContentProvider {
                         whereArgs);
             case TIMING_ENTRY_ID:
                 count = doSingleDelete(TrackLoggerData.TimingEntry._ID,
-                        uri.getPathSegments().get(TrackLoggerData.TimingEntry.TIMING_ENTRY_ID_PATH_POSITION),
+                        uri.getPathSegments().get(TrackLoggerData.TimingEntry.ID_PATH_POSITION),
                         TrackLoggerData.TimingEntry.TABLE_NAME, where, whereArgs);
+                break;
+            case SPLIT_MARKER_SET:
+                count = db.delete(TrackLoggerData.SplitMarkerSet.TABLE_NAME,
+                        where,
+                        whereArgs);
+                break;
+            case SPLIT_MARKER_SET_ID:
+                count = doSingleDelete(TrackLoggerData.SplitMarkerSet._ID,
+                        uri.getPathSegments().get(TrackLoggerData.SplitMarkerSet.ID_PATH_POSITION),
+                        TrackLoggerData.SplitMarkerSet.TABLE_NAME, where, whereArgs);
+                break;
+            case SPLIT_MARKER:
+                count = db.delete(TrackLoggerData.SplitMarker.TABLE_NAME,
+                        where,
+                        whereArgs);
+                break;
+            case SPLIT_MARKER_ID:
+                count = doSingleDelete(TrackLoggerData.SplitMarker._ID,
+                        uri.getPathSegments().get(TrackLoggerData.SplitMarker.ID_PATH_POSITION),
+                        TrackLoggerData.SplitMarker.TABLE_NAME, where, whereArgs);
                 break;
             default:
                 throw new IllegalArgumentException("Unknown URI " + uri);
@@ -402,7 +505,7 @@ public class TrackLoggerDataProvider extends ContentProvider {
                 tableName = TrackLoggerData.Session.TABLE_NAME;
                 
                 finalWhere = TrackLoggerData.Session._ID + " = " + uri.getPathSegments().get(
-                        TrackLoggerData.Session.SESSION_ID_PATH_POSITION);;
+                        TrackLoggerData.Session.ID_PATH_POSITION);;
                 
                 if (where != null) {
                     finalWhere = finalWhere + " AND (" + where + ")";
@@ -416,7 +519,7 @@ public class TrackLoggerDataProvider extends ContentProvider {
                 tableName = TrackLoggerData.LogEntry.TABLE_NAME;
     
                 finalWhere = TrackLoggerData.Session._ID + " = " + uri.getPathSegments().get(
-                        TrackLoggerData.LogEntry.LOG_ENTRY_ID_PATH_POSITION);
+                        TrackLoggerData.LogEntry.ID_PATH_POSITION);
                 
                 if (where != null) {
                     finalWhere = finalWhere + " AND (" + where + ")";
@@ -429,18 +532,47 @@ public class TrackLoggerDataProvider extends ContentProvider {
                 tableName = TrackLoggerData.TimingEntry.TABLE_NAME;
     
                 finalWhere = TrackLoggerData.TimingEntry._ID + " = " + uri.getPathSegments().get(
-                        TrackLoggerData.TimingEntry.TIMING_ENTRY_ID_PATH_POSITION);
+                        TrackLoggerData.TimingEntry.ID_PATH_POSITION);
                 
                 if (where != null) {
                     finalWhere = finalWhere + " AND (" + where + ")";
                 }
+                break;
+            case SPLIT_MARKER_SET:
+                tableName = TrackLoggerData.SplitMarkerSet.TABLE_NAME;
+                finalWhere = where;
+                break;
+            case SPLIT_MARKER_SET_ID:
+                tableName = TrackLoggerData.SplitMarkerSet.TABLE_NAME;
+    
+                finalWhere = TrackLoggerData.SplitMarkerSet._ID + " = " + uri.getPathSegments().get(
+                        TrackLoggerData.SplitMarkerSet.ID_PATH_POSITION);
+                
+                if (where != null) {
+                    finalWhere = finalWhere + " AND (" + where + ")";
+                }
+                break;
+            case SPLIT_MARKER:
+                tableName = TrackLoggerData.SplitMarker.TABLE_NAME;
+                finalWhere = where;
+                break;
+            case SPLIT_MARKER_ID:
+                tableName = TrackLoggerData.SplitMarker.TABLE_NAME;
+    
+                finalWhere = TrackLoggerData.SplitMarker._ID + " = " + uri.getPathSegments().get(
+                        TrackLoggerData.SplitMarker.ID_PATH_POSITION);
+                
+                if (where != null) {
+                    finalWhere = finalWhere + " AND (" + where + ")";
+                }
+                break;
             default:
                 throw new IllegalArgumentException("Unknown URI " + uri);
         }
         
         count = db.update(tableName,
                 values,
-                where,
+                finalWhere,
                 whereArgs);
 
         getContext().getContentResolver().notifyChange(uri, null);
@@ -473,6 +605,12 @@ public class TrackLoggerDataProvider extends ContentProvider {
             case TIMING_ENTRY:
             case TIMING_ENTRY_ID:
                 return TrackLoggerData.TimingEntry.DEFAULT_SORT_ORDER;
+            case SPLIT_MARKER_SET:
+            case SPLIT_MARKER_SET_ID:
+                return TrackLoggerData.SplitMarkerSet.DEFAULT_SORT_ORDER;
+            case SPLIT_MARKER:
+            case SPLIT_MARKER_ID:
+                return TrackLoggerData.SplitMarker.DEFAULT_SORT_ORDER;
             default:
                 throw new IllegalArgumentException("Unknown URI type: " + uriType);
         }

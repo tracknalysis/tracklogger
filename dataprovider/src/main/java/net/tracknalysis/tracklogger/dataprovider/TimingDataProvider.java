@@ -15,6 +15,8 @@
  */
 package net.tracknalysis.tracklogger.dataprovider;
 
+import net.tracknalysis.tracklogger.model.TimingData;
+
 /**
  * @author David Valeri
  */

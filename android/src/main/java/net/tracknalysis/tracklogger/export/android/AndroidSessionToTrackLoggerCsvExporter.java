@@ -28,7 +28,6 @@ import org.slf4j.LoggerFactory;
 import net.tracknalysis.common.notification.NotificationStrategy;
 import net.tracknalysis.tracklogger.config.ConfigurationFactory;
 import net.tracknalysis.tracklogger.export.AbstractSessionToTrackLoggerCsvExporter;
-import net.tracknalysis.tracklogger.export.ExportProgress;
 import net.tracknalysis.tracklogger.export.SessionExporter;
 import net.tracknalysis.tracklogger.provider.TrackLoggerData;
 import android.content.ContentResolver;

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Button xmlns:android="http://schemas.android.com/apk/res/android"
+    style="@style/afc_button_location"
+    android:layout_width="wrap_content"
+    android:layout_height="match_parent"
+    android:layout_gravity="center_vertical"
+    android:ellipsize="end"
+    android:maxWidth="@dimen/afc_button_location_max_width"
+    android:minWidth="80sp"
+    android:padding="@dimen/afc_dim_5dp"
+    android:singleLine="true"
+    android:text="@string/afc_ellipsize"
+    android:textAppearance="?android:attr/textAppearanceMedium" >
+
+</Button>

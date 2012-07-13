@@ -20,6 +20,8 @@ import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 
 /**
+ * Utility class providing for the create of SQLite DB schema and migration of data on updates.
+ *
  * @author David Valeri
  */
 public final class TrackLoggerDatabaseHelper extends SQLiteOpenHelper {
@@ -33,7 +35,9 @@ public final class TrackLoggerDatabaseHelper extends SQLiteOpenHelper {
         db.execSQL("CREATE TABLE " + TrackLoggerData.Session.TABLE_NAME + " ("
                 + TrackLoggerData.Session._ID + " INTEGER PRIMARY KEY,"
                 + TrackLoggerData.Session.COLUMN_NAME_START_DATE + " DATE NOT NULL,"
-                + TrackLoggerData.Session.COLUMN_NAME_LAST_MODIFIED_DATE + " DATE NOT NULL);");
+                + TrackLoggerData.Session.COLUMN_NAME_LAST_MODIFIED_DATE + " DATE NOT NULL,"
+                + TrackLoggerData.Session.COLUMN_NAME_SPLIT_MARKER_SET_ID + " INTEGER NOT NULL"
+                + ");");
 
         db.execSQL("CREATE TABLE " + TrackLoggerData.LogEntry.TABLE_NAME + " ("
                 + TrackLoggerData.LogEntry._ID + " INTEGER PRIMARY KEY,"
@@ -44,6 +48,7 @@ public final class TrackLoggerDatabaseHelper extends SQLiteOpenHelper {
                 + TrackLoggerData.LogEntry.COLUMN_NAME_LATERAL_ACCEL + " FLOAT,"
                 + TrackLoggerData.LogEntry.COLUMN_NAME_VERTICAL_ACCEL + " FLOAT,"
                 + TrackLoggerData.LogEntry.COLUMN_NAME_LOCATION_CAPTURE_TIMESTAMP + " BIGINT,"
+                + TrackLoggerData.LogEntry.COLUMN_NAME_LOCATION_TIME_IN_DAY + " BIGINT,"
                 + TrackLoggerData.LogEntry.COLUMN_NAME_LATITUDE + " DOUBLE,"
                 + TrackLoggerData.LogEntry.COLUMN_NAME_LONGITUDE + " DOUBLE,"
                 + TrackLoggerData.LogEntry.COLUMN_NAME_ALTITUDE + " DOUBLE,"
@@ -65,10 +70,25 @@ public final class TrackLoggerDatabaseHelper extends SQLiteOpenHelper {
                 + TrackLoggerData.TimingEntry.COLUMN_NAME_SESSION_ID + " INTEGER NOT NULL,"
                 + TrackLoggerData.TimingEntry.COLUMN_NAME_SYNCH_TIMESTAMP + " BIGINT NOT NULL,"
                 + TrackLoggerData.TimingEntry.COLUMN_NAME_CAPTURE_TIMESTAMP + " BIGINT NOT NULL,"
+                + TrackLoggerData.TimingEntry.COLUMN_NAME_TIME_IN_DAY + " BIGINT NOT NULL,"
                 + TrackLoggerData.TimingEntry.COLUMN_NAME_LAP + " INTEGER NOT NULL,"
                 + TrackLoggerData.TimingEntry.COLUMN_NAME_LAP_TIME + " BIGINT,"
                 + TrackLoggerData.TimingEntry.COLUMN_NAME_SPLIT_INDEX + " INTEGER NOT NULL,"
                 + TrackLoggerData.TimingEntry.COLUMN_NAME_SPLIT_TIME + " BIGINT"
+                + ");");
+        
+        db.execSQL("CREATE TABLE " + TrackLoggerData.SplitMarkerSet.TABLE_NAME + " ("
+                + TrackLoggerData.SplitMarkerSet._ID + " INTEGER PRIMARY KEY,"
+                + TrackLoggerData.SplitMarkerSet.COLUMN_NAME_NAME + " VARCHAR(50) NOT NULL"
+                + ");");
+        
+        db.execSQL("CREATE TABLE " + TrackLoggerData.SplitMarker.TABLE_NAME + " ("
+                + TrackLoggerData.SplitMarker._ID + " INTEGER PRIMARY KEY,"
+                + TrackLoggerData.SplitMarker.COLUMN_NAME_SPLIT_MARKER_SET_ID + " INTEGER NOT NULL,"
+                + TrackLoggerData.SplitMarker.COLUMN_NAME_NAME + " VARCHAR(50) NULL,"
+                + TrackLoggerData.SplitMarker.COLUMN_NAME_ORDER_INDEX + " INTEGER NOT NULL,"
+                + TrackLoggerData.SplitMarker.COLUMN_NAME_LATITUDE + " DOUBLE NOT NULL,"
+                + TrackLoggerData.SplitMarker.COLUMN_NAME_LONGITUDE + " DOUBLE NOT NULL"
                 + ");");
                 
     }

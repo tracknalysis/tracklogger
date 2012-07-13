@@ -15,6 +15,11 @@
  */
 package net.tracknalysis.tracklogger.dataprovider;
 
+import net.tracknalysis.tracklogger.model.AccelData;
+import net.tracknalysis.tracklogger.model.EcuData;
+import net.tracknalysis.tracklogger.model.LocationData;
+import net.tracknalysis.tracklogger.model.TimingData;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

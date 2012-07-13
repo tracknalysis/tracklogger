@@ -32,22 +32,20 @@ Authors: David Valeri
   <description>TrackLogger application tests for the Android platform.</description>
   <inceptionYear>2012</inceptionYear>
   
-  <properties>
-    <platform.version>2.2.1</platform.version>
-  </properties>
-  
   <dependencies>
     <dependency>
-      <groupId>com.google.android</groupId>
-      <artifactId>android</artifactId>
-      <version>${platform.version}</version>
+      <groupId>android.support</groupId>
+      <artifactId>compatibility-v13</artifactId>
+      <version>10</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>com.google.android</groupId>
+      <artifactId>android</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.google.android</groupId>
       <artifactId>android-test</artifactId>
-      <version>${platform.version}</version>
-      <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>de.mindpipe.android</groupId>
@@ -86,12 +84,20 @@ Authors: David Valeri
       <artifactId>tracklogger-android</artifactId>
       <version>${project.version}</version>
       <type>apk</type>
+      <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>net.tracknalysis.tracklogger</groupId> 
       <artifactId>tracklogger-android</artifactId>
       <version>${project.version}</version>
       <type>jar</type>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>net.tracknalysis.tracklogger</groupId> 
+      <artifactId>android-filechooser</artifactId>
+      <version>${project.version}</version>
+      <type>apklib</type>
       <scope>provided</scope>
     </dependency>
     <dependency>
@@ -103,6 +109,30 @@ Authors: David Valeri
     <dependency>
       <groupId>net.tracknalysis.tracklogger</groupId> 
       <artifactId>tracklogger-export</artifactId>
+      <version>${project.version}</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>net.tracknalysis.tracklogger</groupId> 
+      <artifactId>tracklogger-import</artifactId>
+      <version>${project.version}</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>net.tracknalysis.location</groupId> 
+      <artifactId>tracknalysis-location-core</artifactId>
+      <version>${project.version}</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>net.tracknalysis.location</groupId> 
+      <artifactId>tracknalysis-location-nmea</artifactId>
+      <version>${project.version}</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>net.tracknalysis.tracklogger</groupId> 
+      <artifactId>tracklogger-model</artifactId>
       <version>${project.version}</version>
       <scope>provided</scope>
     </dependency>
@@ -123,6 +153,10 @@ Authors: David Valeri
       <plugin>
         <groupId>com.jayway.maven.plugins.android.generation2</groupId>
         <artifactId>android-maven-plugin</artifactId>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-remote-resources-plugin</artifactId>
       </plugin>
     </plugins>
   </build>

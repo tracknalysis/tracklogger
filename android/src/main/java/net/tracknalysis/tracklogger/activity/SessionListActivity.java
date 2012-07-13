@@ -15,6 +15,9 @@
  */
 package net.tracknalysis.tracklogger.activity;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import net.tracknalysis.tracklogger.R;
 import net.tracknalysis.tracklogger.TrackLogger;
 import net.tracknalysis.tracklogger.provider.TrackLoggerData;
@@ -38,11 +41,11 @@ import android.widget.Toast;
  */
 public class SessionListActivity extends ListActivity {
     
+    private static final Logger LOG = LoggerFactory.getLogger(SessionListActivity.class);
+    
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        
-        getListView().setOnCreateContextMenuListener(this);
         
         String[] projection = new String[] {
                 TrackLoggerData.Session._ID,
@@ -65,6 +68,8 @@ public class SessionListActivity extends ListActivity {
 
         setListAdapter(adapter);
         
+        getListView().setOnCreateContextMenuListener(this);
+        
         if (cursor.getCount() == 0) {
             Toast.makeText(getApplicationContext(), "No stored sessions.",
                     Toast.LENGTH_SHORT).show();
@@ -78,13 +83,14 @@ public class SessionListActivity extends ListActivity {
         try {
             info = (AdapterView.AdapterContextMenuInfo) menuInfo;
         } catch (ClassCastException e) {
-            // TODO log
+            LOG.error("Could not cast {} to {}.", menuInfo,
+                    AdapterView.AdapterContextMenuInfo.class);
             return;
         }
 
         Cursor cursor = (Cursor) getListAdapter().getItem(info.position);
         if (cursor == null) {
-            // TODO log error
+            LOG.error("The cursor is not available from the list adapter.");
             return;
         }
 

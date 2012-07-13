@@ -18,6 +18,8 @@ package net.tracknalysis.tracklogger.dataprovider;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import net.tracknalysis.tracklogger.model.AbstractData;
+
 import org.slf4j.Logger;
 
 /**

@@ -19,7 +19,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import net.tracknalysis.common.notification.NotificationStrategy;
+import net.tracknalysis.tracklogger.model.LogEntry;
+import net.tracknalysis.tracklogger.model.TimingEntry;
 
 /**
  * An implementation used for unit testing of {@link TrackLoggerDataProviderCoordinator} using existing
@@ -34,39 +35,37 @@ public class TestTrackLoggerDataProviderCoordinator extends TrackLoggerDataProvi
     private EcuDataProvider ecuDataProvider;
     private TimingDataProvider timingDataProvider;
     
-    private List<TrackLoggerDataProviderCoordinator.LogEntry> logEntries;
-    private List<TimingData> timingDatas;
+    private List<LogEntry> logEntries;
+    private List<TimingEntry> timingEntries;
     
     private AtomicInteger sessionCounter = new AtomicInteger();
     
     public TestTrackLoggerDataProviderCoordinator(
-            NotificationStrategy<NotificationType> notificationStrategy,
             AccelDataProvider accelDataProvider,
             LocationDataProvider locationDataProvider,
             EcuDataProvider ecuDataProvider,
             TimingDataProvider timingDataProvider) {
-        super(notificationStrategy);
         this.accelDataProvider = accelDataProvider;
         this.locationDataProvider = locationDataProvider;
         this.ecuDataProvider = ecuDataProvider;
         this.timingDataProvider = timingDataProvider;
         
-        logEntries = new LinkedList<TrackLoggerDataProviderCoordinator.LogEntry>();
-        timingDatas = new LinkedList<TimingData>();
+        logEntries = new LinkedList<LogEntry>();
+        timingEntries = new LinkedList<TimingEntry>();
     }
     
     /**
-     * Returns the {@link TrackLoggerDataProviderCoordinator.LogEntry} instances "logged".
+     * Returns the {@link LogEntry} instances "logged".
      */
-    public List<TrackLoggerDataProviderCoordinator.LogEntry> getLogEntries() {
+    public List<LogEntry> getLogEntries() {
         return logEntries;
     }
     
     /**
-     * Returns the {@link TimingData} instances "logged".
+     * Returns the {@link TimingEntry} instances "logged".
      */
-    public List<TimingData> getTimingDatas() {
-        return timingDatas;
+    public List<TimingEntry> getTimingEntries() {
+        return timingEntries;
     }
     
     public int getSessionCount() {
@@ -103,12 +102,12 @@ public class TestTrackLoggerDataProviderCoordinator extends TrackLoggerDataProvi
     }
 
     @Override
-    protected void storeLogEntry(int sessionId, LogEntry logEntry) {
+    protected void storeLogEntry(LogEntry logEntry) {
         logEntries.add(logEntry);
     }
 
     @Override
-    protected void storeTimingEntry(int sessionId, TimingData timingData) {
-        timingDatas.add(timingData);            
+    protected void storeTimingEntry(TimingEntry timingEntry) {
+        timingEntries.add(timingEntry);            
     }
 }

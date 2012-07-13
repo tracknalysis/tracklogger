@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android" >
+
+    <group android:id="@+id/afc_filechooser_activity_menugroup_navigator" >
+        <item
+            android:id="@+id/afc_filechooser_activity_menuitem_home"
+            android:icon="@drawable/afc_ic_menu_home"
+            android:showAsAction="ifRoom"
+            android:title="@string/afc_cmd_home">
+        </item>
+        <item
+            android:id="@+id/afc_filechooser_activity_menuitem_reload"
+            android:icon="@drawable/afc_ic_menu_reload"
+            android:showAsAction="ifRoom"
+            android:title="@string/afc_cmd_reload">
+        </item>
+        </group>
+    <group android:id="@+id/afc_filechooser_activity_menugroup_view" >
+        <item
+            android:id="@+id/afc_filechooser_activity_menuitem_switch_viewmode"
+            android:showAsAction="ifRoom">
+        </item>
+    </group>
+    <group android:id="@+id/afc_filechooser_activity_menugroup_editor" >
+        <item
+            android:id="@+id/afc_filechooser_activity_menuitem_new_folder"
+            android:icon="@android:drawable/ic_menu_add"
+            android:showAsAction="ifRoom"
+            android:title="@string/afc_cmd_new_folder">
+        </item>
+    </group>
+    <group android:id="@+id/afc_filechooser_activity_menugroup_sorter" >
+        <item
+            android:id="@+id/afc_filechooser_activity_menuitem_sort_by_name"
+            android:showAsAction="ifRoom|withText"
+            android:title="@string/afc_cmd_sort_by_name">
+        </item>
+        <item
+            android:id="@+id/afc_filechooser_activity_menuitem_sort_by_size"
+            android:showAsAction="ifRoom|withText"
+            android:title="@string/afc_cmd_sort_by_size">
+        </item>
+        <item
+            android:id="@+id/afc_filechooser_activity_menuitem_sort_by_date"
+            android:showAsAction="ifRoom|withText"
+            android:title="@string/afc_cmd_sort_by_date">
+        </item>
+    </group>
+
+</menu>

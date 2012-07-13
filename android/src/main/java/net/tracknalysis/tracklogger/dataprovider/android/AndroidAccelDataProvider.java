@@ -16,9 +16,9 @@
 package net.tracknalysis.tracklogger.dataprovider.android;
 
 import net.tracknalysis.tracklogger.dataprovider.AbstractDataProvider;
-import net.tracknalysis.tracklogger.dataprovider.AccelData;
-import net.tracknalysis.tracklogger.dataprovider.AccelData.AccelDataBuilder;
 import net.tracknalysis.tracklogger.dataprovider.AccelDataProvider;
+import net.tracknalysis.tracklogger.model.AccelData;
+import net.tracknalysis.tracklogger.model.AccelData.AccelDataBuilder;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

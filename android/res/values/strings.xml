@@ -21,12 +21,28 @@ Authors: David Valeri
     <string name="app_name">TrackLogger</string>
     
     <string name="general_ok">OK</string>
+    <string name="general_cancel">Cancel</string>
     <string name="general_error">An unexpected error has ocurred.</string>
+    
+    <string name="menu_item_new">New</string>
+    <string name="menu_item_duplicate">Duplicate</string>
+    <string name="menu_item_delete">Delete</string>
+    <string name="menu_item_rename">Rename</string>
+    <string name="menu_item_edit">Edit</string>
+    <string name="menu_item_import">Import</string>
+    <string name="menu_item_export">Export</string>
+    <string name="menu_item_view">View</string>
     
     
     <string name="error_alert_title">TrackLogger Error</string>
     <string name="error_bt_not_supported">No Bluetooth capabilities detected on this device.</string>
     <string name="error_bt_not_enabled">Bluetooth is not enabled.  Bluetooth is required for this application to function.</string>
+    
+    <string name="log_error_init">Error initializing data providers.  Check the logs for more details.</string>
+    <string name="log_error_recording">Error recording log data.  Check the logs for more details.</string>
+    
+    <string name="log_setup_session_split_marker_set_name_prompt">Choose a split marker set…</string>
+    <string name="log_setup_session_error_split_marker_set">You must choose a split marker set for this session.</string>
     
     <string name="log_wait_for_ready_location_title">Location:</string>
     <string name="log_wait_for_ready_accel_title">Accelerometer:</string>
@@ -70,20 +86,63 @@ Authors: David Valeri
     <string name="log_ign_adv_title">Ignition Advance</string>
     <string name="log_batv_title">Battery Voltage</string>
     
+    
     <string name="export_error_session_not_found">The selected session could not be found.  Please try again.</string>
     <string name="export_queued">Session export queued.</string>
     <string name="export_total_laps">Total Laps:</string>
     <string name="export_export_button_text">Export</string>
     <string name="export_progress_notification_running_ticker_message">Exporting session %d data…</string>
     <string name="export_progress_notification_running_content_text">Exporting %1$d of %2$d.</string>
-    <string name="export_progress_notification_finished_ticker_message">Export finished</string>
+    <string name="export_progress_notification_finished_ticker_message">Export finished.</string>
     <string name="export_progress_notification_finished_content_text">Finished exporting session %d data.</string>
-    <string name="export_progress_notification_error_ticker_message">Export failed</string>
+    <string name="export_progress_notification_error_ticker_message">Export failed.</string>
     <string name="export_progress_notification_error_content_text">Error exporting session %d data.</string>
     
     
+    <string name="split_marker_set_rename_prompt">Enter a new name for the split marker set with the name %s</string>
+    <string name="split_marker_set_rename_toast">Renamed \'%1$s\' to \'%2$s\'.</string>
+    <string name="split_marker_set_rename_error_not_found">The requested split marker set could not be found.</string>
+    <string name="split_marker_set_rename_error_invalid_name">The name entered is not a valid split marker set name.</string>
+    <string name="split_marker_set_rename_error_duplicate">The name entered already exists.</string>
     
-    <string name="permission_session_export">Grants permission to launch the session export action of Tracklogger.</string>
+    <string name="split_marker_set_view_error_not_found">The requested split marker set could not be found.</string>
+    <string name="split_marker_set_view_new_marker_instruction">Tap screen to place a new split marker.</string>
+    <string name="split_marker_set_view_marker_title">Split Marker %d</string>
+    <string name="split_marker_set_view_marker_moved_while_in_use">You cannot move a marker while the set is associated with a session.</string>
+    <string name="split_marker_set_view_marker_moved_notification">\'%s\' moved.</string>
+    <string name="split_marker_set_view_marker_added_notification">\'Split Marker %d\' added.</string>
+    <string name="split_marker_set_view_marker_deleted_notification">\'%s\' deleted.</string>
+    <string name="split_marker_set_view_marker_renamed_notification">\'%1$s\' renamed to \'%2$s\'.</string>
+    <string name="split_marker_set_view_menu_item_zoom_to_show_all">Show all</string>
+    <string name="split_marker_set_view_confirm_delete_marker_prompt">Are you sure you want to delete \'%s\'</string>
+    <string name="split_marker_set_view_default_new_split_marker_set_name">New Split Marker Set</string>
+    
+    <string name="split_marker_set_list_empty">No split marker sets exist.  Choose an option from the menu to import or create a new set.</string>
+    <string name="split_marker_set_list_confirm_delete_prompt">Are you sure you want to delete the split marker set named %s?</string>
+    <string name="split_marker_set_list_deleted_notification">Deleted the split marker set named \'%s\'.</string>
+    <string name="split_marker_set_list_duplicated_notification">Copied \'%1$s\' to \'%2$s\'.</string>
+    <string name="split_marker_set_list_pick_instructions">Short tap an item to select it.  Long tap for more options.</string>
+    
+    <string name="split_marker_set_config_import_duplicate_name">Could not import split marker set with name %s.  A split marker set already exists with that name.</string>
+    <string name="split_marker_set_config_import_missing_source">Please select a source to import.</string>
+    <string name="split_marker_set_config_import_invalid_format">Please select a valid input source format.</string>
+
+    <string name="split_marker_set_import_notification_running_ticker_message">Importing split marker set %s…</string>
+    <string name="split_marker_set_import_notification_running_content_text">Importing split marker %1$d of %2$d.</string>
+    <string name="split_marker_set_import_notification_running_indeterminate_content_text">Importing split marker %1$d.</string>
+    <string name="split_marker_set_import_notification_finished_ticker_message">Import finished.</string>
+    <string name="split_marker_set_import_notification_finished_content_text">Finished importing split marker set %s.</string>
+    <string name="split_marker_set_import_notification_error_ticker_message">Import failed.</string>
+    <string name="split_marker_set_import_notification_error_content_text">Error importing split marker set %s.</string>
+        
+    
+    <string name="split_marker_edit_prompt">Enter a new name for the split marker with the name \'%s\'</string>
+    <string name="split_marker_edit_success_no_name_notification">\'Split Marker %s\' updated.</string>
+    <string name="split_marker_edit_success_notification">Split marker \'%s\' updated.</string>
+    <string name="split_marker_edit_error_not_found">The requested split marker could not be found.</string>
+    <string name="split_marker_edit_error_invalid_name">The name entered is not a valid split marker name.</string>
+    <string name="split_marker_edit_error_duplicate_name">A split marker already exists with the name entered.</string>
+        
     
     <string name="preference_app_log_preference_group_title">Application Logging</string>
     <string name="preference_app_log_level_title">Log Level</string>

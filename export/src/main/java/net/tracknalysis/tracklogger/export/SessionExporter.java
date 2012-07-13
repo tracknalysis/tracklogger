@@ -18,12 +18,14 @@ package net.tracknalysis.tracklogger.export;
 import java.util.HashMap;
 import java.util.Map;
 
+import net.tracknalysis.common.notification.NotificationType;
+
 /**
  * @author David Valeri
  */
 public interface SessionExporter {
     
-    public enum SessionExporterNotificationType implements net.tracknalysis.common.notification.NotificationType {
+    public static enum SessionExporterNotificationType implements NotificationType {
         EXPORT_STARTING,
         EXPORT_STARTED,
         /**
@@ -58,9 +60,68 @@ public interface SessionExporter {
         }
     }
     
+    public static final class ExportProgress {
+        private int currentRecordIndex;
+        private int totalRecords;
+        
+        public ExportProgress(int currentRecordIndex, int totalRecords) {
+            super();
+            this.currentRecordIndex = currentRecordIndex;
+            this.totalRecords = totalRecords;
+        }
+
+        public int getCurrentRecordIndex() {
+            return currentRecordIndex;
+        }
+
+        public void setCurrentRecordIndex(int currentRecordIndex) {
+            this.currentRecordIndex = currentRecordIndex;
+        }
+
+        public int getTotalRecords() {
+            return totalRecords;
+        }
+
+        public void setTotalRecords(int totalRecords) {
+            this.totalRecords = totalRecords;
+        }
+
+        @Override
+        public String toString() {
+            StringBuilder builder = new StringBuilder();
+            builder.append("ExportProgress [currentRecordIndex=");
+            builder.append(currentRecordIndex);
+            builder.append(", totalRecords=");
+            builder.append(totalRecords);
+            builder.append("]");
+            return builder.toString();
+        }
+    }
+    
+    /**
+     * Exports the session with the given ID, emitting {@link SessionExporterNotificationType} notifications.
+     *
+     * @param sessionId the ID of the session to export
+     */
     void export(int sessionId);
     
+    /**
+     * Exports the session with the given ID, emitting
+     * {@link SessionExporterNotificationType}s.
+     * 
+     * @param sessionId
+     *            the ID of the session to export
+     * @param startLap
+     *            the optional lap to begin exporting on. If {@code null} the
+     *            export will start on the first lap.
+     * @param endLap
+     *            the optional lap to stop exporting on. If {@code null} the
+     *            export runs through the end of the session
+     */
     void export(int sessionId, Integer startLap, Integer endLap);
     
+    /**
+     * Returns the mime type of the output that the exporter produces.
+     */
     String getMimeType();
 }

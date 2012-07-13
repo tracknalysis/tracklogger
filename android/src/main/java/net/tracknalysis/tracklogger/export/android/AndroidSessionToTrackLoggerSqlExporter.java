@@ -124,6 +124,8 @@ public class AndroidSessionToTrackLoggerSqlExporter extends
                         .getColumnIndexOrThrow(TrackLoggerData.TimingEntry.COLUMN_NAME_SYNCH_TIMESTAMP);
                 final int timingEntryCaptureColumnIndex = timingEntryCursor
                         .getColumnIndexOrThrow(TrackLoggerData.TimingEntry.COLUMN_NAME_CAPTURE_TIMESTAMP);
+                final int timingEntryTimeInDayColumnIndex = timingEntryCursor
+                        .getColumnIndexOrThrow(TrackLoggerData.TimingEntry.COLUMN_NAME_TIME_IN_DAY);
                 final int timingEntryLapColumnIndex = timingEntryCursor
                         .getColumnIndexOrThrow(TrackLoggerData.TimingEntry.COLUMN_NAME_LAP);
                 final int timingEntryLapTimeColumnIndex = timingEntryCursor
@@ -134,11 +136,12 @@ public class AndroidSessionToTrackLoggerSqlExporter extends
                         .getColumnIndexOrThrow(TrackLoggerData.TimingEntry.COLUMN_NAME_SPLIT_TIME);
                 
                 while (!timingEntryCursor.isAfterLast()) {
-                    writer.write("INSERT INTO timing_entry(session_id, synch_timestamp, capture_timestamp, lap, lap_time, split_index, split_time)\r\n");
+                    writer.write("INSERT INTO timing_entry(session_id, synch_timestamp, capture_timestamp, time_in_day, lap, lap_time, split_index, split_time)\r\n");
                     writer.write("VALUES (");
                     writer.write(sessionId + ", ");
                     writer.write(toSqlFromString(timingEntryCursor, timingEntrySynchColumnIndex) + ", ");
                     writer.write(toSqlFromString(timingEntryCursor, timingEntryCaptureColumnIndex) + ", ");
+                    writer.write(toSqlFromString(timingEntryCursor, timingEntryTimeInDayColumnIndex) + ", ");
                     writer.write(toSqlFromString(timingEntryCursor, timingEntryLapColumnIndex) + ", ");
                     writer.write(toSqlFromString(timingEntryCursor, timingEntryLapTimeColumnIndex) + ", ");
                     writer.write(toSqlFromString(timingEntryCursor, timingEntrySplitIndexColumnIndex) + ", ");
@@ -168,6 +171,8 @@ public class AndroidSessionToTrackLoggerSqlExporter extends
                         .getColumnIndex(TrackLoggerData.LogEntry.COLUMN_NAME_VERTICAL_ACCEL);
                 final int locationCaptureTimestampColumnIndex = logEntryCursor
                         .getColumnIndex(TrackLoggerData.LogEntry.COLUMN_NAME_LOCATION_CAPTURE_TIMESTAMP);
+                final int locationTimeColumnIndex = logEntryCursor
+                        .getColumnIndex(TrackLoggerData.LogEntry.COLUMN_NAME_LOCATION_TIME_IN_DAY);
                 final int latitudeColumnIndex = logEntryCursor
                         .getColumnIndex(TrackLoggerData.LogEntry.COLUMN_NAME_LATITUDE);
                 final int longitudeColumnIndex = logEntryCursor
@@ -199,7 +204,7 @@ public class AndroidSessionToTrackLoggerSqlExporter extends
                 
                 while (!logEntryCursor.isAfterLast()) {
                 
-                    writer.write("INSERT INTO log_entry(session_id, synch_timestamp, accel_capture_timestamp, longitudinal_accel, lateral_accel, vertical_accel, location_capture_timestamp, latitude, longitude, altitude, speed, bearing, ecu_capture_timestamp, rpm, map, tp, afr, mat, clt, ignition_advance, battery_voltage)\r\n");
+                    writer.write("INSERT INTO log_entry(session_id, synch_timestamp, accel_capture_timestamp, longitudinal_accel, lateral_accel, vertical_accel, location_capture_timestamp, location_time_in_day, latitude, longitude, altitude, speed, bearing, ecu_capture_timestamp, rpm, map, tp, afr, mat, clt, ignition_advance, battery_voltage)\r\n");
                     writer.write("VALUES(");
                     writer.write(sessionId + ", ");
                     writer.write(logEntryCursor.getString(logEntrySynchColumnIndex) + ", ");
@@ -209,6 +214,7 @@ public class AndroidSessionToTrackLoggerSqlExporter extends
                     writer.write(toSqlFromFloat(logEntryCursor, lateralAccelColumnIndex) + ", ");
                     writer.write(toSqlFromFloat(logEntryCursor, verticalAccelColumnIndex) + ", ");
                     writer.write(toSqlFromString(logEntryCursor, locationCaptureTimestampColumnIndex) + ", ");
+                    writer.write(toSqlFromString(logEntryCursor, locationTimeColumnIndex) + ", "); 
                     writer.write(toSqlFromDouble(logEntryCursor, latitudeColumnIndex) + ", ");
                     writer.write(toSqlFromDouble(logEntryCursor, longitudeColumnIndex) + ", ");
                     writer.write(toSqlFromDouble(logEntryCursor, altitudeColumnIndex) + ", ");
