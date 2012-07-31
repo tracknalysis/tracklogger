@@ -29,7 +29,7 @@
                 android:textAppearance="?android:attr/textAppearanceLarge" />
 
             <TextView
-                android:id="@+id/locationStatus"
+                android:id="@+id/log_wait_for_ready_location_status"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Waiting"
@@ -47,7 +47,7 @@
                 android:textAppearance="?android:attr/textAppearanceLarge" />
 
             <TextView
-                android:id="@+id/ecuStatus"
+                android:id="@+id/log_wait_for_ready_ecu_status"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Waiting"
@@ -65,7 +65,7 @@
                 android:textAppearance="?android:attr/textAppearanceLarge" />
 
             <TextView
-                android:id="@+id/accelStatus"
+                android:id="@+id/log_wait_for_ready_accel_status"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Waiting"

@@ -85,6 +85,7 @@ public class RouteManagerTimingDataProvider extends AbstractDataProvider<TimingD
             if (lap == 0 && waypointIndex == 0) {
                 builder.setLap(lap++);
                 builder.setSplitIndex(bestSplitTimes.length - 1);
+                lastLapStartTime = lastSplitStartTime = locationTime;
             } else {
                 
                 int splitIndex;
@@ -98,8 +99,11 @@ public class RouteManagerTimingDataProvider extends AbstractDataProvider<TimingD
                     
                     builder.setLapTime(deltaLap);
                     builder.setBestLapTime(bestLapTime);
+                    builder.setLap(lap++);
+                    lastLapStartTime = locationTime;
                 } else {
                     splitIndex = waypointIndex - 1;
+                    builder.setLap(lap);
                 }
                 
                 if (bestSplitTimes[splitIndex] == null || deltaSplit < bestSplitTimes[splitIndex]) {
@@ -107,7 +111,6 @@ public class RouteManagerTimingDataProvider extends AbstractDataProvider<TimingD
                 }
                 
                 
-                builder.setLap(lap++);
                 builder.setSplitIndex(splitIndex);
                 
                 builder.setSplitTime(deltaSplit);

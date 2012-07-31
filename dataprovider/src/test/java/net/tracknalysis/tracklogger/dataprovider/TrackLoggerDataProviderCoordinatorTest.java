@@ -101,57 +101,69 @@ public class TrackLoggerDataProviderCoordinatorTest {
         
         // start()
         mockNotificationStrategy.sendNotification(
-                eq(TrackLoggerDataProviderCoordinator.NotificationType.STARTING));
+                eq(DataProviderCoordinator.NotificationType.STARTING));
+        expectLastCall();
+        mockLocationDataProvider.addSynchronousListener(capture(locationListenerCapture));
         expectLastCall();
         mockLocationDataProvider.start();
         expectLastCall();
+        mockAccelDataProvider.addSynchronousListener(anyObject(DataListener.class));
+        expectLastCall();
         mockAccelDataProvider.start();
+        expectLastCall();
+        mockEcuDataProvider.addSynchronousListener(anyObject(DataListener.class));
         expectLastCall();
         mockEcuDataProvider.start();
         expectLastCall();
-        mockTimingDataProvider.start();
-        expectLastCall();
-        
-        mockLocationDataProvider.addSynchronousListener(capture(locationListenerCapture));
-        expectLastCall();
         mockTimingDataProvider.addSynchronousListener(capture(timingListenerCapture));
+        expectLastCall();
         
         mockNotificationStrategy.sendNotification(
-                eq(TrackLoggerDataProviderCoordinator.NotificationType.STARTED));
+                eq(DataProviderCoordinator.NotificationType.STARTED));
         expectLastCall();
 
         // receiveData(LocationData) - 1
         expect(mockAccelDataProvider.getCurrentData()).andReturn(null);
         expect(mockEcuDataProvider.getCurrentData()).andReturn(null);
+        expect(mockLocationDataProvider.getCurrentData()).andReturn(locationDataBuilder.build());
+        expect(mockAccelDataProvider.getCurrentData()).andReturn(null);
+        expect(mockEcuDataProvider.getCurrentData()).andReturn(null);
         
         mockNotificationStrategy.sendNotification(
-                eq(TrackLoggerDataProviderCoordinator.NotificationType.READY_PROGRESS),
+                eq(DataProviderCoordinator.NotificationType.READY_PROGRESS),
                 anyObject(Object[].class));
         expectLastCall();
         
         // receiveData(LocationData) - 2
         expect(mockAccelDataProvider.getCurrentData()).andReturn(accelDataBuilder.build());
         expect(mockEcuDataProvider.getCurrentData()).andReturn(null);
+        expect(mockLocationDataProvider.getCurrentData()).andReturn(locationDataBuilder.build());
+        expect(mockAccelDataProvider.getCurrentData()).andReturn(accelDataBuilder.build());
+        expect(mockEcuDataProvider.getCurrentData()).andReturn(null);
         
         mockNotificationStrategy.sendNotification(
-                eq(TrackLoggerDataProviderCoordinator.NotificationType.READY_PROGRESS),
+                eq(DataProviderCoordinator.NotificationType.READY_PROGRESS),
                 anyObject(Object[].class));
         expectLastCall();
         
         // receiveData(LocationData) - 3
         expect(mockAccelDataProvider.getCurrentData()).andReturn(accelDataBuilder.build());
         expect(mockEcuDataProvider.getCurrentData()).andReturn(ecuDataBuilder.build());
+        expect(mockLocationDataProvider.getCurrentData()).andReturn(locationDataBuilder.build());
+        expect(mockAccelDataProvider.getCurrentData()).andReturn(accelDataBuilder.build());
+        expect(mockEcuDataProvider.getCurrentData()).andReturn(ecuDataBuilder.build());
         
         mockNotificationStrategy.sendNotification(
-                eq(TrackLoggerDataProviderCoordinator.NotificationType.READY_PROGRESS),
+                eq(DataProviderCoordinator.NotificationType.READY_PROGRESS),
                 anyObject(Object[].class));
         expectLastCall();
         
-        mockNotificationStrategy.sendNotification(
-                eq(TrackLoggerDataProviderCoordinator.NotificationType.READY));
+        mockTimingDataProvider.start();
         expectLastCall();
         
-        // startLogging()
+        mockNotificationStrategy.sendNotification(
+                eq(DataProviderCoordinator.NotificationType.READY));
+        expectLastCall();
         
         // receiveData(LocationData) - 4
         expect(mockAccelDataProvider.getCurrentData()).andReturn(accelDataBuilder.build());
@@ -159,7 +171,7 @@ public class TrackLoggerDataProviderCoordinatorTest {
         
         // receiveData(TimingData) - 1
         mockNotificationStrategy.sendNotification(
-                eq(TrackLoggerDataProviderCoordinator.NotificationType.TIMING_START_TRIGGER_FIRED));
+                eq(DataProviderCoordinator.NotificationType.TIMING_START_TRIGGER_FIRED));
         expectLastCall();
         
         // receiveData(LocationData) - 5
@@ -170,9 +182,13 @@ public class TrackLoggerDataProviderCoordinatorTest {
         
         // stop()
         mockNotificationStrategy.sendNotification(
-                eq(TrackLoggerDataProviderCoordinator.NotificationType.STOPPING));
+                eq(DataProviderCoordinator.NotificationType.STOPPING));
+        expectLastCall();
+        mockAccelDataProvider.removeSynchronousListener(notNull(DataListener.class));
         expectLastCall();
         mockLocationDataProvider.removeSynchronousListener(notNull(DataListener.class));
+        expectLastCall();
+        mockEcuDataProvider.removeSynchronousListener(notNull(DataListener.class));
         expectLastCall();
         mockTimingDataProvider.removeSynchronousListener(notNull(DataListener.class));
         expectLastCall();
@@ -185,7 +201,7 @@ public class TrackLoggerDataProviderCoordinatorTest {
         mockEcuDataProvider.stop();
         expectLastCall();
         mockNotificationStrategy.sendNotification(
-                eq(TrackLoggerDataProviderCoordinator.NotificationType.STOPPED));
+                eq(DataProviderCoordinator.NotificationType.STOPPED));
         expectLastCall();
         
         
@@ -195,7 +211,7 @@ public class TrackLoggerDataProviderCoordinatorTest {
         
         // start()
         dpc.start();
-        
+             
         // receiveData(LocationData) - 1
         locationListenerCapture.getValue().receiveData(locationDataBuilder.build());
         
@@ -206,7 +222,6 @@ public class TrackLoggerDataProviderCoordinatorTest {
         locationListenerCapture.getValue().receiveData(locationDataBuilder.build());
         
         // startLogging()
-        dpc.startLogging();
         assertEquals(1, dpc.getSessionCount());
         
         // receiveData(LocationData) - 4
@@ -220,7 +235,7 @@ public class TrackLoggerDataProviderCoordinatorTest {
         // receiveData(LocationData) - 5
         locationListenerCapture.getValue().receiveData(locationDataBuilder.build());
         Thread.sleep(500l);  // Wait for asynchronous logging
-        assertEquals(2, dpc.getLogEntries().size());
+        assertEquals(3, dpc.getLogEntries().size());
         
         // receiveData(TimingData) - 2
         timingDataBuilder.setLap(1);

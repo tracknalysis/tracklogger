@@ -119,40 +119,17 @@ public class AndroidTrackLoggerDataProviderCoordinator extends
         }
     }
     
+    /**
+     * Starting the location manager after the coordinator is ready so we don't emit timing events
+     * that don't get logged.
+     */
     @Override
-    protected void preStart() {
+    protected void postStart() {
         locationManager.start();
     }
     
-    @Override
-    protected void postStop() {
-        locationManager.stop();
-    }
-    
     protected void cleanup() {
-        try {
-            if (accelDataProvider != null) {
-                accelDataProvider.stop();
-            }
-        } catch (Exception e) {
-            LOG.error("Error cleaning up accel data provider.", e);
-        }
-        
-        try {
-            if (locationDataProvider != null) {
-                locationDataProvider.stop();
-            }
-        } catch (Exception e) {
-            LOG.error("Error cleaning up location data provider.", e);
-        }
-        
-        try {
-            if (timingDataProvider != null) {
-                timingDataProvider.stop();
-            }
-        } catch (Exception e) {
-            LOG.error("Error cleaning up timing data provider.", e);
-        }
+        super.cleanup();
         
         try {
             if (locationManager != null) {
@@ -164,15 +141,7 @@ public class AndroidTrackLoggerDataProviderCoordinator extends
             silentSocketManagerDisconnect(gpsSocketManager);
         }
         
-        try {
-            if (ecuDataProvider != null) {
-                ecuDataProvider.stop();
-            }
-        } catch (Exception e) {
-            LOG.error("Error cleaning up ecu data provider.", e);
-        } finally {
-            silentSocketManagerDisconnect(ecuSocketManager);
-        }
+        silentSocketManagerDisconnect(ecuSocketManager);
     }
     
     protected void silentSocketManagerDisconnect(SocketManager socketManager) {
@@ -183,6 +152,10 @@ public class AndroidTrackLoggerDataProviderCoordinator extends
                 LOG.warn("Error disconnecting BlueTooth connection with manager.", e1);
             }
         }
+    }
+    
+    protected Context getContext() {
+        return context;
     }
     
     @Override

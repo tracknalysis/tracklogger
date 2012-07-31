@@ -18,9 +18,7 @@ package net.tracknalysis.tracklogger.dataprovider;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 
@@ -54,171 +52,78 @@ public abstract class TrackLoggerDataProviderCoordinator extends
     private final SimpleDateFormat sqlDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
     private final BlockingQueue<Object> dataQueue = new ArrayBlockingQueue<Object>(100);
     
-    /**
-     * Enumeration of notification types that this implementation may generate.
-     */
-    public static enum NotificationType implements net.tracknalysis.common.notification.NotificationType {
-        /**
-         * Triggered when the the startup of the coordinator is begins.
-         */
-        STARTING,
-        /**
-         * Triggered when the startup of the coordinator is complete.
-         */
-        STARTED,
-        /**
-         * Triggered when the startup of the coordinator fails.  The notification contains the exception that
-         * triggered the failure.
-         */
-        START_FAILED,
-        /**
-         * Triggered when an update from a subordinate data provider arrives and the coordinator is not
-         * yet ready to start logging.  The notification contains an array of {@link LocationData}, {@link AccelData},
-         * and {@link EcuData}.
-         */
-        READY_PROGRESS,
-        /**
-         * Triggered when an all subordinate data providers are ready and logging can start. 
-         */
-        READY,
-        /**
-         * Triggered when the condition for the start of timing is met.
-         */
-        TIMING_START_TRIGGER_FIRED,
-        /**
-         * Triggered when an update to timing data becomes available.  The notification contains
-         * the new {@link TimingData}.
-         */
-        TIMING_DATA_UPDATE,
-        /**
-         * Triggered when there is a failure recording logged data.
-         */
-        LOGGING_FAILED,
-        /**
-         * Triggered when the the shutdown of the coordinator is begins.
-         */
-        STOPPING,
-        /**
-         * Triggered when the the shutdown of the coordinator completes.
-         */
-        STOPPED,
-        /**
-         * Triggered when the the shutdown of the coordinator fails.  The notification contains the exception that
-         * triggered the failure.
-         */
-        STOP_FAILED;
-        
-        private static final Map<Integer, NotificationType> intToTypeMap = new HashMap<Integer, NotificationType>();
-        
-        static {
-            for (NotificationType type : NotificationType.values()) {
-                intToTypeMap.put(type.ordinal(), type);
-            }
-        }
-
-        public static NotificationType fromInt(int i) {
-            NotificationType type = intToTypeMap.get(Integer.valueOf(i));
-            if (type == null) {
-                throw new IllegalArgumentException(
-                        "No enum const " + i);
-            }
-            return type;
-        }
-
-        @Override
-        public int getNotificationTypeId() {
-            return ordinal();
-        }
-    }
-
     public TrackLoggerDataProviderCoordinator(NotificationStrategy notificationStrategy) {
         this.notificationStrategy = notificationStrategy;
     }
     
     @Override
     public final synchronized void start() {
-        notificationStrategy.sendNotification(NotificationType.STARTING);
+        notificationStrategy.sendNotification(DataProviderCoordinator.NotificationType.STARTING);
         preStart();
         try {
             ready = false;
+            
+            loggingStartTriggerFired = false;
+            
+            if (sessionId == 0) {
+                currentSessionId = createSession();
+            } else {
+                currentSessionId = sessionId;
+                
+                openSession(sessionId);
+            }
+            
+            dataQueue.clear();
+            logThread = new LogThread();
+            logThread.start();
+            
+            logging = true;
+            
             super.start();
         } catch (Exception e) {
             LOG.error("Error during startup.", e);
-            notificationStrategy.sendNotification(NotificationType.START_FAILED, e);
+            notificationStrategy.sendNotification(DataProviderCoordinator.NotificationType.START_FAILED, e);
             
             try {
                 stop();
             } catch (Exception e2) {
-                LOG.warn("Error trying to cleanup after failed start.", e);
+                LOG.warn("Error trying to cleanup after failed start.", e2);
                 // Ignore
             }
         }
-        notificationStrategy.sendNotification(NotificationType.STARTED);
+        notificationStrategy.sendNotification(DataProviderCoordinator.NotificationType.STARTED);
     }
     
     @Override
     public final synchronized void stop() {
-        notificationStrategy.sendNotification(NotificationType.STOPPING);
+        notificationStrategy.sendNotification(DataProviderCoordinator.NotificationType.STOPPING);
         try {
             // Call super first so we stop receiving updates immediately.  Otherwise
             // if we shutdown logging first, the state gets out of whack because we
             // emit messages that logging is ready again, even though we are shutting down.
             super.stop();
-            stopLogging();
-            ready = false;
-        } catch (Exception e) {
-            LOG.error("Error during shutdown.", e);
-            notificationStrategy.sendNotification(NotificationType.STOP_FAILED, e);
-        }
-        postStop();
-        notificationStrategy.sendNotification(NotificationType.STOPPED);
-    }
-
-    public final boolean isReady() {
-        return ready && isRunning();
-    }
-    
-    public final synchronized void startLogging() {
-        if (!logging) {
-            if (ready && isRunning()) {
-                
-                loggingStartTriggerFired = false;
-                
-                if (sessionId == 0) {
-                    currentSessionId = createSession();
-                } else {
-                    currentSessionId = sessionId;
-                    
-                    openSession(sessionId);
-                }
-                
-                dataQueue.clear();
-                logThread = new LogThread();
-                logThread.start();
-                
-                logging = true;
-                
-            } else {
-                throw new IllegalStateException();
-            }
-        }
-    }
-    
-    public final synchronized void stopLogging() {
-        if (logging) {
+            
             logging = false;
             loggingStartTriggerFired = false;
             logThread.cancel();
             logThread = null;
+            
+            ready = false;
+        } catch (Exception e) {
+            LOG.error("Error during shutdown.", e);
+            notificationStrategy.sendNotification(DataProviderCoordinator.NotificationType.STOP_FAILED, e);
         }
+        postStop();
+        notificationStrategy.sendNotification(DataProviderCoordinator.NotificationType.STOPPED);
     }
     
-    public final boolean isLogging() {
-        return logging;
-    }
-    
+    @Override
     public final boolean isLoggingStartTriggerFired() {
         return loggingStartTriggerFired;
+    }
+    
+    protected final boolean isLogging() {
+        return logging;
     }
     
     public final synchronized void setSessionId(int sessionId) {
@@ -227,6 +132,11 @@ public abstract class TrackLoggerDataProviderCoordinator extends
         } else {
             this.sessionId = sessionId;
         }
+    }
+    
+    @Override
+    public final boolean isReady() {
+        return ready && isRunning();
     }
     
     protected final void handleReady() {
@@ -242,14 +152,18 @@ public abstract class TrackLoggerDataProviderCoordinator extends
                 ready = true;
                 
                 notificationStrategy.sendNotification(
-                        NotificationType.READY_PROGRESS, new Object[] {
+                        DataProviderCoordinator.NotificationType.READY_PROGRESS, new Object[] {
                                 locationData, accelData, ecuData});
                 
+                // Start only once everyone is ready so we don't get timing events before
+                // the other data providers are ready.
+                getTimingDataProvider().start();
+                
                 notificationStrategy.sendNotification(
-                        NotificationType.READY);
+                        DataProviderCoordinator.NotificationType.READY);
             } else if (!ready) {
                 notificationStrategy.sendNotification(
-                        NotificationType.READY_PROGRESS, new Object[] {
+                        DataProviderCoordinator.NotificationType.READY_PROGRESS, new Object[] {
                                 locationData, accelData, ecuData });
             }
         }
@@ -261,7 +175,7 @@ public abstract class TrackLoggerDataProviderCoordinator extends
     }
     
     @Override
-    protected void handleUpdate(EcuData data) {
+    protected final synchronized void handleUpdate(EcuData data) {
         handleReady();
     }
     
@@ -297,7 +211,7 @@ public abstract class TrackLoggerDataProviderCoordinator extends
             
             if (!dataQueue.offer(logEntry)) {
                 LOG.error("No space on the data queue.  Discarding current data.");
-                notificationStrategy.sendNotification(NotificationType.LOGGING_FAILED);
+                notificationStrategy.sendNotification(DataProviderCoordinator.NotificationType.LOGGING_FAILED);
             }
         }
         
@@ -312,19 +226,21 @@ public abstract class TrackLoggerDataProviderCoordinator extends
     }
     
     @Override
-    protected final void handleUpdate(TimingData timingData) {
+    protected final synchronized void handleUpdate(TimingData timingData) {
+        handleReady();
+        
         if (ready && logging) {
             if (!loggingStartTriggerFired) {
                 // TODO This is split marker based.  Handle start based on configuration options for immediately, movement, etc.
                 LOG.debug("Log trigger start condition met.");
                 loggingStartTriggerFired = true;
-                notificationStrategy.sendNotification(NotificationType.TIMING_START_TRIGGER_FIRED);
+                notificationStrategy.sendNotification(DataProviderCoordinator.NotificationType.TIMING_START_TRIGGER_FIRED);
             }
             
             if (loggingStartTriggerFired) {
                 if (!dataQueue.offer(timingData)) {
                     LOG.error("No space on the data queue.  Discarding current data.");
-                    notificationStrategy.sendNotification(NotificationType.LOGGING_FAILED);
+                    notificationStrategy.sendNotification(DataProviderCoordinator.NotificationType.LOGGING_FAILED);
                 }
             }
         }
@@ -360,6 +276,12 @@ public abstract class TrackLoggerDataProviderCoordinator extends
      * Hook to allow sub-classes to do extra initialization before the main startup.
      */
     protected void preStart() {
+    }
+    
+    /**
+     * Hook to allow sub-classes to do extra initialization after the main startup.
+     */
+    protected void postStart() {
     }
     
     /**
@@ -428,7 +350,7 @@ public abstract class TrackLoggerDataProviderCoordinator extends
                 
                 if (run) {
                     LOG.error(logMessage, e);
-                    notificationStrategy.sendNotification(NotificationType.LOGGING_FAILED);
+                    notificationStrategy.sendNotification(DataProviderCoordinator.NotificationType.LOGGING_FAILED);
                 } else {
                     LOG.info(logMessage, e);
                 }

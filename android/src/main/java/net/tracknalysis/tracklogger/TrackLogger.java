@@ -25,10 +25,18 @@ import net.tracknalysis.tracklogger.config.ConfigurationChangeListener;
 import net.tracknalysis.tracklogger.config.ConfigurationFactory;
 import net.tracknalysis.tracklogger.config.DefaultConfigurationFactory;
 import net.tracknalysis.tracklogger.config.android.AndroidConfiguration;
+import net.tracknalysis.tracklogger.dataprovider.android.DataProviderCoordinatorFactory;
+import net.tracknalysis.tracklogger.dataprovider.android.DefaultDataProviderCoordinatorFactory;
+import net.tracknalysis.tracklogger.dataprovider.android.DataProviderCoordinatorFactoryService;
+import net.tracknalysis.tracklogger.dataprovider.android.DataProviderCoordinatorFactoryService.LocalBinder;
 
 import de.mindpipe.android.logging.log4j.LogConfigurator;
 import android.app.Application;
+import android.content.ComponentName;
+import android.content.Intent;
+import android.content.ServiceConnection;
 import android.os.Environment;
+import android.os.IBinder;
 
 /**
  * @author David Valeri
@@ -40,6 +48,8 @@ public class TrackLogger extends Application implements ConfigurationChangeListe
     public static final String SESSION_EXPORT_ACTION = TrackLogger.class
             .getPackage().getName() + "." + "SESSION_EXPORT_ACTION";
     
+    private ServiceConnection serviceConnection;
+    
     @Override
     public void onCreate() {
         super.onCreate();
@@ -49,6 +59,36 @@ public class TrackLogger extends Application implements ConfigurationChangeListe
         
         configureLogging(configuration);
         configuration.addConfigurationChangeListenerListener(this);
+        
+        startService(new Intent(this, DataProviderCoordinatorFactoryService.class));
+        
+        serviceConnection = new ServiceConnection() {
+
+            @Override
+            public void onServiceConnected(ComponentName name, IBinder service) {
+                LocalBinder binder = (LocalBinder) service;
+                DataProviderCoordinatorFactory
+                        .setInstance(new DefaultDataProviderCoordinatorFactory(
+                                binder.getService()));
+            }
+
+            @Override
+            public void onServiceDisconnected(ComponentName arg0) {
+                DataProviderCoordinatorFactory
+                        .setInstance(null);
+            }
+        };
+        
+        bindService(new Intent(this,
+                DataProviderCoordinatorFactoryService.class),
+                serviceConnection, BIND_NOT_FOREGROUND);
+    }
+    
+    @Override
+    public void onTerminate() {
+        unbindService(serviceConnection);
+        stopService(new Intent(this, DataProviderCoordinatorFactoryService.class));
+        super.onTerminate();
     }
 
     @Override

@@ -18,42 +18,36 @@ package net.tracknalysis.tracklogger.dataprovider.android;
 import android.bluetooth.BluetoothAdapter;
 import android.content.Context;
 import android.os.Handler;
-import net.tracknalysis.tracklogger.dataprovider.TrackLoggerDataProviderCoordinator;
+import net.tracknalysis.tracklogger.dataprovider.DataProviderCoordinator;
 
 /**
  * A simple abstract factory to enable testing of activities.
  *
  * @author David Valeri
  */
-public abstract class TrackLoggerDataProviderCoordinatorFactory {
+public abstract class DataProviderCoordinatorFactory {
     
-    private static TrackLoggerDataProviderCoordinatorFactory instance;
+    private static DataProviderCoordinatorFactory instance;
     
-    public static synchronized void setInstance(TrackLoggerDataProviderCoordinatorFactory instance) {
+    public static synchronized void setInstance(DataProviderCoordinatorFactory instance) {
         if (instance == null) {
             throw new NullPointerException("instance cannot be null.");
         }
         
-        TrackLoggerDataProviderCoordinatorFactory.instance = instance;
+        DataProviderCoordinatorFactory.instance = instance;
     }
     
-    public static synchronized TrackLoggerDataProviderCoordinatorFactory getInstance() {
+    public static synchronized DataProviderCoordinatorFactory getInstance() {
         if (instance == null) {
-            instance = new DefaultTrackLoggerDataProviderCoordinatorFactory();
+            throw new IllegalStateException("No factory instance is configured.");
         }
         return instance;
     }
     
-    public abstract TrackLoggerDataProviderCoordinator getTrackLoggerDataProviderCoordinator(
+    public abstract DataProviderCoordinator createDataProviderCoordinator(
             Handler handler, Context context, BluetoothAdapter btAdapter);
     
-    public static final class DefaultTrackLoggerDataProviderCoordinatorFactory
-            extends TrackLoggerDataProviderCoordinatorFactory {
-
-        @Override
-        public TrackLoggerDataProviderCoordinator getTrackLoggerDataProviderCoordinator(
-                Handler handler, Context context, BluetoothAdapter btAdapter) {
-            return new AndroidTrackLoggerDataProviderCoordinator(handler, context, btAdapter);
-        }
-    }
+    public abstract DataProviderCoordinator getDataProviderCoordinator();
+    
+    public abstract void removeDataProviderCoordinator();
 }

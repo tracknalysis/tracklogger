@@ -6,6 +6,9 @@
     <string name="error_bt_not_supported">No Bluetooth capabilities detected on this device.</string>
     <string name="error_bt_not_enabled">Bluetooth is not enabled.  Bluetooth is required for this application to function.</string>
     
+    <string name="log_notification_title">TrackLogger</string>
+    <string name="log_notification_message">Logging...</string>
+    
     <string name="log_elapsed_lap_time_title">Elapsed Time</string>
     <string name="log_lap_number_title">Lap</string>
     <string name="log_elapsed_session_time_title">Session Time</string>

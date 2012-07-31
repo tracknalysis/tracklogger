@@ -7,6 +7,9 @@ target
 .settings
 .checkstyle
 *.log
+*.class
 
 android/bin
 android/gen
+android-test/bin
+android-test/gen

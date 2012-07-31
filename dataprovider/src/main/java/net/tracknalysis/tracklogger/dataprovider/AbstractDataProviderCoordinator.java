@@ -15,10 +15,15 @@
  */
 package net.tracknalysis.tracklogger.dataprovider;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * @author David Valeri
  */
 public abstract class AbstractDataProviderCoordinator implements DataProviderCoordinator {
+    
+    private static final Logger LOG = LoggerFactory.getLogger(AbstractDataProviderCoordinator.class);
     
     private volatile boolean running;
     
@@ -73,27 +78,14 @@ public abstract class AbstractDataProviderCoordinator implements DataProviderCoo
         if (getEcuDataProvider() != null) {
             getEcuDataProvider().start();
         }
-        getTimingDataProvider().start();
         
         running = true;
     }
     
     @Override
     public synchronized void stop() {
-        getLocationDataProvider().removeSynchronousListener(locationListener);
-        getAccelDataProvider().removeSynchronousListener(accelListener);
-        if (isEcuDataProviderEnabled()) {
-            getEcuDataProvider().removeSynchronousListener(ecuListener);
-        }
-        getTimingDataProvider().removeSynchronousListener(timingListener);
-        getLocationDataProvider().stop();
-        getTimingDataProvider().stop();
-        getAccelDataProvider().stop();
-        if (getEcuDataProvider() != null) {
-            getEcuDataProvider().stop();
-        }
-        
-        running = false;
+       cleanup();
+       running = false;
     }
     
     @Override
@@ -101,36 +93,82 @@ public abstract class AbstractDataProviderCoordinator implements DataProviderCoo
         return running;
     }
     
+    @Override
     public final LocationData getCurrentLocationData() {
         return getLocationDataProvider().getCurrentData();
     }
     
+    @Override
     public final double getLocationDataUpdateFrequency() {
         return getLocationDataProvider().getUpdateFrequency();
     }
     
+    @Override
     public final AccelData getCurrentAccelData() {
         return getAccelDataProvider().getCurrentData();
     }
     
+    @Override
     public final double getAccelDataUpdateFrequency() {
         return getAccelDataProvider().getUpdateFrequency();
     }
     
+    @Override
     public final EcuData getCurrentEcuData() {
         return isEcuDataProviderEnabled() ? getEcuDataProvider().getCurrentData() : null;
     }
     
+    @Override
     public final double getEcuDataUpdateFrequency() {
         return isEcuDataProviderEnabled() ? getEcuDataProvider().getUpdateFrequency() : 0d;
     }
     
+    @Override
     public final TimingData getCurrentTimingData() {
         return getTimingDataProvider().getCurrentData();
     }
     
     protected final boolean isEcuDataProviderEnabled() {
         return getEcuDataProvider() != null;
+    }
+    
+    protected void cleanup() {
+        
+        try {
+            if (getLocationDataProvider() != null) {
+                getLocationDataProvider().removeSynchronousListener(locationListener);
+                getLocationDataProvider().stop();
+            }
+        } catch (Exception e) {
+            LOG.error("Error cleaning up location data provider.", e);
+        }
+        
+        try {
+            if (getTimingDataProvider() != null) {
+                getTimingDataProvider().removeSynchronousListener(timingListener);
+                getTimingDataProvider().stop();
+            }
+        } catch (Exception e) {
+            LOG.error("Error cleaning up timing data provider.", e);
+        }
+        
+        try {
+            if (getAccelDataProvider() != null) {
+                getAccelDataProvider().removeSynchronousListener(accelListener);
+                getAccelDataProvider().stop();
+            }
+        } catch (Exception e) {
+            LOG.error("Error cleaning up accel data provider.", e);
+        }
+        
+        try {
+            if (getEcuDataProvider() != null) {
+                getEcuDataProvider().removeSynchronousListener(ecuListener);
+                getEcuDataProvider().stop();
+            }
+        } catch (Exception e) {
+            LOG.error("Error cleaning up ecu data provider.", e);
+        }
     }
     
     /**

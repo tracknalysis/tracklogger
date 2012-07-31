@@ -21,6 +21,7 @@
       android:exported="false">
       <grant-uri-permission android:pathPattern=".*" />
     </provider>
+    
     <activity android:name=".activity.HomeActivity">
       <intent-filter>
         <action android:name="android.intent.action.MAIN" />
@@ -38,6 +39,8 @@
       </intent-filter>  
     </activity>
     <activity android:name=".activity.ConfigActivity"/>
+    
+    <service android:name=".dataprovider.android.DataProviderCoordinatorFactoryService" android:exported="false"/>
   </application>
   
   
