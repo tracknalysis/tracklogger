@@ -22,14 +22,22 @@ import java.io.OutputStreamWriter;
 import java.io.UnsupportedEncodingException;
 import java.io.Writer;
 
+import net.tracknalysis.common.notification.NotificationStrategy;
+
 /**
  * @author David Valeri
  */
 public abstract class AbstractSessionToTrackLoggerCsvExporter extends
         AbstractSessionToFileExporter {
 
-    public AbstractSessionToTrackLoggerCsvExporter(File exportDir) {
-        super(exportDir);
+    public AbstractSessionToTrackLoggerCsvExporter(File exportDir,
+            NotificationStrategy<SessionExporterNotificationType> notificationStrategy) {
+        super(exportDir, notificationStrategy);
+    }
+    
+    @Override
+    public String getMimeType() {
+        return "text/csv";
     }
 
     @Override

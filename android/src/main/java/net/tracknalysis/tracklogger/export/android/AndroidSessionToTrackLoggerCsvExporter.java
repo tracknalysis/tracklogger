@@ -15,6 +15,9 @@
  */
 package net.tracknalysis.tracklogger.export.android;
 
+import static net.tracknalysis.tracklogger.export.android.AndroidSessionExporterHelper.*;
+
+import java.io.File;
 import java.io.IOException;
 import java.io.Writer;
 import java.util.Date;
@@ -22,7 +25,10 @@ import java.util.Date;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import net.tracknalysis.common.notification.NotificationStrategy;
+import net.tracknalysis.tracklogger.config.ConfigurationFactory;
 import net.tracknalysis.tracklogger.export.AbstractSessionToTrackLoggerCsvExporter;
+import net.tracknalysis.tracklogger.export.ExportProgress;
 import net.tracknalysis.tracklogger.export.SessionExporter;
 import net.tracknalysis.tracklogger.provider.TrackLoggerData;
 import android.content.ContentResolver;
@@ -30,6 +36,8 @@ import android.content.Context;
 import android.database.Cursor;
 
 /**
+ * Exports to a flat CSV file using the TrackLogger v1 CSV format.
+ *
  * @author David Valeri
  */
 public class AndroidSessionToTrackLoggerCsvExporter extends AbstractSessionToTrackLoggerCsvExporter {
@@ -38,8 +46,11 @@ public class AndroidSessionToTrackLoggerCsvExporter extends AbstractSessionToTra
     
     private Context context;
 
-    public AndroidSessionToTrackLoggerCsvExporter(Context context) {
-        super(null);
+    public AndroidSessionToTrackLoggerCsvExporter(Context context,
+            NotificationStrategy<SessionExporterNotificationType> notificationStrategy) {
+        super(
+                new File(ConfigurationFactory.getInstance().getConfiguration().getDataDirectory()),
+                notificationStrategy);
         this.context = context;
     }
     
@@ -144,7 +155,7 @@ public class AndroidSessionToTrackLoggerCsvExporter extends AbstractSessionToTra
                         .getLong(logEntrySynchColumnIndex);
                 
                 getNotificationStrategy().sendNotification(
-                        SessionExporter.NotificationType.EXPORT_PROGRESS,
+                        SessionExporter.SessionExporterNotificationType.EXPORT_PROGRESS,
                         new ExportProgress(logEntryCursor.getPosition(), recordCount));
             }
             
@@ -165,29 +176,18 @@ public class AndroidSessionToTrackLoggerCsvExporter extends AbstractSessionToTra
                         timingEntryCursor.getPosition());
             }
             
-            int lap = 1;
-            int splitIndex = 0;
+            int lap = timingEntryCursor
+                    .getInt(timingEntryCursor
+                            .getColumnIndex(TrackLoggerData.TimingEntry.COLUMN_NAME_LAP));
+            int splitIndex = timingEntryCursor
+                    .getInt(timingEntryCursor
+                            .getColumnIndex(TrackLoggerData.TimingEntry.COLUMN_NAME_SPLIT_INDEX));
             long timingCaptureTimestamp = timingEntryCursor
                     .getLong(timingCaptureTimestampColumnIndex);
-            
-            // An entry represents the end of a lap/segment so we want to be one ahead in the timing data
-            // so that the log data will catch up to it as we iterate.
-            timingEntryCursor.move(1);
             
             // Until we run out of log data
             while (!logEntryCursor.isAfterLast()) {
 
-                if (!timingEntryCursor.isAfterLast()) {
-                    lap = timingEntryCursor
-                            .getInt(timingEntryCursor
-                                    .getColumnIndex(TrackLoggerData.TimingEntry.COLUMN_NAME_LAP));
-                    splitIndex = timingEntryCursor
-                            .getInt(timingEntryCursor
-                                    .getColumnIndex(TrackLoggerData.TimingEntry.COLUMN_NAME_SPLIT_INDEX));
-                    timingCaptureTimestamp = timingEntryCursor
-                            .getLong(timingCaptureTimestampColumnIndex);
-                }
-                
                 logSynchTimestamp = logEntryCursor
                         .getLong(logEntrySynchColumnIndex);
 
@@ -230,17 +230,27 @@ public class AndroidSessionToTrackLoggerCsvExporter extends AbstractSessionToTra
 
                 // This entry represents a split/segment or lap event so we are now waiting for the next event
                 if (logSynchTimestamp == timingSynchTimestamp) {
-                    if (timingEntryCursor.move(1)) {
+                    timingEntryCursor.move(1);
+                    if (!timingEntryCursor.isAfterLast()) {
                         timingSynchTimestamp = timingEntryCursor
                                 .getLong(timingEntrySynchColumnIndex);
+                        
+                        lap = timingEntryCursor
+                                .getInt(timingEntryCursor
+                                        .getColumnIndex(TrackLoggerData.TimingEntry.COLUMN_NAME_LAP));
+                        splitIndex = timingEntryCursor
+                                .getInt(timingEntryCursor
+                                        .getColumnIndex(TrackLoggerData.TimingEntry.COLUMN_NAME_SPLIT_INDEX));
+                        timingCaptureTimestamp = timingEntryCursor
+                                .getLong(timingCaptureTimestampColumnIndex);
+                    } else {
+                        // TODO figure out what the proper lap and split index are for whatever would come next
                     }
                 }
                 
                 logEntryCursor.move(1);
 
-                getNotificationStrategy().sendNotification(
-                        SessionExporter.NotificationType.EXPORT_PROGRESS,
-                        new ExportProgress(logEntryCursor.getPosition(), recordCount));
+                sendExportProgressNotification(logEntryCursor.getPosition(), recordCount);
             }
         } finally {
             if (timingEntryCursor != null) {
@@ -252,47 +262,10 @@ public class AndroidSessionToTrackLoggerCsvExporter extends AbstractSessionToTra
             }
         }
     }
-    
-    protected Double getDoubleOrNull(int columnIndex, Cursor cursor) {
-        return cursor.isNull(columnIndex) ? null : cursor.getDouble(columnIndex);
-    }
-    
-    protected Float getFloatOrNull(int columnIndex, Cursor cursor) {
-        return cursor.isNull(columnIndex) ? null : cursor.getFloat(columnIndex);
-    }
-    
-    protected Integer getIntegerOrNull(int columnIndex, Cursor cursor) {
-        return cursor.isNull(columnIndex) ? null : cursor.getInt(columnIndex);
-    }
-    
-    protected Long getLongOrNull(int columnIndex, Cursor cursor) {
-        return cursor.isNull(columnIndex) ? null : cursor.getLong(columnIndex);
-    }
 
     @Override
     protected Date getSessionStartTime(int sessionId) {
         ContentResolver cr = context.getContentResolver();
-        Cursor sessionCursor = null;
-        
-        try {
-            sessionCursor = cr.query(TrackLoggerData.Session.CONTENT_URI,
-                    new String[] {TrackLoggerData.Session.COLUMN_NAME_START_DATE}, 
-                    TrackLoggerData.Session._ID + "= ?",
-                    new String[] {Integer.toString(sessionId)},
-                    null);
-        
-            if (!sessionCursor.moveToFirst()) {
-                LOG.error("No session found for session ID '{}'.", sessionId);
-                throw new IllegalStateException("No session found for ID " + sessionId);
-            }
-            
-            return new Date(
-                    sessionCursor.getLong(sessionCursor
-                            .getColumnIndex(TrackLoggerData.Session.COLUMN_NAME_START_DATE)));
-        } finally {
-            if (sessionCursor != null) {
-                sessionCursor.close();
-            }
-        }
+        return AndroidSessionExporterHelper.getSessionStartTime(sessionId, cr, LOG);
     }
 }

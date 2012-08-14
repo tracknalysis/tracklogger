@@ -17,8 +17,9 @@ package net.tracknalysis.tracklogger.dataprovider.android;
 
 import android.bluetooth.BluetoothAdapter;
 import android.content.Context;
-import android.os.Handler;
+import net.tracknalysis.common.notification.NotificationStrategy;
 import net.tracknalysis.tracklogger.dataprovider.DataProviderCoordinator;
+import net.tracknalysis.tracklogger.dataprovider.DataProviderCoordinator.NotificationType;
 
 /**
  * A simple abstract factory to enable testing of activities.
@@ -39,15 +40,13 @@ public abstract class DataProviderCoordinatorFactory {
     
     public static synchronized DataProviderCoordinatorFactory getInstance() {
         if (instance == null) {
-            throw new IllegalStateException("No factory instance is configured.");
+            instance = new ServiceBasedDataProviderCoordinatorFactory();
         }
         return instance;
     }
     
     public abstract DataProviderCoordinator createDataProviderCoordinator(
-            Handler handler, Context context, BluetoothAdapter btAdapter);
-    
-    public abstract DataProviderCoordinator getDataProviderCoordinator();
-    
-    public abstract void removeDataProviderCoordinator();
+            DataProviderCoordinatorService dataProviderCoordinatorService,
+            NotificationStrategy<NotificationType> notificationStrategy,
+            Context context, BluetoothAdapter btAdapter);
 }

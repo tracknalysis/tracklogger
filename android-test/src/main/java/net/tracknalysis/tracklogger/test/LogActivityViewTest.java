@@ -19,10 +19,13 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 
-import net.tracknalysis.common.android.notification.AndroidNotificationStrategy;
+import org.apache.log4j.Level;
+
 import net.tracknalysis.common.notification.NotificationStrategy;
 import net.tracknalysis.tracklogger.R;
 import net.tracknalysis.tracklogger.activity.LogActivity;
+import net.tracknalysis.tracklogger.config.Configuration;
+import net.tracknalysis.tracklogger.config.ConfigurationFactory;
 import net.tracknalysis.tracklogger.dataprovider.AccelData;
 import net.tracknalysis.tracklogger.dataprovider.DataProviderCoordinator;
 import net.tracknalysis.tracklogger.dataprovider.EcuData;
@@ -32,19 +35,22 @@ import net.tracknalysis.tracklogger.dataprovider.LocationData.LocationDataBuilde
 import net.tracknalysis.tracklogger.dataprovider.TimingData;
 import net.tracknalysis.tracklogger.dataprovider.TimingData.TimingDataBuilder;
 import net.tracknalysis.tracklogger.dataprovider.android.DataProviderCoordinatorFactory;
+import net.tracknalysis.tracklogger.dataprovider.android.DataProviderCoordinatorService;
 import android.app.Dialog;
 import android.bluetooth.BluetoothAdapter;
 import android.content.Context;
-import android.os.Handler;
 import android.test.ActivityInstrumentationTestCase2;
 import android.widget.TextView;
 
 /**
+ * Tests the log activity views with a mock {@link DataProviderCoordinator} instance for fine grained unit testing.
  * @author David Valeri
  */
-public class LogActivityTest extends ActivityInstrumentationTestCase2<LogActivity> {
+public class LogActivityViewTest extends ActivityInstrumentationTestCase2<LogActivity> {
     
-    private NotificationStrategy notificationStrategy;
+    private Configuration configuration;
+    
+    private NotificationStrategy<DataProviderCoordinator.NotificationType> notificationStrategy;
     private boolean started;
     private LocationData locationData;
     private AccelData accelData;
@@ -63,7 +69,7 @@ public class LogActivityTest extends ActivityInstrumentationTestCase2<LogActivit
     private TextView lastLapTime;
     private TextView lastLapTimeDelta;
     
-    public LogActivityTest() {
+    public LogActivityViewTest() {
         super(LogActivity.class);
     }
     
@@ -71,36 +77,42 @@ public class LogActivityTest extends ActivityInstrumentationTestCase2<LogActivit
     protected void setUp() throws Exception {
         super.setUp();
         
+        configuration = ConfigurationFactory.getInstance().getConfiguration();
+        configuration.setRootLogLevel(Level.INFO);
+        configuration.setLogToFile(false);
+        
         DataProviderCoordinatorFactory.setInstance(
                 new DataProviderCoordinatorFactory() {
-
+                    
                     @Override
                     public DataProviderCoordinator createDataProviderCoordinator(
-                            Handler handler, Context context,
-                            BluetoothAdapter btAdapter) {
-                        LogActivityTest.this.notificationStrategy = new AndroidNotificationStrategy(handler);
+                            DataProviderCoordinatorService dataProviderCoordinatorService,
+                            NotificationStrategy<DataProviderCoordinator.NotificationType> notificationStrategy,
+                            Context context, BluetoothAdapter btAdapter) {
+                        
+                        LogActivityViewTest.this.notificationStrategy = notificationStrategy;
                         
                         return new DataProviderCoordinator() {
 
                             @Override
                             public void start() {
-                                LogActivityTest.this.started = true;
+                                LogActivityViewTest.this.started = true;
                             }
 
                             @Override
                             public void stop() {
-                                LogActivityTest.this.started = false;
+                                LogActivityViewTest.this.started = false;
                                 
                             }
 
                             @Override
                             public boolean isRunning() {
-                                return LogActivityTest.this.started;
+                                return LogActivityViewTest.this.started;
                             }
 
                             @Override
                             public LocationData getCurrentLocationData() {
-                                return LogActivityTest.this.locationData;
+                                return LogActivityViewTest.this.locationData;
                             }
 
                             @Override
@@ -110,7 +122,7 @@ public class LogActivityTest extends ActivityInstrumentationTestCase2<LogActivit
 
                             @Override
                             public AccelData getCurrentAccelData() {
-                                return LogActivityTest.this.accelData;
+                                return LogActivityViewTest.this.accelData;
                             }
 
                             @Override
@@ -120,7 +132,7 @@ public class LogActivityTest extends ActivityInstrumentationTestCase2<LogActivit
 
                             @Override
                             public EcuData getCurrentEcuData() {
-                                return LogActivityTest.this.ecuData;
+                                return LogActivityViewTest.this.ecuData;
                             }
 
                             @Override
@@ -130,7 +142,7 @@ public class LogActivityTest extends ActivityInstrumentationTestCase2<LogActivit
 
                             @Override
                             public TimingData getCurrentTimingData() {
-                                return LogActivityTest.this.timingData;
+                                return LogActivityViewTest.this.timingData;
                             }
 
                             @Override
@@ -141,23 +153,22 @@ public class LogActivityTest extends ActivityInstrumentationTestCase2<LogActivit
                             @Override
                             public boolean isReady() {
                                 return false;
+                            }
+
+                            @Override
+                            public void startAsynch() {
+                                start();
                             } 
                         };
-                    }
-
-                    @Override
-                    public DataProviderCoordinator getDataProviderCoordinator() {
-                        return null;
-                    }
-
-                    @Override
-                    public void removeDataProviderCoordinator() {                       
                     }
         });
     }
     
     public void testDefaultView() throws Throwable {
-        LogActivity logActivity = getActivity();
+        
+        configuration.setLogLayoutId(R.layout.log_default);
+        
+        final LogActivity logActivity = getActivity();
         initializeUiFields(logActivity);
         
         LocationDataBuilder locBuilder = new LocationDataBuilder();
@@ -199,9 +210,9 @@ public class LogActivityTest extends ActivityInstrumentationTestCase2<LogActivit
             
             @Override
             public void run() {
-                assertEquals("OK", locationStatus.getText());
-                assertEquals("Waiting", accelStatus.getText());
-                assertEquals("Waiting", ecuStatus.getText());
+                assertEquals(logActivity.getText(R.string.log_wait_for_ready_text_ready), locationStatus.getText());
+                assertEquals(logActivity.getText(R.string.log_wait_for_ready_text_waiting), accelStatus.getText());
+                assertEquals(logActivity.getText(R.string.log_wait_for_ready_text_waiting), ecuStatus.getText());
                 assertTrue(getActivity().getInitDataProviderCoordinatorDialog().isShowing());
                 assertFalse(getActivity().getWaitingForStartTriggerDialog().isShowing());
             }
@@ -216,9 +227,9 @@ public class LogActivityTest extends ActivityInstrumentationTestCase2<LogActivit
             
             @Override
             public void run() {
-                assertEquals("OK", locationStatus.getText());
-                assertEquals("OK", accelStatus.getText());
-                assertEquals("Waiting", ecuStatus.getText());
+                assertEquals(logActivity.getText(R.string.log_wait_for_ready_text_ready), locationStatus.getText());
+                assertEquals(logActivity.getText(R.string.log_wait_for_ready_text_ready), accelStatus.getText());
+                assertEquals(logActivity.getText(R.string.log_wait_for_ready_text_waiting), ecuStatus.getText());
                 assertTrue(getActivity().getInitDataProviderCoordinatorDialog().isShowing());
                 assertFalse(getActivity().getWaitingForStartTriggerDialog().isShowing());
             }
@@ -362,6 +373,22 @@ public class LogActivityTest extends ActivityInstrumentationTestCase2<LogActivit
                 assertEquals("3", lapNumber.getText());
             }
         });
+    }
+    
+    public void testInitDataProviderCoordinatorError() {
+        // TODO testInitDataProviderError
+    }
+    
+    public void testCancelDuringInitDataProviderCoordinator() {
+        // TODO testCancelDuringInitDataProviderCoordinator
+    }
+    
+    public void testLoggingError() {
+        // TODO testLoggingError
+    }
+    
+    public void testUserStopWithBackArrow() {
+        // TODO testUserStopWithBackArrow
     }
     
     protected void initializeUiFields(LogActivity logActivity) {

@@ -15,12 +15,11 @@
  */
 package net.tracknalysis.tracklogger.dataprovider;
 
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,6 +32,9 @@ import net.tracknalysis.tracklogger.dataprovider.EcuData;
 import net.tracknalysis.tracklogger.dataprovider.LocationData;
 
 /**
+ * Implements data collection and coordination logic, delegating to sub-classes only for persistence and
+ * creation of the {@link DataProvider}s being coordinated.
+ *
  * @author David Valeri
  */
 public abstract class TrackLoggerDataProviderCoordinator extends
@@ -41,7 +43,9 @@ public abstract class TrackLoggerDataProviderCoordinator extends
     private static final Logger LOG = LoggerFactory
             .getLogger(TrackLoggerDataProviderCoordinator.class);
     
-    private final NotificationStrategy notificationStrategy;
+    private static final AtomicInteger logThreadCounter = new AtomicInteger();
+    
+    private final NotificationStrategy<NotificationType> notificationStrategy;
     private volatile boolean ready;
     private volatile int sessionId;
     private volatile boolean logging;
@@ -49,72 +53,85 @@ public abstract class TrackLoggerDataProviderCoordinator extends
     private volatile boolean loggingStartTriggerFired;
     private LogThread logThread;
     
-    private final SimpleDateFormat sqlDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
     private final BlockingQueue<Object> dataQueue = new ArrayBlockingQueue<Object>(100);
+    private volatile int logEntriesOffered;
+    private volatile int timingEntriesOffered;
     
-    public TrackLoggerDataProviderCoordinator(NotificationStrategy notificationStrategy) {
+    public TrackLoggerDataProviderCoordinator(NotificationStrategy<NotificationType> notificationStrategy) {
         this.notificationStrategy = notificationStrategy;
     }
     
     @Override
     public final synchronized void start() {
-        notificationStrategy.sendNotification(DataProviderCoordinator.NotificationType.STARTING);
-        preStart();
-        try {
-            ready = false;
-            
-            loggingStartTriggerFired = false;
-            
-            if (sessionId == 0) {
-                currentSessionId = createSession();
-            } else {
-                currentSessionId = sessionId;
-                
-                openSession(sessionId);
-            }
-            
-            dataQueue.clear();
+        if (logThread == null) {
+            notificationStrategy.sendNotification(DataProviderCoordinator.NotificationType.STARTING);
             logThread = new LogThread();
-            logThread.start();
             
-            logging = true;
-            
-            super.start();
-        } catch (Exception e) {
-            LOG.error("Error during startup.", e);
-            notificationStrategy.sendNotification(DataProviderCoordinator.NotificationType.START_FAILED, e);
-            
+            preStart();
             try {
-                stop();
-            } catch (Exception e2) {
-                LOG.warn("Error trying to cleanup after failed start.", e2);
-                // Ignore
+                
+                if (sessionId == 0) {
+                    currentSessionId = createSession();
+                } else {
+                    currentSessionId = sessionId;
+                    
+                    openSession(sessionId);
+                }
+                
+                dataQueue.clear();
+                logEntriesOffered = 0;
+                timingEntriesOffered = 0;
+                
+                ready = false;
+                logThread.start();
+                loggingStartTriggerFired = false;
+                logging = true;
+                
+                super.start();
+                postStart();
+                notificationStrategy.sendNotification(DataProviderCoordinator.NotificationType.STARTED);
+            } catch (RuntimeException e) {
+                LOG.error("Error during startup.", e);
+                notificationStrategy.sendNotification(DataProviderCoordinator.NotificationType.START_FAILED, e);
+                
+                try {
+                    stop();
+                } catch (Exception e2) {
+                    LOG.warn("Error trying to cleanup after failed start.", e2);
+                    // Ignore
+                }
             }
         }
-        notificationStrategy.sendNotification(DataProviderCoordinator.NotificationType.STARTED);
     }
     
     @Override
     public final synchronized void stop() {
-        notificationStrategy.sendNotification(DataProviderCoordinator.NotificationType.STOPPING);
-        try {
-            // Call super first so we stop receiving updates immediately.  Otherwise
-            // if we shutdown logging first, the state gets out of whack because we
-            // emit messages that logging is ready again, even though we are shutting down.
-            super.stop();
-            
-            logging = false;
-            loggingStartTriggerFired = false;
-            logThread.cancel();
-            logThread = null;
-            
-            ready = false;
-        } catch (Exception e) {
-            LOG.error("Error during shutdown.", e);
-            notificationStrategy.sendNotification(DataProviderCoordinator.NotificationType.STOP_FAILED, e);
+        if (logThread != null) {
+            notificationStrategy.sendNotification(DataProviderCoordinator.NotificationType.STOPPING);
+            try {
+                // Call super first so we stop receiving updates immediately.  Otherwise
+                // if we shutdown logging first, the state gets out of whack because we
+                // emit messages that logging is ready again, even though we are shutting down.
+                super.stop();
+                
+                logging = false;
+                loggingStartTriggerFired = false;
+                logThread.cancel();
+                logThread = null;
+                ready = false;
+                
+                LOG.info(
+                        "Offered {} log entries and {} timing entries in total.",
+                        logEntriesOffered, timingEntriesOffered);
+                
+                postStop();
+                notificationStrategy.sendNotification(DataProviderCoordinator.NotificationType.STOPPED);
+            } catch (RuntimeException e) {
+                logThread = null;
+                LOG.error("Error during shutdown.", e);
+                notificationStrategy.sendNotification(DataProviderCoordinator.NotificationType.STOP_FAILED, e);
+            }
         }
-        postStop();
-        notificationStrategy.sendNotification(DataProviderCoordinator.NotificationType.STOPPED);
     }
     
     @Override
@@ -139,6 +156,10 @@ public abstract class TrackLoggerDataProviderCoordinator extends
         return ready && isRunning();
     }
     
+    public int getCurrentSessionId() {
+        return currentSessionId;
+    }
+
     protected final void handleReady() {
         if (!ready) {
         
@@ -212,6 +233,8 @@ public abstract class TrackLoggerDataProviderCoordinator extends
             if (!dataQueue.offer(logEntry)) {
                 LOG.error("No space on the data queue.  Discarding current data.");
                 notificationStrategy.sendNotification(DataProviderCoordinator.NotificationType.LOGGING_FAILED);
+            } else {
+                logEntriesOffered++;
             }
         }
         
@@ -234,13 +257,21 @@ public abstract class TrackLoggerDataProviderCoordinator extends
                 // TODO This is split marker based.  Handle start based on configuration options for immediately, movement, etc.
                 LOG.debug("Log trigger start condition met.");
                 loggingStartTriggerFired = true;
-                notificationStrategy.sendNotification(DataProviderCoordinator.NotificationType.TIMING_START_TRIGGER_FIRED);
+                notificationStrategy
+                        .sendNotification(DataProviderCoordinator.NotificationType.TIMING_START_TRIGGER_FIRED);
             }
             
             if (loggingStartTriggerFired) {
+                notificationStrategy
+                        .sendNotification(
+                                DataProviderCoordinator.NotificationType.TIMING_DATA_UPDATE,
+                                timingData);
+                
                 if (!dataQueue.offer(timingData)) {
                     LOG.error("No space on the data queue.  Discarding current data.");
                     notificationStrategy.sendNotification(DataProviderCoordinator.NotificationType.LOGGING_FAILED);
+                } else {
+                    timingEntriesOffered++;
                 }
             }
         }
@@ -290,10 +321,6 @@ public abstract class TrackLoggerDataProviderCoordinator extends
     protected void postStop() {
     }
     
-    protected final synchronized String formatAsSqlDate(Date date) {
-        return sqlDateFormat.format(date);
-    }
-    
     protected static final class LogEntry {
         public AccelData accelData;
         public LocationData locationData;
@@ -301,6 +328,13 @@ public abstract class TrackLoggerDataProviderCoordinator extends
     }
 
     private class LogThread extends GracefulShutdownThread {
+        
+        private int logEntriesWritten = 0;
+        private int timingEntriesWritten = 0;
+        
+        public LogThread() {
+            setName("TrackLoggerDataProviderCoordinator-LogThread-" + logThreadCounter.getAndIncrement());
+        }
         
         @Override
         public void run() {
@@ -325,11 +359,12 @@ public abstract class TrackLoggerDataProviderCoordinator extends
                             LogEntry logEntry = (LogEntry) o;
                             
                             storeLogEntry(currentSessionId, logEntry);
-                            
+                            logEntriesWritten++;
                         } else if (o instanceof TimingData) {
                             TimingData timingData = (TimingData) o;
                             
                             storeTimingEntry(currentSessionId, timingData);
+                            timingEntriesWritten++;
                         } else {
                             LOG.warn("Error while logging data.  Unknown data type {}.", o.getClass());
                         }
@@ -340,10 +375,16 @@ public abstract class TrackLoggerDataProviderCoordinator extends
                     if (numRead != 0 && LOG.isDebugEnabled()) {
                         long time = System.currentTimeMillis() - startTime;
                         LOG.debug(
-                                "Wrote {} entries in {}ms.  Avg. time per entry is {}ms.",
-                                new Object[] { numRead, time, time / numRead });
+                                "Wrote {} entries in {}ms.  Avg. time per entry in this cycle is {}ms.  "
+                                        + "Wrote {} timing entries and {} log entries in total.",
+                                new Object[] {numRead, time, time / numRead,
+                                        timingEntriesWritten, logEntriesWritten});
                     }
                 }
+                
+                LOG.info("Wrote {} timing entries and {} log entries in total.",
+                        timingEntriesWritten, logEntriesWritten);
+                
             } catch (Exception e) {
                 String logMessage = "Exception while logging data.  Data queue depth is '" + dataQueue.size()
                         + "' running is " + run + ".";

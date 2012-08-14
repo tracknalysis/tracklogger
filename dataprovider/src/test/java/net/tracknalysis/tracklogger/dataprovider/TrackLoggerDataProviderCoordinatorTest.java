@@ -22,6 +22,7 @@ import java.util.Arrays;
 
 import net.tracknalysis.common.notification.NotificationStrategy;
 import net.tracknalysis.tracklogger.dataprovider.AccelData.AccelDataBuilder;
+import net.tracknalysis.tracklogger.dataprovider.DataProviderCoordinator.NotificationType;
 import net.tracknalysis.tracklogger.dataprovider.EcuData.EcuDataBuilder;
 import net.tracknalysis.tracklogger.dataprovider.LocationData.LocationDataBuilder;
 import net.tracknalysis.tracklogger.dataprovider.TimingData.TimingDataBuilder;
@@ -37,12 +38,13 @@ public class TrackLoggerDataProviderCoordinatorTest {
 
     private TestTrackLoggerDataProviderCoordinator dpc;
     
-    private NotificationStrategy mockNotificationStrategy;
+    private NotificationStrategy<NotificationType> mockNotificationStrategy;
     private LocationDataProvider mockLocationDataProvider;
     private EcuDataProvider mockEcuDataProvider;
     private AccelDataProvider mockAccelDataProvider;
     private TimingDataProvider mockTimingDataProvider;
     
+    @SuppressWarnings("unchecked")
     @Before
     public void setup() throws Exception {
         mockNotificationStrategy = createMock(NotificationStrategy.class);
@@ -173,12 +175,22 @@ public class TrackLoggerDataProviderCoordinatorTest {
         mockNotificationStrategy.sendNotification(
                 eq(DataProviderCoordinator.NotificationType.TIMING_START_TRIGGER_FIRED));
         expectLastCall();
+        mockNotificationStrategy
+                .sendNotification(
+                        eq(DataProviderCoordinator.NotificationType.TIMING_DATA_UPDATE),
+                        anyObject(TimingData.class));
+        expectLastCall();
         
         // receiveData(LocationData) - 5
         expect(mockAccelDataProvider.getCurrentData()).andReturn(accelDataBuilder.build());
         expect(mockEcuDataProvider.getCurrentData()).andReturn(ecuDataBuilder.build());
         
         // receiveData(TimingData) - 2
+        mockNotificationStrategy
+                .sendNotification(
+                        eq(DataProviderCoordinator.NotificationType.TIMING_DATA_UPDATE),
+                        anyObject(TimingData.class));
+        expectLastCall();
         
         // stop()
         mockNotificationStrategy.sendNotification(

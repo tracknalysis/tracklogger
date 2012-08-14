@@ -18,14 +18,12 @@ package net.tracknalysis.tracklogger.export;
 import java.util.HashMap;
 import java.util.Map;
 
-import net.tracknalysis.common.notification.NotificationStrategy;
-
 /**
  * @author David Valeri
  */
 public interface SessionExporter {
     
-    public enum NotificationType implements net.tracknalysis.common.notification.NotificationType {
+    public enum SessionExporterNotificationType implements net.tracknalysis.common.notification.NotificationType {
         EXPORT_STARTING,
         EXPORT_STARTED,
         /**
@@ -41,17 +39,17 @@ public interface SessionExporter {
             return ordinal();
         }
         
-        private static final Map<Integer, NotificationType> intToTypeMap = 
-                new HashMap<Integer, NotificationType>();
+        private static final Map<Integer, SessionExporterNotificationType> intToTypeMap = 
+                new HashMap<Integer, SessionExporterNotificationType>();
         
         static {
-            for (NotificationType type : NotificationType.values()) {
+            for (SessionExporterNotificationType type : SessionExporterNotificationType.values()) {
                 intToTypeMap.put(type.ordinal(), type);
             }
         }
 
-        public static NotificationType fromInt(int i) {
-            NotificationType type = intToTypeMap.get(Integer.valueOf(i));
+        public static SessionExporterNotificationType fromInt(int i) {
+            SessionExporterNotificationType type = intToTypeMap.get(Integer.valueOf(i));
             if (type == null) {
                 throw new IllegalArgumentException(
                         "No enum const " + i);
@@ -60,47 +58,9 @@ public interface SessionExporter {
         }
     }
     
-    public static class ExportProgress {
-        private int currentRecordIndex;
-        private int totalRecords;
-        
-        public ExportProgress(int currentRecordIndex, int totalRecords) {
-            super();
-            this.currentRecordIndex = currentRecordIndex;
-            this.totalRecords = totalRecords;
-        }
-
-        public int getCurrentRecordIndex() {
-            return currentRecordIndex;
-        }
-
-        public void setCurrentRecordIndex(int currentRecordIndex) {
-            this.currentRecordIndex = currentRecordIndex;
-        }
-
-        public int getTotalRecords() {
-            return totalRecords;
-        }
-
-        public void setTotalRecords(int totalRecords) {
-            this.totalRecords = totalRecords;
-        }
-
-        @Override
-        public String toString() {
-            StringBuilder builder = new StringBuilder();
-            builder.append("ExportProgress [currentRecordIndex=");
-            builder.append(currentRecordIndex);
-            builder.append(", totalRecords=");
-            builder.append(totalRecords);
-            builder.append("]");
-            return builder.toString();
-        }
-    }
+    void export(int sessionId);
     
-    void export(int sessionId) throws Exception;
+    void export(int sessionId, Integer startLap, Integer endLap);
     
-    void export(int sessionId, int startLap, int endLap) throws Exception;
-    
-    void setNotificationStrategy(NotificationStrategy notificationStrategy);
+    String getMimeType();
 }

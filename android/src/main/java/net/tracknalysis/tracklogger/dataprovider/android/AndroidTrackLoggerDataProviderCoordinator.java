@@ -15,21 +15,26 @@
  */
 package net.tracknalysis.tracklogger.dataprovider.android;
 
+import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import net.tracknalysis.common.android.io.BtSocketManager;
 import net.tracknalysis.common.android.io.BtSocketManager.BtProfile;
-import net.tracknalysis.common.android.notification.AndroidNotificationStrategy;
 import net.tracknalysis.common.io.SocketManager;
 import net.tracknalysis.common.notification.NoOpNotificationStrategy;
+import net.tracknalysis.common.notification.NotificationStrategy;
 import net.tracknalysis.location.LocationManager;
+import net.tracknalysis.location.LocationManagerNotificationType;
 import net.tracknalysis.location.Route;
 import net.tracknalysis.location.Waypoint;
 import net.tracknalysis.location.nmea.NmeaLocationManager;
+import net.tracknalysis.tracklogger.R;
+import net.tracknalysis.tracklogger.activity.LogActivity;
 import net.tracknalysis.tracklogger.config.Configuration;
 import net.tracknalysis.tracklogger.config.ConfigurationFactory;
 import net.tracknalysis.tracklogger.dataprovider.AccelDataProvider;
@@ -42,17 +47,22 @@ import net.tracknalysis.tracklogger.dataprovider.ecu.MegasquirtEcuDataProvider;
 import net.tracknalysis.tracklogger.dataprovider.location.LocationManagerLocationDataProvider;
 import net.tracknalysis.tracklogger.dataprovider.timing.RouteManagerTimingDataProvider;
 import net.tracknalysis.tracklogger.provider.TrackLoggerData;
+import android.app.Notification;
+import android.app.PendingIntent;
 import android.bluetooth.BluetoothAdapter;
 import android.content.ContentResolver;
 import android.content.ContentUris;
 import android.content.ContentValues;
 import android.content.Context;
+import android.content.Intent;
 import android.hardware.SensorManager;
 import android.net.Uri;
-import android.os.Handler;
 import android.view.WindowManager;
 
 /**
+ * Implements the lowest level details of the coordinator specific to persisting data and managing
+ * life cycle in the Android environment.
+ *  
  * @author David Valeri
  */
 public class AndroidTrackLoggerDataProviderCoordinator extends
@@ -61,62 +71,139 @@ public class AndroidTrackLoggerDataProviderCoordinator extends
     private static final Logger LOG = LoggerFactory.getLogger(AndroidTrackLoggerDataProviderCoordinator.class);
     
     private final Context context;
+    private final SimpleDateFormat sqlDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+    private final DataProviderCoordinatorService dataProviderCoordinatorService;
+    private AtomicLong logEntryCounter = new AtomicLong();
     
     // Accel
-    private AccelDataProvider accelDataProvider;
+    protected AccelDataProvider accelDataProvider;
     
     // Location
-    private SocketManager gpsSocketManager;
-    private LocationManager locationManager;
-    private LocationDataProvider locationDataProvider;
+    protected SocketManager locationSocketManager;
+    protected LocationManager locationManager;
+    protected LocationDataProvider locationDataProvider;
     
     // ECU
-    private SocketManager ecuSocketManager;
-    private EcuDataProvider ecuDataProvider;
+    protected SocketManager ecuSocketManager;
+    protected EcuDataProvider ecuDataProvider;
     
     // Timing
-    private TimingDataProvider timingDataProvider;
+    protected TimingDataProvider timingDataProvider;
 
-    public AndroidTrackLoggerDataProviderCoordinator(Handler handler, Context context, BluetoothAdapter btAdapter) {
-        super(new AndroidNotificationStrategy(handler));
-        
+    public AndroidTrackLoggerDataProviderCoordinator(DataProviderCoordinatorService dataProviderCoordinatorService, 
+            NotificationStrategy<NotificationType> notificationStrategy, Context context, BluetoothAdapter btAdapter) {
+        super(notificationStrategy);
         this.context = context;
-
+        this.dataProviderCoordinatorService = dataProviderCoordinatorService;
+        initProviders(context, btAdapter);
+    }
+    
+    /**
+     * Initializes the data providers and other resources used by the coordinator.
+     */
+    protected void initProviders(Context context, BluetoothAdapter btAdapter) {
         Configuration config = ConfigurationFactory.getInstance().getConfiguration();
         
-        
         try {
-            gpsSocketManager = new BtSocketManager(config.getLocationBtAddress(),
-                    btAdapter, BtProfile.SPP);
-            locationManager = new NmeaLocationManager(gpsSocketManager,
-                    new NoOpNotificationStrategy());
-            
-            locationDataProvider = new LocationManagerLocationDataProvider(locationManager);
-
-            SensorManager sensorManager = (SensorManager) context.getSystemService(Context.SENSOR_SERVICE);
-            WindowManager windowManager = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
-            accelDataProvider = new AndroidAccelDataProvider(sensorManager, windowManager);
-
-            if (config.isEcuEnabled()) {
-                ecuSocketManager = new BtSocketManager(config.getEcuBtAddress(),
-                        btAdapter, BtProfile.SPP);
-                ecuDataProvider = new MegasquirtEcuDataProvider(ecuSocketManager);
-            }
-            
-            // TODO route from external source
-            Route route = new Route("My Route", Arrays.asList(
-                    new Waypoint("1", 38.979896545410156d, -77.54102325439453d),
-                    new Waypoint("2", 38.98295974731445d, -77.53973388671875d),
-                    new Waypoint("3", 38.982906341552734d, -77.54007720947266d),
-                    new Waypoint("4", 38.972618103027344d, -77.54145050048828d),
-                    new Waypoint("5", 38.97257995605469d, -77.5412826538086d)));
-            
-            timingDataProvider = new RouteManagerTimingDataProvider(
-                    locationManager.getRouteManager(), route);
+            initLocationManager(config, btAdapter);
+            initLocationDataProvider(config, btAdapter);
+            initAccelDataProvider(config, btAdapter);
+            initEcuDataProvider(config, btAdapter);
+            initTimingDataProvider(config, btAdapter);
         } catch (RuntimeException e) {
             cleanup();
             throw e;
         }
+    }
+    
+    /**
+     * Initializes the location manager.  By default, initializes an NMEA based location manager
+     * reading from the a BT serial port.
+     *
+     * @param config the application configuration
+     * @param btAdapter the adapter to use
+     */
+    protected void initLocationManager(Configuration config, BluetoothAdapter btAdapter) {
+        locationSocketManager = new BtSocketManager(config.getLocationBtAddress(),
+                btAdapter, BtProfile.SPP);
+        locationManager = new NmeaLocationManager(locationSocketManager,
+                new NoOpNotificationStrategy<LocationManagerNotificationType>());
+    }
+    
+    /**
+     * Initializes the location data provider.  By default, initializes one based on the location manager.
+     * 
+     * @param config the application configuration
+     * @param btAdapter the adapter to use
+     * 
+     * @see #initLocationManager(Configuration, BluetoothAdapter)
+     */
+    protected void initLocationDataProvider(Configuration config, BluetoothAdapter btAdapter) {
+        locationDataProvider = new LocationManagerLocationDataProvider(locationManager);
+    }
+    
+    /**
+     * Initializes the accel data provider.  By default, initializes one based on the OS provided
+     * acceleration data.
+     * 
+     * @param config the application configuration
+     * @param btAdapter the adapter to use
+     */
+    protected void initAccelDataProvider(Configuration config, BluetoothAdapter btAdapter) {
+        SensorManager sensorManager = (SensorManager) context.getSystemService(Context.SENSOR_SERVICE);
+        WindowManager windowManager = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
+        accelDataProvider = new AndroidAccelDataProvider(sensorManager, windowManager);
+    }
+    
+    /**
+     * Initializes the ECU data provider.  By default, initializes one based on MegaCom using a BT
+     * serial port.
+     *
+     * @param config the application configuration
+     * @param btAdapter the adapter to use
+     */
+    protected void initEcuDataProvider(Configuration config, BluetoothAdapter btAdapter) {
+        if (config.isEcuEnabled()) {
+            ecuSocketManager = new BtSocketManager(config.getEcuBtAddress(),
+                    btAdapter, BtProfile.SPP);
+            ecuDataProvider = new MegasquirtEcuDataProvider(ecuSocketManager);
+        }
+    }
+    
+    /**
+     * Initializes the timing data provider.  By default, initializes one based on the route manager
+     * from the previously initialized location manager.
+     *
+     * @param config the application configuration
+     * @param btAdapter the adapter to use
+     * 
+     * @see #initLocationManager(Configuration, BluetoothAdapter)
+     */
+    protected void initTimingDataProvider(Configuration config, BluetoothAdapter btAdapter) {
+        timingDataProvider = new RouteManagerTimingDataProvider(
+                locationManager.getRouteManager(), getRoute(config));
+    }
+    
+    protected Route getRoute(Configuration config) {
+        return // TODO route from external source
+                new Route("My Route", Arrays.asList(
+                        new Waypoint("1", 38.979896545410156d, -77.54102325439453d),
+                        new Waypoint("2", 38.98295974731445d, -77.53973388671875d),
+                        new Waypoint("3", 38.982906341552734d, -77.54007720947266d),
+                        new Waypoint("4", 38.972618103027344d, -77.54145050048828d),
+                        new Waypoint("5", 38.97257995605469d, -77.5412826538086d)));
+    }   
+    
+    @Override
+    protected void preStart() {
+        Notification notification = new Notification(R.drawable.icon, this.dataProviderCoordinatorService.getText(R.string.log_notification_message),
+                System.currentTimeMillis());
+        Intent notificationIntent = new Intent(getContext(), LogActivity.class);
+        PendingIntent pendingIntent = PendingIntent.getActivity(getContext(), 0, notificationIntent, 0);
+        notification.setLatestEventInfo(getContext(), this.dataProviderCoordinatorService.getText(R.string.log_notification_title),
+                this.dataProviderCoordinatorService.getText(R.string.log_notification_message), pendingIntent);
+        this.dataProviderCoordinatorService.startForeground(DataProviderCoordinatorService.ONGOING_NOTIFICATION, notification);
+        super.preStart();
     }
     
     /**
@@ -138,10 +225,20 @@ public class AndroidTrackLoggerDataProviderCoordinator extends
         } catch(Exception e) {
             LOG.error("Error cleaning up location manager.", e);
         } finally {
-            silentSocketManagerDisconnect(gpsSocketManager);
+            silentSocketManagerDisconnect(locationSocketManager);
         }
         
         silentSocketManagerDisconnect(ecuSocketManager);
+    }
+    
+    @Override
+    protected void postStop() {
+        this.dataProviderCoordinatorService.stopForeground(true);
+        super.postStop();
+    }
+    
+    protected final synchronized String formatAsSqlDate(Date date) {
+        return sqlDateFormat.format(date);
     }
     
     protected void silentSocketManagerDisconnect(SocketManager socketManager) {
@@ -213,6 +310,8 @@ public class AndroidTrackLoggerDataProviderCoordinator extends
 
     @Override
     protected void storeLogEntry(int sessionId, LogEntry logEntry) {
+        LOG.debug("Writing log entry {} to session with ID {}.", logEntryCounter.getAndIncrement(), sessionId);
+        
         ContentResolver cr = context.getContentResolver();
         ContentValues cv = new ContentValues();
         
@@ -242,7 +341,7 @@ public class AndroidTrackLoggerDataProviderCoordinator extends
         cv.put(TrackLoggerData.LogEntry.COLUMN_NAME_SPEED,
                 logEntry.locationData.getSpeed());
         cv.put(TrackLoggerData.LogEntry.COLUMN_NAME_BEARING,
-                logEntry.locationData.getSpeed());
+                logEntry.locationData.getBearing());
         
         if (logEntry.ecuData != null) {
             cv.put(TrackLoggerData.LogEntry.COLUMN_NAME_LOCATION_CAPTURE_TIMESTAMP,

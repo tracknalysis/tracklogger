@@ -43,18 +43,13 @@ public abstract class AbstractSessionToFileExporter implements SessionToFileExpo
     private File exportFile;
     private OutputStream out;
     private File exportDir;
-    private NotificationStrategy notificationStrategy = new NoOpNotificationStrategy();
+    private NotificationStrategy<SessionExporterNotificationType> notificationStrategy;
     
-    public AbstractSessionToFileExporter(File exportDir) {
+    public AbstractSessionToFileExporter(File exportDir, NotificationStrategy<SessionExporterNotificationType> notificationStrategy) {
         super();
         this.exportDir = exportDir;
-    }
-    
-    @Override
-    public final void setNotificationStrategy(
-            NotificationStrategy notificationStrategy) {
         if (notificationStrategy == null) {
-            notificationStrategy = new NoOpNotificationStrategy();
+            notificationStrategy = new NoOpNotificationStrategy<SessionExporterNotificationType>();
         } else {
             this.notificationStrategy = notificationStrategy;
         }
@@ -66,13 +61,13 @@ public abstract class AbstractSessionToFileExporter implements SessionToFileExpo
     }
     
     @Override
-    public final void export(int sessionId) throws Exception {
+    public final void export(int sessionId) {
         runExport(sessionId, null, null);
     }
     
     @Override
-    public final void export(int sessionId, int startLap, int endLap) throws Exception {
-        runExport(sessionId, new Integer(startLap), new Integer(endLap));
+    public final void export(int sessionId, Integer startLap, Integer endLap) {
+        runExport(sessionId, startLap, endLap);
     }
     
     @Override
@@ -81,7 +76,10 @@ public abstract class AbstractSessionToFileExporter implements SessionToFileExpo
     }
     
     /**
-     * 
+     * Writes the output to the output stream.  Implementations should flush the stream or any writers
+     * that they instantiate on the stream; however, they should not close the stream as that is handled
+     * by this class.
+     *
      * @param out a buffered stream for writing the exported data
      * @param sessionId
      * @param startLap
@@ -98,48 +96,50 @@ public abstract class AbstractSessionToFileExporter implements SessionToFileExpo
      */
     protected abstract String getFileExtension();
     
-    protected final NotificationStrategy getNotificationStrategy() {
+    protected final NotificationStrategy<SessionExporterNotificationType> getNotificationStrategy() {
         return notificationStrategy;
     }
     
-    private void runExport(int sessionId, Integer startLap, Integer endLap) throws Exception {
+    protected final void sendExportProgressNotification(int currentRecord, int totalRecords) {
+        getNotificationStrategy().sendNotification(
+                SessionExporterNotificationType.EXPORT_PROGRESS,
+                new ExportProgress(currentRecord, totalRecords));
+    }
+    
+    private void runExport(int sessionId, Integer startLap, Integer endLap) {
         try {
             LOG.debug("Starting export.");
-            notificationStrategy.sendNotification(NotificationType.EXPORT_STARTING);
+            notificationStrategy.sendNotification(SessionExporterNotificationType.EXPORT_STARTING);
             
             try {
                 createLogFile(sessionId, startLap, endLap);
             } catch (IOException e) {
                 out = null;
                 exportFile = null;
-                notificationStrategy.sendNotification(NotificationType.EXPORT_FAILED, e);
                 throw e;
             }
             
             LOG.debug("Started export.");
-            notificationStrategy.sendNotification(NotificationType.EXPORT_STARTED);
+            notificationStrategy.sendNotification(SessionExporterNotificationType.EXPORT_STARTED);
             
             export(out, sessionId, startLap, endLap);
-            
-            getNotificationStrategy().sendNotification(
-                    SessionExporter.NotificationType.EXPORT_FINISHED);
             
         } catch (Exception e) {
             LOG.error("Export failed due to an exception.");
             getNotificationStrategy().sendNotification(
-                    SessionExporter.NotificationType.EXPORT_FAILED, e);
-            throw e;
+                    SessionExporter.SessionExporterNotificationType.EXPORT_FAILED, e);
         } finally {
             if (out != null) {
                 try {
                     out.flush();
                     out.close();
-                } catch (IOException e) {
-                    notificationStrategy.sendNotification(NotificationType.EXPORT_FAILED, e);
-                    throw e;
+                    
+                    getNotificationStrategy().sendNotification(
+                            SessionExporter.SessionExporterNotificationType.EXPORT_FINISHED);
+                } catch (Exception e) {
+                    notificationStrategy.sendNotification(SessionExporterNotificationType.EXPORT_FAILED, e);
                 } finally {
                     out = null;
-                    exportFile = null;
                 }
             }
         }
@@ -147,14 +147,6 @@ public abstract class AbstractSessionToFileExporter implements SessionToFileExpo
     
     private void createLogFile(int sessionId, Integer startLap, Integer endLap) throws FileNotFoundException {
         String fileName = sessionId + "-" + dateFormat.format(getSessionStartTime(sessionId));
-        
-        if (startLap != null) {
-            fileName = fileName + "-" + startLap;
-        }
-        
-        if (endLap != null) {
-            fileName = fileName + "-" + endLap;
-        }
         
         fileName = fileName + "." + getFileExtension();
         

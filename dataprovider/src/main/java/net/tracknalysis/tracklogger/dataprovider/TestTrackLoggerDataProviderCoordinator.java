@@ -22,6 +22,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import net.tracknalysis.common.notification.NotificationStrategy;
 
 /**
+ * An implementation used for unit testing of {@link TrackLoggerDataProviderCoordinator} using existing
+ * {@link DataProvider} instances and recording "logged" data to collections for later examination.
+ *
  * @author David Valeri
  */
 public class TestTrackLoggerDataProviderCoordinator extends TrackLoggerDataProviderCoordinator {
@@ -37,7 +40,7 @@ public class TestTrackLoggerDataProviderCoordinator extends TrackLoggerDataProvi
     private AtomicInteger sessionCounter = new AtomicInteger();
     
     public TestTrackLoggerDataProviderCoordinator(
-            NotificationStrategy notificationStrategy,
+            NotificationStrategy<NotificationType> notificationStrategy,
             AccelDataProvider accelDataProvider,
             LocationDataProvider locationDataProvider,
             EcuDataProvider ecuDataProvider,
@@ -52,10 +55,16 @@ public class TestTrackLoggerDataProviderCoordinator extends TrackLoggerDataProvi
         timingDatas = new LinkedList<TimingData>();
     }
     
+    /**
+     * Returns the {@link TrackLoggerDataProviderCoordinator.LogEntry} instances "logged".
+     */
     public List<TrackLoggerDataProviderCoordinator.LogEntry> getLogEntries() {
         return logEntries;
     }
     
+    /**
+     * Returns the {@link TimingData} instances "logged".
+     */
     public List<TimingData> getTimingDatas() {
         return timingDatas;
     }

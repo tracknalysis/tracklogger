@@ -15,59 +15,144 @@
  */
 package net.tracknalysis.tracklogger.activity;
 
-import java.io.File;
+import java.lang.ref.WeakReference;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import net.tracknalysis.common.android.notification.AndroidNotificationStrategy;
+import net.tracknalysis.common.notification.NotificationStrategy;
+import net.tracknalysis.common.util.TimeUtil;
 import net.tracknalysis.tracklogger.R;
 import net.tracknalysis.tracklogger.TrackLogger;
-import net.tracknalysis.tracklogger.export.SessionExporter;
-import net.tracknalysis.tracklogger.export.SessionExporter.ExportProgress;
-import net.tracknalysis.tracklogger.export.android.AndroidSessionToTrackLoggerCsvExporter;
-import net.tracknalysis.tracklogger.export.SessionToFileExporter;
+import net.tracknalysis.tracklogger.export.ExportProgress;
+import net.tracknalysis.tracklogger.export.SessionExporterService;
+import net.tracknalysis.tracklogger.export.SessionExporterService.SessionExportLifecycleNotification;
+import net.tracknalysis.tracklogger.export.SessionExporterService.SessionExporterServiceNotificationType;
+import net.tracknalysis.tracklogger.export.android.SessionExporterServiceImpl;
+import net.tracknalysis.tracklogger.export.android.SessionExporterServiceImpl.LocalBinder;
 import net.tracknalysis.tracklogger.provider.TrackLoggerData;
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.app.Dialog;
+import android.content.ComponentName;
 import android.content.DialogInterface;
-import android.content.DialogInterface.OnCancelListener;
 import android.content.Intent;
+import android.content.ServiceConnection;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
-import android.os.Environment;
 import android.os.Handler;
+import android.os.IBinder;
 import android.os.Message;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.Button;
+import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.ProgressBar;
 import android.widget.SimpleCursorAdapter;
 import android.widget.TextView;
+import android.widget.Toast;
 
 /**
+ * Activity for configuring, triggering, and monitoring the progress of session exports.
+ *
  * @author David Valeri
  */
 public class SessionExportActivity extends Activity {
     
     private static final Logger LOG = LoggerFactory.getLogger(SessionExportActivity.class);
 
-    private int laps;
     private int sessionId;
     private String createdDateString;
-    private SessionExporter sessionExporter;
-    private Dialog exportProgressDialog;
+    private Dialog initErrorDialog;
+    
+    private TextView sessionIdTextView;
+    private TextView createdDateTextView;
+    private TextView totalLapsTextView;
+    private Button exportButton;
+    private LinearLayout exportBarEnqueueLayout;
+    private LinearLayout exportBarInProgressLayout;
+    private TextView exportProgressMessageTextView;
+    private ProgressBar exportProgressBar;
+    
+    private ServiceConnection serviceConnection;
+    private SessionExporterService sessionExporterService;
+    private volatile boolean bound;
+    private NotificationStrategy<SessionExporterServiceNotificationType> notificationStrategy;
     
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         
+        notificationStrategy = new AndroidNotificationStrategy<SessionExporterServiceNotificationType>(
+                new SessionExporterServiceHandler(this));
+        
+        setContentView(R.layout.session_export);
+        
+        sessionIdTextView = (TextView) findViewById(R.id.sessionId);
+        
+        createdDateTextView = (TextView) findViewById(R.id.createdDate);
+        
+        totalLapsTextView = (TextView) findViewById(R.id.totalLaps);
+        
+        exportButton = (Button) findViewById(R.id.export_button);
+        exportButton.setOnClickListener(new OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                startExport();
+            }
+        });
+        
+        exportBarEnqueueLayout = (LinearLayout) findViewById(R.id.export_action_bar_enqueue);
+        exportBarInProgressLayout = (LinearLayout) findViewById(R.id.export_action_bar_in_progress);
+        
+        exportProgressMessageTextView = (TextView) findViewById(R.id.export_progress_text);
+        exportProgressBar = (ProgressBar) findViewById(R.id.export_progress_bar);
+    }
+    
+    @Override
+    protected void onResume() {
+        super.onResume();
+        
+        serviceConnection = new ServiceConnection() {
+            @Override
+            public void onServiceConnected(ComponentName name, IBinder service) {
+                // TODO deal with rebind
+                LocalBinder binder = (LocalBinder) service;
+                bound = true;
+                sessionExporterService = binder.getService();
+                finishResume();
+            }
+
+            @Override
+            public void onServiceDisconnected(ComponentName arg0) {
+                bound = false;
+            }
+        };
+        
+        if (!bindService(new Intent(getApplicationContext(), SessionExporterServiceImpl.class),
+                serviceConnection,
+                BIND_AUTO_CREATE)) {
+            LOG.error("The Activity could not bind to the SessionExporterService.");
+            onInitError(R.string.app_name, R.string.general_error);
+        }
+    }
+    
+    /**
+     * Finish view setup only after we have bound to the session exporter service.
+     */
+    protected void finishResume() {
+        
         Intent intent = getIntent();
         
-        if (!TrackLogger.SESSION_EXPORT_ACTION.equals(intent.getAction())) {
-            // TODO dialog and exit
+        if (!TrackLogger.ACTION_SESSION_EXPORT_CONFIG.equals(intent.getAction())) {
+            LOG.error(
+                    "The Activity was launched with action {}, but the activity does not understand this action.",
+                    intent.getAction());
+            onInitError(R.string.app_name, R.string.general_error);
+            return;
         } else {
             Cursor sessionCursor = null;
             Cursor timingEntryCursor = null;
@@ -78,11 +163,15 @@ public class SessionExportActivity extends Activity {
                     null, null, null, null);
             
             if (!sessionCursor.moveToFirst()) {
-             // TODO bad URI, no data
+                onInitError(R.string.app_name, R.string.export_error_session_not_found);
+                return;
             }
             
             sessionId = sessionCursor.getInt(sessionCursor
                     .getColumnIndex(TrackLoggerData.Session._ID));
+            
+            sessionExporterService.register(sessionId, notificationStrategy);
+            
             createdDateString = sessionCursor
                     .getString(sessionCursor
                             .getColumnIndex(TrackLoggerData.Session.COLUMN_NAME_START_DATE));
@@ -97,31 +186,15 @@ public class SessionExportActivity extends Activity {
                     new String[] {Integer.toString(sessionId)},
                     TrackLoggerData.TimingEntry.DEFAULT_SORT_ORDER);
             
-            laps = timingEntryCursor.getCount();
+            final int laps = timingEntryCursor.getCount();
             
-            setContentView(R.layout.session_export);
-            
-            TextView sessionIdTextView = (TextView) findViewById(R.id.sessionId);
             sessionIdTextView.setText(String.valueOf(sessionId));
-            
-            TextView createdDateTextView = (TextView) findViewById(R.id.createdDate);
             createdDateTextView.setText(createdDateString);
-            
-            TextView totalLapsTextView = (TextView) findViewById(R.id.totalLaps);
             totalLapsTextView.setText(String.valueOf(laps));
-            
-            Button exportButton = (Button) findViewById(R.id.export);
-            exportButton.setOnClickListener(new OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    setupSessionExporter();
-                    startExport();
-                }
-            });
             
             ListView listView = (ListView) findViewById(R.id.lapList);
             
-            listView.setAdapter(new SimpleCursorAdapter(
+            SimpleCursorAdapter adapter = new SimpleCursorAdapter(
                     this,
                     R.layout.lap_list_item,
                     timingEntryCursor,
@@ -130,134 +203,183 @@ public class SessionExportActivity extends Activity {
                             TrackLoggerData.TimingEntry.COLUMN_NAME_LAP_TIME},
                     new int[] {
                             R.id.lapNumber,
-                            R.id.lapTime}));
+                            R.id.lapTime});
             
-            exportProgressDialog = new Dialog(this);
-            exportProgressDialog.setContentView(R.layout.export_progress);
-            exportProgressDialog.setTitle("Session Export");
-            exportProgressDialog.setCancelable(false);
-            exportProgressDialog.setOnCancelListener(new OnCancelListener() {
+            adapter.setViewBinder(new SimpleCursorAdapter.ViewBinder() {
                 @Override
-                public void onCancel(DialogInterface dialog) {
-                    finish();
+                public boolean setViewValue(View view, Cursor cursor, int columnIndex) {
+                    int lapTimeColumnIndex = cursor.getColumnIndex(TrackLoggerData.TimingEntry.COLUMN_NAME_LAP_TIME);
+                    boolean bound = false;
+                    
+                    if (lapTimeColumnIndex == columnIndex) {
+                        long duration = cursor.getLong(lapTimeColumnIndex);
+                        
+                        if (view instanceof TextView) {
+                            ((TextView) view).setText(TimeUtil.formatDuration(duration, false, true));
+                        } else {
+                            throw new IllegalStateException("This binder can only bind the lap time to a text view.");
+                        }
+                        
+                        bound = true;
+                    }
+                    
+                    return bound;
                 }
             });
             
-            Button okButton = (Button) exportProgressDialog.findViewById(R.id.ok);
-            okButton.setOnClickListener(new OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    onExportProgressDialogOk();
-                }
-            });
-            okButton.setClickable(false);
+            listView.setAdapter(adapter);
         }
     }
     
     @Override
-    protected void onDestroy() {
-        cleanupSessionExporter();
+    protected void onPause() {
+        super.onPause();
+        
+        sessionExporterService.unRegister(sessionId, notificationStrategy);
+        
+        if (bound) {
+            unbindService(serviceConnection);
+            bound = false;
+        }
+    }
+    
+    @Override
+    protected void onDestroy() {      
+        if (initErrorDialog != null) {
+            initErrorDialog.dismiss();
+        }
         
         super.onDestroy();
     }
     
-    protected void setupSessionExporter() {
-        
-        cleanupSessionExporter();
-        
-        File outputDir = new File(Environment.getExternalStorageDirectory(), "TrackLogger");
-        
-        Handler sessionExporterHandler = new Handler() {
-            @Override
-            public void handleMessage(Message msg) {
-                LOG.debug("Handling session exporter message: {}.", msg);
-                
-                SessionExporter.NotificationType type = 
-                        SessionExporter.NotificationType.fromInt(msg.what);
-                
-                switch (type) {
-                    case EXPORT_PROGRESS:
-                        ExportProgress progress = (ExportProgress) msg.obj;
-                        onExportProgress(progress);
-                        break;
-                    case EXPORT_FINISHED:
-                        onExportFinished();
-                        break;
-                    case EXPORT_FAILED:
-                        onExportFailed();
-                        break;
-                }
-            }
-        };
-        
-        SessionToFileExporter exporter = new AndroidSessionToTrackLoggerCsvExporter(this);
-        exporter.setExportDir(outputDir);
-        exporter.setNotificationStrategy(new AndroidNotificationStrategy(sessionExporterHandler));
-        
-        sessionExporter = exporter;
-    }
-    
+    /**
+     * Enqueue the session for export with the current export settings.
+     */
     protected void startExport() {
-        exportProgressDialog.show();
+        Intent intent = new Intent(TrackLogger.ACTION_SESSION_EXPORT, getIntent().getData());
+        // Only used for testing until https://tracknalysis.atlassian.net/browse/TRKLGR-23 is implemented
+        // intent.putExtra("exportFormat", "sql1");
+        startService(intent);
         
-        Thread thread = new Thread() {
-            public void run() {
-                try {
-                    sessionExporter.export(sessionId);
-                } catch (Exception e) {
-                    LOG.error("Error executing export.", e);
-                }                
-            }
-        };
-        
-        thread.start();
+        Toast.makeText(this, getString(R.string.export_queued), Toast.LENGTH_LONG).show();
     }
     
-    protected void cleanupSessionExporter() {
-        if (sessionExporter != null) {
-            // make sure we don't get updates from the old one if it is still running for some reason
-            sessionExporter.setNotificationStrategy(null);
-            exportProgressDialog.dismiss();
-            ProgressBar progressBar = (ProgressBar) exportProgressDialog.findViewById(R.id.exportProgressBar);
-            progressBar.setMax(100);
-            progressBar.setProgress(0);
-            ((TextView) exportProgressDialog.findViewById(R.id.exportProgressMessage)).setText(null);
-            exportProgressDialog.findViewById(R.id.ok).setClickable(false);
-            sessionExporter = null;
+    /**
+     * Displays the form for configuring and triggering the export of the
+     * session while hiding the export progress display.
+     */
+    protected void showExportForm() {
+        exportBarInProgressLayout.setVisibility(View.GONE);
+        exportBarEnqueueLayout.setVisibility(View.VISIBLE);
+        
+        exportProgressBar.setMax(100);
+        exportProgressBar.setProgress(0);
+    }
+    
+    /**
+     * Hides the form for triggering a session export while displaying the form for queued / running
+     * export progress.
+     */
+    protected void showExportProgress(ExportProgress progress) {
+        if (exportBarEnqueueLayout.getVisibility() != View.GONE) {
+            exportBarEnqueueLayout.setVisibility(View.GONE);
+        }
+        
+        if (exportBarInProgressLayout.getVisibility() != View.VISIBLE) {
+            exportBarInProgressLayout.setVisibility(View.VISIBLE);
+        }
+        
+        if (progress == null) {
+            exportProgressBar.setIndeterminate(true);
+            exportProgressMessageTextView.setText(getString(R.string.export_queued));
+            exportProgressBar.setMax(100);
+            exportProgressBar.setProgress(0);
+        } else {
+            exportProgressBar.setIndeterminate(false);
+            exportProgressMessageTextView.setText(getString(
+                    R.string.export_progress_notification_running_content_text,
+                    progress.getCurrentRecordIndex(), progress.getTotalRecords()));
+            exportProgressBar.setMax(progress.getTotalRecords());
+            exportProgressBar.setProgress(progress.getCurrentRecordIndex());
+        }
+        
+    }
+    
+    /**
+     * Display an alert dialog with the title text containing the string with ID {@code title}
+     * and an error message containing the string with ID {@code errorMessage} and optional arguments 
+     * {@code args}.  The OK buttom on the dialog triggers the finishing of this activity.
+     *
+     * @param title the string ID for the dialog title
+     * @param errorMessage the string ID for the dialog message
+     * @param args the optional arguments for token replacement in the string with ID {@code errorMessage}
+     */
+    protected void onInitError(int title, int errorMessage, Object... args) {
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setMessage(getString(errorMessage, args))
+                .setTitle(title)
+                .setPositiveButton(R.string.general_ok,
+                        new DialogInterface.OnClickListener() {
+                            public void onClick(DialogInterface dialog, int id) {
+                                dialog.dismiss();
+                                finish();
+                            }
+                        });
+
+        if (!isFinishing()) {
+            initErrorDialog = builder.create();
+            initErrorDialog.show();
         }
     }
     
-    protected void onExportProgress(ExportProgress progress) {
-        ProgressBar progressBar = (ProgressBar) exportProgressDialog
-                .findViewById(R.id.exportProgressBar);
+    private static class SessionExporterServiceHandler extends Handler {
         
-        progressBar.setMax(progress.getTotalRecords());
-        progressBar.setProgress(progress.getCurrentRecordIndex());
+        private final WeakReference<SessionExportActivity> activityRef;
         
-        TextView exportProgressMessage = (TextView) exportProgressDialog
-                .findViewById(R.id.exportProgressMessage);
-        exportProgressMessage.setText("Exporting "
-                + progress.getCurrentRecordIndex() + " of "
-                + progress.getTotalRecords() + ".");
-    }
-    
-    protected void onExportFinished() {
-        TextView exportProgressMessage = (TextView) exportProgressDialog
-                .findViewById(R.id.exportProgressMessage);
+        private SessionExporterServiceHandler(
+                SessionExportActivity activity) {
+            super();
+            this.activityRef = new WeakReference<SessionExportActivity>(activity);
+        }
         
-        exportProgressMessage.setText("Export complete.");
-        exportProgressDialog.findViewById(R.id.ok).setClickable(true);
-    }
-    
-    protected void onExportFailed() {
-        TextView exportProgressMessage = (TextView) exportProgressDialog
-                .findViewById(R.id.exportProgressMessage);
-        
-        exportProgressMessage.setText("Export failed.");
-        exportProgressDialog.findViewById(R.id.ok).setClickable(true);
-    }
-    
-    protected void onExportProgressDialogOk() {
-        cleanupSessionExporter();
+        @Override
+        public void handleMessage(Message msg) {
+            
+            SessionExportActivity activity = activityRef.get();
+            
+            if (activity != null) {
+                LOG.debug("{}", msg);
+                
+                SessionExportLifecycleNotification exportNotification = (SessionExportLifecycleNotification) msg.obj;
+                SessionExporterServiceNotificationType notificationType = 
+                        SessionExporterServiceNotificationType.fromInt(msg.what);
+                
+                switch (notificationType) {
+                    case SESSION_EXPORT_LIFECYCLE_NOTIFICATION:
+                        
+                        switch (exportNotification.getStatus()) {
+                            case NOT_QUEUED:
+                                activity.showExportForm();
+                                break;
+                            case QUEUED:
+                                activity.showExportProgress(null);
+                                break;
+                            case EXPORTING:
+                                activity.showExportProgress(exportNotification.getProgress());
+                                break;
+                            case FINISHED:
+                                activity.showExportForm();
+                                break;
+                            case FAILED:
+                                activity.showExportForm();
+                                break;
+                        }
+                        break;
+                    default:
+                        // TODO
+                }
+            }
+        }
     }
 }

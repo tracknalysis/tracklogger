@@ -24,6 +24,8 @@ import java.io.Writer;
 import java.util.Date;
 import java.util.List;
 
+import net.tracknalysis.common.notification.NoOpNotificationStrategy;
+
 import org.apache.commons.io.IOUtils;
 import org.junit.Before;
 import org.junit.Test;
@@ -64,7 +66,7 @@ public class AbstractSessionToTrackLoggerCsvExporterTest {
     private final class AbstractSessionToTrackLoggerCsvExporterHarness extends AbstractSessionToTrackLoggerCsvExporter {
 
         public AbstractSessionToTrackLoggerCsvExporterHarness(File exportDir) {
-            super(exportDir);
+            super(exportDir, new NoOpNotificationStrategy<SessionExporterNotificationType>());
         }
 
         @Override

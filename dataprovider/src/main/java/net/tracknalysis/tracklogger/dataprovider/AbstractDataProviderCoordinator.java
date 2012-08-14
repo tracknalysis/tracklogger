@@ -19,6 +19,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
+ * Base implementation providing basic lifecycle for {@link DataProvider}s and registration
+ * of listeners for processing of data from the providers.
+ *
  * @author David Valeri
  */
 public abstract class AbstractDataProviderCoordinator implements DataProviderCoordinator {
@@ -75,11 +78,25 @@ public abstract class AbstractDataProviderCoordinator implements DataProviderCoo
         
         getLocationDataProvider().start();
         getAccelDataProvider().start();
-        if (getEcuDataProvider() != null) {
+        if (isEcuDataProviderEnabled()) {
             getEcuDataProvider().start();
         }
         
         running = true;
+    }
+    
+    @Override
+    public void startAsynch() {
+        Thread t = new Thread() {
+            public void run() {
+                try {
+                    AbstractDataProviderCoordinator.this.start();
+                } catch (RuntimeException e) {
+                    LOG.error("Error starting data provider coordinator asynchronously.", e);
+                }
+            };
+        };
+        t.start();
     }
     
     @Override
@@ -139,7 +156,7 @@ public abstract class AbstractDataProviderCoordinator implements DataProviderCoo
                 getLocationDataProvider().removeSynchronousListener(locationListener);
                 getLocationDataProvider().stop();
             }
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             LOG.error("Error cleaning up location data provider.", e);
         }
         
@@ -148,7 +165,7 @@ public abstract class AbstractDataProviderCoordinator implements DataProviderCoo
                 getTimingDataProvider().removeSynchronousListener(timingListener);
                 getTimingDataProvider().stop();
             }
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             LOG.error("Error cleaning up timing data provider.", e);
         }
         
@@ -157,7 +174,7 @@ public abstract class AbstractDataProviderCoordinator implements DataProviderCoo
                 getAccelDataProvider().removeSynchronousListener(accelListener);
                 getAccelDataProvider().stop();
             }
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             LOG.error("Error cleaning up accel data provider.", e);
         }
         
@@ -166,7 +183,7 @@ public abstract class AbstractDataProviderCoordinator implements DataProviderCoo
                 getEcuDataProvider().removeSynchronousListener(ecuListener);
                 getEcuDataProvider().stop();
             }
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             LOG.error("Error cleaning up ecu data provider.", e);
         }
     }

@@ -101,6 +101,8 @@ public interface DataProviderCoordinator {
     }
 
     void start();
+    
+    void startAsynch();
 
     void stop();
 

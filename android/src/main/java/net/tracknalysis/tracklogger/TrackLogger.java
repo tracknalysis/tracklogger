@@ -16,6 +16,7 @@
 package net.tracknalysis.tracklogger;
 
 import java.io.File;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.log4j.Logger;
 
@@ -25,30 +26,56 @@ import net.tracknalysis.tracklogger.config.ConfigurationChangeListener;
 import net.tracknalysis.tracklogger.config.ConfigurationFactory;
 import net.tracknalysis.tracklogger.config.DefaultConfigurationFactory;
 import net.tracknalysis.tracklogger.config.android.AndroidConfiguration;
-import net.tracknalysis.tracklogger.dataprovider.android.DataProviderCoordinatorFactory;
-import net.tracknalysis.tracklogger.dataprovider.android.DefaultDataProviderCoordinatorFactory;
-import net.tracknalysis.tracklogger.dataprovider.android.DataProviderCoordinatorFactoryService;
-import net.tracknalysis.tracklogger.dataprovider.android.DataProviderCoordinatorFactoryService.LocalBinder;
+import net.tracknalysis.tracklogger.dataprovider.android.DataProviderCoordinatorService;
+import net.tracknalysis.tracklogger.export.android.SessionExporterServiceImpl;
+import net.tracknalysis.tracklogger.provider.TrackLoggerData;
 
 import de.mindpipe.android.logging.log4j.LogConfigurator;
 import android.app.Application;
-import android.content.ComponentName;
 import android.content.Intent;
-import android.content.ServiceConnection;
 import android.os.Environment;
-import android.os.IBinder;
 
 /**
  * @author David Valeri
  */
 public class TrackLogger extends Application implements ConfigurationChangeListener {
     
+    private static final AtomicInteger NOTIFICATION_COUNTER = new AtomicInteger();
     private static LogConfigurator LOG_CONFIGURATOR;
     
-    public static final String SESSION_EXPORT_ACTION = TrackLogger.class
+    /**
+     * Start the activity to configure and trigger the export of data from a
+     * session.
+     * 
+     * <p>
+     * Input: {@link Intent#getData} is the session URI from which to export data. See
+     * {@link TrackLoggerData.Session#SESSION_ITEM_TYPE}.
+     * <p>
+     * Output: nothing.
+     */
+    public static final String ACTION_SESSION_EXPORT_CONFIG = TrackLogger.class
+            .getPackage().getName() + "." + "SESSION_EXPORT_CONFIG_ACTION";
+    
+    /**
+     * Start the export process in the background.
+     * 
+     * <p>
+     * Input: {@link Intent#getData} is the session URI from which to export data. See
+     * {@link TrackLoggerData.Session#SESSION_ITEM_TYPE}.
+     * <p>Output: nothing.
+     * <p>Extras:
+     * <ul>
+     *   <li>{@link SessionExporterServiceImpl#EXTRA_EXPORT_FORMAT} - (String) The optional identifier for the desired export format.</li>
+     *   <li>{@link SessionExporterServiceImpl#EXTRA_EXPORT_START_LAP} - (int) The optional value for the lap to start exporting from.</li>
+     *   <li>{@link SessionExporterServiceImpl#EXTRA_EXPORT_STOP_LAP} - (int) The optional value for the lap to stop exporting on.</li>
+     * </ul> 
+     */
+    public static final String ACTION_SESSION_EXPORT = TrackLogger.class
             .getPackage().getName() + "." + "SESSION_EXPORT_ACTION";
     
-    private ServiceConnection serviceConnection;
+    public static int getUniqueNotificationId() {
+        return NOTIFICATION_COUNTER.getAndIncrement();
+    }
     
     @Override
     public void onCreate() {
@@ -59,35 +86,11 @@ public class TrackLogger extends Application implements ConfigurationChangeListe
         
         configureLogging(configuration);
         configuration.addConfigurationChangeListenerListener(this);
-        
-        startService(new Intent(this, DataProviderCoordinatorFactoryService.class));
-        
-        serviceConnection = new ServiceConnection() {
-
-            @Override
-            public void onServiceConnected(ComponentName name, IBinder service) {
-                LocalBinder binder = (LocalBinder) service;
-                DataProviderCoordinatorFactory
-                        .setInstance(new DefaultDataProviderCoordinatorFactory(
-                                binder.getService()));
-            }
-
-            @Override
-            public void onServiceDisconnected(ComponentName arg0) {
-                DataProviderCoordinatorFactory
-                        .setInstance(null);
-            }
-        };
-        
-        bindService(new Intent(this,
-                DataProviderCoordinatorFactoryService.class),
-                serviceConnection, BIND_NOT_FOREGROUND);
     }
     
     @Override
     public void onTerminate() {
-        unbindService(serviceConnection);
-        stopService(new Intent(this, DataProviderCoordinatorFactoryService.class));
+        stopService(new Intent(this, DataProviderCoordinatorService.class));
         super.onTerminate();
     }
 

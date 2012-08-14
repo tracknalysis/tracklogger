@@ -18,24 +18,17 @@ package net.tracknalysis.tracklogger.dataprovider;
 import static org.easymock.EasyMock.*;
 import static org.junit.Assert.*;
 
-import java.io.BufferedReader;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
-import java.io.Writer;
 import java.util.Arrays;
 
 import net.tracknalysis.common.io.SocketManager;
 import net.tracknalysis.common.io.StreamSocketManager;
 import net.tracknalysis.common.notification.NotificationStrategy;
-import net.tracknalysis.common.util.TimeUtil;
 import net.tracknalysis.location.LocationManager;
 import net.tracknalysis.location.Route;
 import net.tracknalysis.location.Waypoint;
 import net.tracknalysis.location.nmea.NmeaLocationManager;
 import net.tracknalysis.tracklogger.dataprovider.AccelData.AccelDataBuilder;
+import net.tracknalysis.tracklogger.dataprovider.DataProviderCoordinator.NotificationType;
 import net.tracknalysis.tracklogger.dataprovider.location.LocationManagerLocationDataProvider;
 import net.tracknalysis.tracklogger.dataprovider.timing.RouteManagerTimingDataProvider;
 
@@ -43,6 +36,9 @@ import org.junit.Before;
 import org.junit.Test;
 
 /**
+ * Tests the core data provider coordinator implementation logic against real input from
+ * an {@link NmeaLocationManager}.
+ *
  * @author David Valeri
  */
 public class TrackLoggerDataProviderCoordinatorIntegrationTest {
@@ -50,54 +46,18 @@ public class TrackLoggerDataProviderCoordinatorIntegrationTest {
     private TestTrackLoggerDataProviderCoordinator dpc;
     private LocationManager locationManager;
     
-    private NotificationStrategy mockNotificationStrategy;
+    private NotificationStrategy<NotificationType> mockNotificationStrategy;
     private AccelDataProvider mockAccelDataProvider;
     
+    @SuppressWarnings("unchecked")
     @Before
     public void setup() throws Exception {
       
-        // Data to test with
-        InputStream is = this.getClass().getResourceAsStream("/RouteManagerTestData.csv");
-        BufferedReader reader = new BufferedReader(new InputStreamReader(is));
-                
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        Writer writer = new OutputStreamWriter(baos);
-        
-        for (int i = 0; i < 20; i++) {
-            writer.write("$GPGGA,000445.102,3859.0335,N,07731.9688,W,1,6,1.37,113.3,M,-33.4,M,,*6E\r\n");
-            writer.write("$GPRMC,000445.102,A,3859.0335,N,07731.9688,W,0.09,229.39,130512,,,A*78\r\n");
-        }
-        
-        String line = reader.readLine();
-        while (line != null) {
-            String[] tokens = line.split(",[ ]*");
-            String[] timeTokens = tokens[1].split("\\.");
-            
-            // ms offset into day
-            long time = 0;
-            if (timeTokens.length == 2) {
-                time += Long.valueOf(timeTokens[1]);
-            }
-            time += Long.valueOf(timeTokens[0]) * 1000;
-            time = time - (86400 * 1000);
-            long hours = time / TimeUtil.MS_IN_HOUR;
-            long minutes = (time % TimeUtil.MS_IN_HOUR) / TimeUtil.MS_IN_MINUTE;
-            long seconds = (time % TimeUtil.MS_IN_HOUR % TimeUtil.MS_IN_MINUTE) / TimeUtil.MS_IN_SECOND;
-            long ms = (time % TimeUtil.MS_IN_HOUR % TimeUtil.MS_IN_MINUTE % TimeUtil.MS_IN_SECOND);
-            
-            writer.write("$GPGGA," + String.format("%02d%02d%02d.%03d", hours, minutes, seconds, ms) + "," + tokens[4] + ",N," + tokens[5] + ",W,1,6,1.37,113.3,M,-33.4,M,,*6E\r\n");
-            writer.write("$GPRMC," + String.format("%02d%02d%02d.%03d", hours, minutes, seconds, ms) + ",A," + tokens[4] + ",N," + tokens[5] + ",W,0.09,229.39,130512,,,A*78\r\n");
-            
-            line = reader.readLine();
-        }
-        
-        writer.close();
-        baos.close();
-        
-        is = new ByteArrayInputStream(baos.toByteArray());
-        
-        
-        SocketManager socketManager = new StreamSocketManager(is, null);
+        // Setup with canned NMEA data for a known "lap".  There is no output from
+        // the location manager implementation so it is safe to leave the output stream
+        // null.
+        SocketManager socketManager = new StreamSocketManager(this.getClass()
+                .getResourceAsStream("/NMEA-Test-Data.txt"), null);
         
         locationManager = new NmeaLocationManager(socketManager);
         
@@ -156,6 +116,11 @@ public class TrackLoggerDataProviderCoordinatorIntegrationTest {
         
         // While logging we will get a bunch of calls to this method
         expect(mockAccelDataProvider.getCurrentData()).andReturn(accelDataBuilder.build()).anyTimes();
+        mockNotificationStrategy
+                .sendNotification(
+                        eq(DataProviderCoordinator.NotificationType.TIMING_DATA_UPDATE),
+                        anyObject(TimingData.class));
+        expectLastCall().times(6);
         
         mockNotificationStrategy.sendNotification(
                 eq(DataProviderCoordinator.NotificationType.STOPPING));
@@ -186,6 +151,7 @@ public class TrackLoggerDataProviderCoordinatorIntegrationTest {
         
         verify(mockNotificationStrategy, mockAccelDataProvider);
         
+        // Verify the timing data accuracy
         assertEquals(6, dpc.getTimingDatas().size());
         assertEquals(Long.valueOf(16359), dpc.getTimingDatas().get(1).getSplitTime());
         assertEquals(Long.valueOf(12822), dpc.getTimingDatas().get(2).getSplitTime());

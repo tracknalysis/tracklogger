@@ -1,13 +1,41 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  Copyright 2012 the original author or authors.
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+  -->
+<!-- 
+Authors: David Valeri
+ -->
 <resources>
-    <string name="app_name">Tracklogger</string>
+    <string name="app_name">TrackLogger</string>
     
-    <string name="error_alert_title">Tracklogger Error</string>
+    <string name="general_ok">OK</string>
+    <string name="general_error">An unexpected error has ocurred.</string>
+    
+    
+    <string name="error_alert_title">TrackLogger Error</string>
     <string name="error_bt_not_supported">No Bluetooth capabilities detected on this device.</string>
     <string name="error_bt_not_enabled">Bluetooth is not enabled.  Bluetooth is required for this application to function.</string>
     
+    <string name="log_wait_for_ready_location_title">Location:</string>
+    <string name="log_wait_for_ready_accel_title">Accelerometer:</string>
+    <string name="log_wait_for_ready_ecu_title">ECU:</string>
+    <string name="log_wait_for_ready_text_waiting">Waiting…</string>
+    <string name="log_wait_for_ready_text_ready">Ready</string>
+    
     <string name="log_notification_title">TrackLogger</string>
-    <string name="log_notification_message">Logging...</string>
+    <string name="log_notification_message">Logging…</string>
     
     <string name="log_elapsed_lap_time_title">Elapsed Time</string>
     <string name="log_lap_number_title">Lap</string>
@@ -41,6 +69,19 @@
     <string name="log_clt_title">CLT</string>
     <string name="log_ign_adv_title">Ignition Advance</string>
     <string name="log_batv_title">Battery Voltage</string>
+    
+    <string name="export_error_session_not_found">The selected session could not be found.  Please try again.</string>
+    <string name="export_queued">Session export queued.</string>
+    <string name="export_total_laps">Total Laps:</string>
+    <string name="export_export_button_text">Export</string>
+    <string name="export_progress_notification_running_ticker_message">Exporting session %d data…</string>
+    <string name="export_progress_notification_running_content_text">Exporting %1$d of %2$d.</string>
+    <string name="export_progress_notification_finished_ticker_message">Export finished</string>
+    <string name="export_progress_notification_finished_content_text">Finished exporting session %d data.</string>
+    <string name="export_progress_notification_error_ticker_message">Export failed</string>
+    <string name="export_progress_notification_error_content_text">Error exporting session %d data.</string>
+    
+    
     
     <string name="permission_session_export">Grants permission to launch the session export action of Tracklogger.</string>
     

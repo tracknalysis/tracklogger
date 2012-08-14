@@ -1,397 +1,408 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<!--
+  Copyright 2012 the original author or authors.
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+  -->
+<!-- 
+Authors: David Valeri
+ -->
+<TableLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="fill_parent"
     android:layout_height="fill_parent"
-    android:orientation="vertical" >
-
-    <TableLayout
-        android:layout_width="fill_parent"
-        android:layout_height="fill_parent"
-        android:stretchColumns="0" >
-
-        <TableRow>
-
-            <TextView
-                android:layout_width="fill_parent"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="@string/log_elapsed_lap_time_title"/>
-
-            <TextView
-                android:id="@+id/log_elapsed_lap_time_value"
-                android:layout_height="wrap_content"
-                />
-        </TableRow>
-        
-        <TableRow>
-
-            <TextView
-                android:layout_width="fill_parent"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="@string/log_elapsed_session_time_title"/>
-
-            <TextView
-                android:id="@+id/log_elapsed_session_time_value"
-                android:layout_height="wrap_content"
-                />
-        </TableRow>
-        
-        <TableRow>
-
-            <TextView
-                android:layout_width="fill_parent"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="@string/log_lap_number_title"/>
-
-            <TextView
-                android:id="@+id/log_lap_number_value"
-                android:layout_height="wrap_content"
-                />
-        </TableRow>
-
-        <TableRow>
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/log_split_index_title" />
-
-            <TextView
-                android:id="@+id/log_split_index_value"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content" />
-        </TableRow>
-
-        <TableRow>
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/log_last_lap_time_title" />
-
-            <TextView
-                android:id="@+id/log_last_lap_time_value"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content" />
-        </TableRow>
-        
-        <TableRow>
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/log_last_lap_time_delta_title" />
-
-            <TextView
-                android:id="@+id/log_last_lap_time_delta_value"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content" />
-        </TableRow>
-
-        <TableRow>
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/log_best_lap_time_title" />
-
-            <TextView
-                android:id="@+id/log_best_lap_time_value"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content" />
-        </TableRow>
-        
-        <TableRow>
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/log_last_split_time_title" />
-
-            <TextView
-                android:id="@+id/log_last_split_time_value"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content" />
-        </TableRow>
-        
-        <TableRow>
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/log_last_split_time_delta_title" />
-
-            <TextView
-                android:id="@+id/log_last_split_time_delta_value"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content" />
-        </TableRow>
-        
-        <TableRow>
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/log_best_split_time_title" />
-
-            <TextView
-                android:id="@+id/log_best_split_time_value"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content" />
-        </TableRow>
-
-        <View
-            android:layout_height="2dip"
-            android:background="#FF909090" />
-
-        <TableRow>
-
-            <TextView
-                android:layout_width="fill_parent"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="@string/log_accel_update_frequency_title" />
-
-            <TextView
-                android:id="@+id/log_accel_update_frequency_value"
-                android:layout_height="wrap_content"
-                android:gravity="right" />
-        </TableRow>
-
-        <TableRow>
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/log_lon_accel_title" />
-
-            <TextView
-                android:id="@+id/log_lon_accel_value"
-                android:layout_height="wrap_content"
-                android:gravity="right" />
-        </TableRow>
-
-        <TableRow>
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/log_lat_accel_title" />
-
-            <TextView
-                android:id="@+id/log_lat_accel_value"
-                android:layout_height="wrap_content"
-                android:gravity="right" />
-        </TableRow>
-
-        <TableRow>
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/log_vert_accel_title" />
-
-            <TextView
-                android:id="@+id/log_vert_accel_value"
-                android:layout_height="wrap_content"
-                android:gravity="right" />
-        </TableRow>
-
-        <View
-            android:layout_height="2dip"
-            android:background="#FF909090" />
-
-        <TableRow>
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/log_location_update_frequency_title" />
-
-            <TextView
-                android:id="@+id/log_location_update_frequency_value"
-                android:layout_width="wrap_content"
-                android:gravity="right" />
-        </TableRow>
-
-        <TableRow>
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/log_lat_title" />
-
-            <TextView
-                android:id="@+id/log_lat_value"
-                android:layout_width="wrap_content"
-                android:gravity="right" />
-        </TableRow>
-        
-        <TableRow>
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/log_lon_title" />
-
-            <TextView
-                android:id="@+id/log_lon_value"
-                android:layout_width="wrap_content"
-                android:gravity="right" />
-        </TableRow>
-        
-        <TableRow>
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/log_alt_title" />
-
-            <TextView
-                android:id="@+id/log_alt_value"
-                android:layout_width="wrap_content"
-                android:gravity="right" />
-        </TableRow>
-
-        <TableRow>
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/log_bearing_title" />
-
-            <TextView
-                android:id="@+id/log_bearing_value"
-                android:layout_width="wrap_content"
-                android:gravity="right" />
-        </TableRow>
-        
-        <TableRow>
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/log_speed_title" />
-
-            <TextView
-                android:id="@+id/log_speed_value"
-                android:layout_width="wrap_content"
-                android:gravity="right" />
-        </TableRow>
-
-        <View
-            android:layout_height="2dip"
-            android:background="#FF909090" />
-
-        <TableRow>
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/log_ecu_update_frequency_title" />
-
-            <TextView
-                android:id="@+id/log_ecu_update_frequency_value"
-                android:layout_width="wrap_content"
-                android:gravity="right" />
-        </TableRow>
-
-        <TableRow>
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/log_rpm_title" />
-
-            <TextView
-                android:id="@+id/log_rpm_value"
-                android:layout_width="wrap_content"
-                android:gravity="right" />
-        </TableRow>
-        
-        <TableRow>
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/log_map_title" />
-
-            <TextView
-                android:id="@+id/log_map_value"
-                android:layout_width="wrap_content"
-                android:gravity="right" />
-        </TableRow>
-
-        <TableRow>
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/log_tp_title" />
-
-            <TextView
-                android:id="@+id/log_tp_value"
-                android:layout_width="wrap_content"
-                android:gravity="right" />
-        </TableRow>
-        
-        <TableRow>
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/log_afr_title" />
-
-            <TextView
-                android:id="@+id/log_afr_value"
-                android:layout_width="wrap_content"
-                android:gravity="right" />
-        </TableRow>
-        
-        <TableRow>
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/log_mat_title" />
-
-            <TextView
-                android:id="@+id/log_mat_value"
-                android:layout_width="wrap_content"
-                android:gravity="right" />
-        </TableRow>
-        
-        <TableRow>
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/log_clt_title" />
-
-            <TextView
-                android:id="@+id/log_clt_value"
-                android:layout_width="wrap_content"
-                android:gravity="right" />
-        </TableRow>
-        
-        <TableRow>
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/log_ign_adv_title" />
-
-            <TextView
-                android:id="@+id/log_ign_adv_value"
-                android:layout_width="wrap_content"
-                android:gravity="right" />
-        </TableRow>
-        
-        <TableRow>
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/log_batv_title" />
-
-            <TextView
-                android:id="@+id/log_batv_value"
-                android:layout_width="wrap_content"
-                android:gravity="right" />
-        </TableRow>
-    </TableLayout>
-
-</LinearLayout>
+    android:stretchColumns="0" >
+
+    <TableRow>
+
+        <TextView
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/log_elapsed_lap_time_title"/>
+
+        <TextView
+            android:id="@+id/log_elapsed_lap_time_value"
+            android:layout_height="wrap_content"
+            />
+    </TableRow>
+    
+    <TableRow>
+
+        <TextView
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/log_elapsed_session_time_title"/>
+
+        <TextView
+            android:id="@+id/log_elapsed_session_time_value"
+            android:layout_height="wrap_content"
+            />
+    </TableRow>
+    
+    <TableRow>
+
+        <TextView
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/log_lap_number_title"/>
+
+        <TextView
+            android:id="@+id/log_lap_number_value"
+            android:layout_height="wrap_content"
+            />
+    </TableRow>
+
+    <TableRow>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/log_split_index_title" />
+
+        <TextView
+            android:id="@+id/log_split_index_value"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
+    </TableRow>
+
+    <TableRow>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/log_last_lap_time_title" />
+
+        <TextView
+            android:id="@+id/log_last_lap_time_value"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
+    </TableRow>
+    
+    <TableRow>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/log_last_lap_time_delta_title" />
+
+        <TextView
+            android:id="@+id/log_last_lap_time_delta_value"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
+    </TableRow>
+
+    <TableRow>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/log_best_lap_time_title" />
+
+        <TextView
+            android:id="@+id/log_best_lap_time_value"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
+    </TableRow>
+    
+    <TableRow>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/log_last_split_time_title" />
+
+        <TextView
+            android:id="@+id/log_last_split_time_value"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
+    </TableRow>
+    
+    <TableRow>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/log_last_split_time_delta_title" />
+
+        <TextView
+            android:id="@+id/log_last_split_time_delta_value"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
+    </TableRow>
+    
+    <TableRow>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/log_best_split_time_title" />
+
+        <TextView
+            android:id="@+id/log_best_split_time_value"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
+    </TableRow>
+
+    <View
+        android:layout_height="2dip"
+        android:background="#FF909090" />
+
+    <TableRow>
+
+        <TextView
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/log_accel_update_frequency_title" />
+
+        <TextView
+            android:id="@+id/log_accel_update_frequency_value"
+            android:layout_height="wrap_content"
+            android:gravity="right" />
+    </TableRow>
+
+    <TableRow>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/log_lon_accel_title" />
+
+        <TextView
+            android:id="@+id/log_lon_accel_value"
+            android:layout_height="wrap_content"
+            android:gravity="right" />
+    </TableRow>
+
+    <TableRow>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/log_lat_accel_title" />
+
+        <TextView
+            android:id="@+id/log_lat_accel_value"
+            android:layout_height="wrap_content"
+            android:gravity="right" />
+    </TableRow>
+
+    <TableRow>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/log_vert_accel_title" />
+
+        <TextView
+            android:id="@+id/log_vert_accel_value"
+            android:layout_height="wrap_content"
+            android:gravity="right" />
+    </TableRow>
+
+    <View
+        android:layout_height="2dip"
+        android:background="#FF909090" />
+
+    <TableRow>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/log_location_update_frequency_title" />
+
+        <TextView
+            android:id="@+id/log_location_update_frequency_value"
+            android:layout_width="wrap_content"
+            android:gravity="right" />
+    </TableRow>
+
+    <TableRow>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/log_lat_title" />
+
+        <TextView
+            android:id="@+id/log_lat_value"
+            android:layout_width="wrap_content"
+            android:gravity="right" />
+    </TableRow>
+    
+    <TableRow>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/log_lon_title" />
+
+        <TextView
+            android:id="@+id/log_lon_value"
+            android:layout_width="wrap_content"
+            android:gravity="right" />
+    </TableRow>
+    
+    <TableRow>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/log_alt_title" />
+
+        <TextView
+            android:id="@+id/log_alt_value"
+            android:layout_width="wrap_content"
+            android:gravity="right" />
+    </TableRow>
+
+    <TableRow>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/log_bearing_title" />
+
+        <TextView
+            android:id="@+id/log_bearing_value"
+            android:layout_width="wrap_content"
+            android:gravity="right" />
+    </TableRow>
+    
+    <TableRow>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/log_speed_title" />
+
+        <TextView
+            android:id="@+id/log_speed_value"
+            android:layout_width="wrap_content"
+            android:gravity="right" />
+    </TableRow>
+
+    <View
+        android:layout_height="2dip"
+        android:background="#FF909090" />
+
+    <TableRow>
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/log_ecu_update_frequency_title" />
+
+        <TextView
+            android:id="@+id/log_ecu_update_frequency_value"
+            android:layout_width="wrap_content"
+            android:gravity="right" />
+    </TableRow>
+
+    <TableRow>
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/log_rpm_title" />
+
+        <TextView
+            android:id="@+id/log_rpm_value"
+            android:layout_width="wrap_content"
+            android:gravity="right" />
+    </TableRow>
+    
+    <TableRow>
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/log_map_title" />
+
+        <TextView
+            android:id="@+id/log_map_value"
+            android:layout_width="wrap_content"
+            android:gravity="right" />
+    </TableRow>
+
+    <TableRow>
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/log_tp_title" />
+
+        <TextView
+            android:id="@+id/log_tp_value"
+            android:layout_width="wrap_content"
+            android:gravity="right" />
+    </TableRow>
+    
+    <TableRow>
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/log_afr_title" />
+
+        <TextView
+            android:id="@+id/log_afr_value"
+            android:layout_width="wrap_content"
+            android:gravity="right" />
+    </TableRow>
+    
+    <TableRow>
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/log_mat_title" />
+
+        <TextView
+            android:id="@+id/log_mat_value"
+            android:layout_width="wrap_content"
+            android:gravity="right" />
+    </TableRow>
+    
+    <TableRow>
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/log_clt_title" />
+
+        <TextView
+            android:id="@+id/log_clt_value"
+            android:layout_width="wrap_content"
+            android:gravity="right" />
+    </TableRow>
+    
+    <TableRow>
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/log_ign_adv_title" />
+
+        <TextView
+            android:id="@+id/log_ign_adv_value"
+            android:layout_width="wrap_content"
+            android:gravity="right" />
+    </TableRow>
+    
+    <TableRow>
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/log_batv_title" />
+
+        <TextView
+            android:id="@+id/log_batv_value"
+            android:layout_width="wrap_content"
+            android:gravity="right" />
+    </TableRow>
+</TableLayout>

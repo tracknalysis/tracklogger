@@ -50,6 +50,8 @@ Authors: David Valeri
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
+      <version>3.8.2</version><!--$NO-MVN-MAN-VER$-->
+      <scope>compile</scope>
       <exclusions>
         <exclusion>
           <artifactId>hamcrest-core</artifactId>

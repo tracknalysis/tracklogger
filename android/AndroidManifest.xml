@@ -28,19 +28,27 @@
         <category android:name="android.intent.category.LAUNCHER" />
       </intent-filter>
     </activity>
-    <activity android:name=".activity.LogActivity" android:theme="@android:style/Theme.Black.NoTitleBar"/>
+    <activity android:name=".activity.LogActivity" android:theme="@android:style/Theme.Black.NoTitleBar"
+        android:launchMode="singleTask"/>
     <activity android:name=".activity.SessionListActivity"/>
     <activity android:name=".activity.SessionExportActivity"
       android:permission="tracklogger.permission.session.export">
       <intent-filter>
-        <action android:name="net.tracknalysis.tracklogger.SESSION_EXPORT_ACTION" />
+        <action android:name="net.tracknalysis.tracklogger.SESSION_EXPORT_CONFIG_ACTION" />
         <category android:name="android.intent.category.DEFAULT" />
         <data android:mimeType="vnd.android.cursor.item/net.tracknalysis.tracklogger.session" />
       </intent-filter>  
     </activity>
     <activity android:name=".activity.ConfigActivity"/>
     
-    <service android:name=".dataprovider.android.DataProviderCoordinatorFactoryService" android:exported="false"/>
+    <service android:name=".dataprovider.android.DataProviderCoordinatorService" android:exported="false"/>
+    <service android:name=".export.android.SessionExporterServiceImpl" android:exported="false">
+       <intent-filter>
+        <action android:name="net.tracknalysis.tracklogger.SESSION_EXPORT_ACTION" />
+        <category android:name="android.intent.category.DEFAULT" />
+        <data android:mimeType="vnd.android.cursor.item/net.tracknalysis.tracklogger.session" />
+      </intent-filter>
+    </service>
   </application>
   
   

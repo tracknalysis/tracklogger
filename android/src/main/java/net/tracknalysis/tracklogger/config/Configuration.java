@@ -28,9 +28,19 @@ public interface Configuration {
     Level getRootLogLevel();
     
     /**
+     * @see #getRootLogLevel()
+     */
+    void setRootLogLevel(Level level);
+    
+    /**
      * Returns true if the application should output log data to a file.
      */
     boolean isLogToFile();
+    
+    /**
+     * @see #isLogToFile()
+     */
+    void setLogToFile(boolean enabled);
     
     /**
      * Returns true if ECU data should be captured and logged when logging session data.
@@ -51,6 +61,16 @@ public interface Configuration {
      * Returns the name/id of the view to use when performing logging.
      */
     int getLogLayoutId();
+    
+    /**
+     * @see #getLogLayoutId()
+     */
+    void setLogLayoutId(int id);
+    
+    /**
+     * Returns the path to the folder, relative to external storage root, where user accessible data is written.
+     */
+    String getDataDirectory();
     
     /**
      * Adds a listener for configuration change events if the listener is not already registered.

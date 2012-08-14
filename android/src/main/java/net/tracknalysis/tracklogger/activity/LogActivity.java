@@ -15,7 +15,9 @@
  */
 package net.tracknalysis.tracklogger.activity;
 
+import java.lang.ref.WeakReference;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,7 +31,8 @@ import net.tracknalysis.tracklogger.dataprovider.DataProviderCoordinator;
 import net.tracknalysis.tracklogger.dataprovider.EcuData;
 import net.tracknalysis.tracklogger.dataprovider.LocationData;
 import net.tracknalysis.tracklogger.dataprovider.TimingData;
-import net.tracknalysis.tracklogger.dataprovider.android.DataProviderCoordinatorFactory;
+import net.tracknalysis.tracklogger.dataprovider.android.DataProviderCoordinatorService;
+import net.tracknalysis.tracklogger.dataprovider.android.DataProviderCoordinatorService.LocalBinder;
 import net.tracknalysis.tracklogger.R;
 
 import android.app.Activity;
@@ -37,15 +40,17 @@ import android.app.AlertDialog;
 import android.app.Dialog;
 import android.app.ProgressDialog;
 import android.bluetooth.BluetoothAdapter;
+import android.content.ComponentName;
 import android.content.DialogInterface;
 import android.content.DialogInterface.OnCancelListener;
 import android.content.Intent;
+import android.content.ServiceConnection;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.IBinder;
 import android.os.Message;
-import android.os.PowerManager;
-import android.os.PowerManager.WakeLock;
+import android.view.WindowManager;
 import android.widget.TextView;
 
 /**
@@ -57,12 +62,14 @@ public class LogActivity extends Activity implements OnCancelListener {
     
     private static final int ACTION_REQUEST_BT_ENABLE = 1;
     
-    private static final DataProviderCoordinatorHandler DATA_PROVIDER_COORDINATOR_HANDLER = 
-            new DataProviderCoordinatorHandler();
+    private static final AtomicInteger displayTaskCounter = new AtomicInteger();
     
     private BluetoothAdapter btAdapter;
     
-    private Configuration config = ConfigurationFactory.getInstance().getConfiguration();    
+    private final Configuration config = ConfigurationFactory.getInstance().getConfiguration();  
+    
+    private volatile ServiceConnection serviceConnection;
+    private volatile boolean bound;
     
     // Timing
     private volatile long lapNumberCounter = 1;
@@ -71,11 +78,8 @@ public class LogActivity extends Activity implements OnCancelListener {
     private volatile Long previousBestLapTime;
     private volatile List<Long> previousBestSplitTimes;
     
-    // Wake
-    private WakeLock wakeLock;
-    
     // Data Coordinator
-    private DataProviderCoordinator dataProviderCoordinator;
+    private DataProviderCoordinatorService dataProviderCoordinatorService;
     
     // Display
     private DisplayTask displayTask;
@@ -149,7 +153,7 @@ public class LogActivity extends Activity implements OnCancelListener {
     private TextView latAccel;
     
     /**
-     * Vertical acceleration in m/s^2/
+     * Vertical acceleration in m/s^2.
      */
     private TextView vertAccel;
     
@@ -256,11 +260,6 @@ public class LogActivity extends Activity implements OnCancelListener {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         
-        PowerManager pm = (PowerManager) getSystemService(POWER_SERVICE);
-        wakeLock = pm.newWakeLock(
-                PowerManager.SCREEN_BRIGHT_WAKE_LOCK | PowerManager.ACQUIRE_CAUSES_WAKEUP,
-                LogActivity.class.getName());
-        
         btAdapter = BluetoothAdapter.getDefaultAdapter();
         
         initDataProviderCoordinatorDialog = new Dialog(this);
@@ -314,84 +313,98 @@ public class LogActivity extends Activity implements OnCancelListener {
             
             @Override
             public void run() {
-                // Last ditch effort to catch missed events on resume.  
-                if (dataProviderCoordinator.isLoggingStartTriggerFired()) {
-                    initDataProviderCoordinatorDialog.dismiss();
-                    waitingForStartTriggerDialog.dismiss();
-                }
                 
-                AccelData accelData = dataProviderCoordinator.getCurrentAccelData();
-                LocationData locationData = dataProviderCoordinator.getCurrentLocationData();
-                EcuData ecuData = null;
-                
-                
-                ecuData = dataProviderCoordinator.getCurrentEcuData();
-                
-                final long currentTime = System.currentTimeMillis();
-                
-                if (sessionStartReceivedTime != null) {
-                    long sessionElapsedTime = currentTime - sessionStartReceivedTime;
-                    setTextIfShown(elapsedSessionTime,
-                            TimeUtil.formatDuration(sessionElapsedTime,
-                                    false, false));
+                try {
+                    // Last ditch effort to catch missed events on resume.
+                    if (dataProviderCoordinatorService
+                                    .isLoggingStartTriggerFired()) {
+                        initDataProviderCoordinatorDialog.dismiss();
+                        waitingForStartTriggerDialog.dismiss();
+                    }
                     
-                }
-                
-                if (lapStartReceivedTime != null) {
-                    long lapElapsedTime = currentTime - lapStartReceivedTime;
-                    setTextIfShown(elapsedLapTime, TimeUtil.formatDuration(
-                            lapElapsedTime, false, true));
-                }
-                
-                if (accelData == null) {
-                    setTextIfShown(accelUpdateFreq, "N/A");
-                    setTextIfShown(lonAccel, "N/A");
-                    setTextIfShown(latAccel, "N/A");
-                    setTextIfShown(vertAccel, "N/A");
-                } else {
-                    setTextIfShown(accelUpdateFreq, "%.3f", dataProviderCoordinator.getAccelDataUpdateFrequency());
-                    setTextIfShown(lonAccel, "%.3f", accelData.getLongitudinal());
-                    setTextIfShown(latAccel, "%.3f", accelData.getLateral());
-                    setTextIfShown(vertAccel, "%.3f", accelData.getVertical());
-                }
-                
-                if (locationData == null) {
-                    setTextIfShown(locationUpdateFreq, "N/A");
-                    setTextIfShown(lat, "N/A");
-                    setTextIfShown(lon, "N/A");
-                    setTextIfShown(alt, "N/A");
-                    setTextIfShown(bearing, "N/A");
-                    setTextIfShown(speed, "N/A");
-                } else {
-                    setTextIfShown(locationUpdateFreq, "%.3f",
-                            dataProviderCoordinator.getLocationDataUpdateFrequency());
-                    setTextIfShown(lat, "%.8f", locationData.getLatitude());
-                    setTextIfShown(lon, "%.8f", locationData.getLongitude());
-                    setTextIfShown(alt, "%.3f", locationData.getAltitude());
-                    setTextIfShown(bearing, "%.3f", locationData.getBearing());
-                    setTextIfShown(speed, "%.3f", locationData.getSpeed());
-                }
-                
-                if (ecuData == null) {
-                    setTextIfShown(ecuUpdateFreq, "N/A");
-                    setTextIfShown(rpm, "N/A");
-                    setTextIfShown(map, "N/A");
-                    setTextIfShown(tp, "N/A");
-                    setTextIfShown(afr, "N/A");
-                    setTextIfShown(mat, "N/A");
-                    setTextIfShown(clt, "N/A");
-                    setTextIfShown(ignAdv, "N/A");
-                    setTextIfShown(batV, "N/A");
-                } else {
-                    setTextIfShown(ecuUpdateFreq, "%.3f", dataProviderCoordinator.getEcuDataUpdateFrequency());
-                    setTextIfShown(rpm, "%d", ecuData.getRpm());
-                    setTextIfShown(map, "%.0f", ecuData.getManifoldAbsolutePressure());
-                    setTextIfShown(tp, "%.0f", ecuData.getThrottlePosition() * 100);
-                    setTextIfShown(afr, "%.1f", ecuData.getAirFuelRatio());
-                    setTextIfShown(mat, "%.1f", ecuData.getManifoldAirTemperature());
-                    setTextIfShown(clt, "%.1f", ecuData.getCoolantTemperature());
-                    setTextIfShown(ignAdv, "%.1f", ecuData.getIgnitionAdvance());
-                    setTextIfShown(batV, "%.1f", ecuData.getBatteryVoltage());
+                    AccelData accelData = dataProviderCoordinatorService.getCurrentAccelData();
+                    LocationData locationData = dataProviderCoordinatorService.getCurrentLocationData();
+                    EcuData ecuData = null;
+                    
+                    
+                    ecuData = dataProviderCoordinatorService.getCurrentEcuData();
+                    
+                    final long currentTime = System.currentTimeMillis();
+                    
+                    if (sessionStartReceivedTime != null) {
+                        long sessionElapsedTime = currentTime - sessionStartReceivedTime;
+                        setTextIfShown(elapsedSessionTime,
+                                TimeUtil.formatDuration(sessionElapsedTime,
+                                        false, false));
+                        
+                    }
+                    
+                    if (lapStartReceivedTime != null) {
+                        long lapElapsedTime = currentTime - lapStartReceivedTime;
+                        setTextIfShown(elapsedLapTime, TimeUtil.formatDuration(
+                                lapElapsedTime, false, true));
+                    }
+                    
+                    if (accelData == null) {
+                        setTextIfShown(accelUpdateFreq, "N/A");
+                        setTextIfShown(lonAccel, "N/A");
+                        setTextIfShown(latAccel, "N/A");
+                        setTextIfShown(vertAccel, "N/A");
+                    } else {
+                        setTextIfShown(accelUpdateFreq, "%.3f", dataProviderCoordinatorService.getAccelDataUpdateFrequency());
+                        setTextIfShown(lonAccel, "%.3f", accelData.getLongitudinal());
+                        setTextIfShown(latAccel, "%.3f", accelData.getLateral());
+                        setTextIfShown(vertAccel, "%.3f", accelData.getVertical());
+                    }
+                    
+                    if (locationData == null) {
+                        setTextIfShown(locationUpdateFreq, "N/A");
+                        setTextIfShown(lat, "N/A");
+                        setTextIfShown(lon, "N/A");
+                        setTextIfShown(alt, "N/A");
+                        setTextIfShown(bearing, "N/A");
+                        setTextIfShown(speed, "N/A");
+                    } else {
+                        setTextIfShown(locationUpdateFreq, "%.3f",
+                                dataProviderCoordinatorService.getLocationDataUpdateFrequency());
+                        setTextIfShown(lat, "%.8f", locationData.getLatitude());
+                        setTextIfShown(lon, "%.8f", locationData.getLongitude());
+                        setTextIfShown(alt, "%.3f", locationData.getAltitude());
+                        setTextIfShown(bearing, "%.3f", locationData.getBearing());
+                        setTextIfShown(speed, "%.3f", locationData.getSpeed());
+                    }
+                    
+                    if (ecuData == null) {
+                        setTextIfShown(ecuUpdateFreq, "N/A");
+                        setTextIfShown(rpm, "N/A");
+                        setTextIfShown(map, "N/A");
+                        setTextIfShown(tp, "N/A");
+                        setTextIfShown(afr, "N/A");
+                        setTextIfShown(mat, "N/A");
+                        setTextIfShown(clt, "N/A");
+                        setTextIfShown(ignAdv, "N/A");
+                        setTextIfShown(batV, "N/A");
+                    } else {
+                        setTextIfShown(ecuUpdateFreq, "%.3f", dataProviderCoordinatorService.getEcuDataUpdateFrequency());
+                        setTextIfShown(rpm, "%d", ecuData.getRpm());
+                        setTextIfShown(map, "%.0f", ecuData.getManifoldAbsolutePressure());
+                        setTextIfShown(tp, "%.0f", ecuData.getThrottlePosition() * 100);
+                        setTextIfShown(afr, "%.1f", ecuData.getAirFuelRatio());
+                        setTextIfShown(mat, "%.1f", ecuData.getManifoldAirTemperature());
+                        setTextIfShown(clt, "%.1f", ecuData.getCoolantTemperature());
+                        setTextIfShown(ignAdv, "%.1f", ecuData.getIgnitionAdvance());
+                        setTextIfShown(batV, "%.1f", ecuData.getBatteryVoltage());
+                    }
+                } catch (IllegalStateException e) {
+                    LOG.warn(
+                            "Scheduled runnable on UI thread was still executing when the data "
+                                    + "provider coordinator service was destroyed.  This is likely just a timing"
+                                    + " issue; however, this still warrants a look as a possible cause of errors if the"
+                                    + " exception was triggered outside of the data provider coordinator.",
+                            e);
+                } catch (RuntimeException e) {
+                    LOG.error("Error updating LogActivity UI components.", e);
+                    throw e;
                 }
             }
         };
@@ -400,58 +413,62 @@ public class LogActivity extends Activity implements OnCancelListener {
     }
     
     @Override
-    protected void onStart() {
-        super.onStart();
-    }
-    
-    @Override
     protected void onResume() {
         super.onResume();
-        wakeLock.acquire();
         
-        dataProviderCoordinator = DataProviderCoordinatorFactory.getInstance().getDataProviderCoordinator();
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         
-        if (btAdapter == null) {
-            onError(R.string.error_bt_not_supported, R.string.error_alert_title);
-        } else {
-            if (!btAdapter.isEnabled()) {
-                if (dataProviderCoordinator != null) {
-                    dataProviderCoordinator.stop();
-                    DataProviderCoordinatorFactory.getInstance().removeDataProviderCoordinator();
-                    dataProviderCoordinator = null;
+        serviceConnection = new ServiceConnection() {
+            @Override
+            public void onServiceConnected(ComponentName name, IBinder service) {
+                // TODO deal with rebinding.
+                bound = true;
+                LocalBinder binder = (LocalBinder) service;
+                dataProviderCoordinatorService = binder.getService();
+                
+                if (btAdapter == null) {
+                    onError(R.string.error_bt_not_supported, R.string.error_alert_title);
+                } else {
+                    if (!btAdapter.isEnabled()) {
+                        if (dataProviderCoordinatorService.isInitialized()) {
+                            dataProviderCoordinatorService.uninitialize();
+                            dataProviderCoordinatorService = null;
+                        }
+                        startActivityForResult(
+                                new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE),
+                                ACTION_REQUEST_BT_ENABLE);
+                    } else {
+                        initDataProviderCoordinator();
+                    }
                 }
-                startActivityForResult(
-                        new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE),
-                        ACTION_REQUEST_BT_ENABLE);
-            } else {
-                initDataProviderCoordinator();
             }
+
+            @Override
+            public void onServiceDisconnected(ComponentName arg0) {
+                bound = false;
+            }
+        };
+        
+        if (!bindService(
+                new Intent(getApplicationContext(), DataProviderCoordinatorService.class),
+                serviceConnection,
+                BIND_AUTO_CREATE)) {
+            LOG.error("Could not bind to DataProviderCoordinatorService.");
+            onInitDataProviderCoordinatorError();
         }
     }
     
     @Override
     protected void onPause() {
-        wakeLock.release();
-        if (initDataProviderCoordinatorDialog != null) {
-            initDataProviderCoordinatorDialog.dismiss();
-        }
-        
-        if (waitingForStartTriggerDialog != null) {
-            initDataProviderCoordinatorDialog.dismiss();
-        }
+        cleanup(false);
         super.onPause();
     }
 
     @Override
-    protected void onStop() {
-        super.onStop();
-    }
-
-    @Override
     protected void onDestroy() {
-        if (isFinishing()) {
-            cleanup();
-        }
+        // Always cleanup, but also only stop logging if the activity is finishing rather than
+        // being destroyed by the OS for resource reasons.
+        cleanup(isFinishing());
         super.onDestroy();
     }
 
@@ -481,10 +498,8 @@ public class LogActivity extends Activity implements OnCancelListener {
         }
     }
     
-    protected void cleanup() {
-        if (dataProviderCoordinator != null) {
-            dataProviderCoordinator.stop();
-        }
+    protected void cleanup(boolean stopLogging) {
+        getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         
         if (displayTask != null) {
             displayTask.cancel();
@@ -498,42 +513,55 @@ public class LogActivity extends Activity implements OnCancelListener {
             initDataProviderCoordinatorDialog.dismiss();
         }
         
-        DataProviderCoordinatorFactory.getInstance().removeDataProviderCoordinator();
-        dataProviderCoordinator = null;
+        if (dataProviderCoordinatorService != null && stopLogging && dataProviderCoordinatorService.isInitialized()) {
+            dataProviderCoordinatorService.uninitialize();
+        }
         
-        DATA_PROVIDER_COORDINATOR_HANDLER.setActivity(null);
+        if (dataProviderCoordinatorService != null) {
+            dataProviderCoordinatorService.clearHandler();
+        }
+        
+        if (bound) {
+            unbindService(serviceConnection);
+            bound = false;
+        }
     }
     
     protected void initDataProviderCoordinator() {
+        ((TextView) initDataProviderCoordinatorDialog
+                .findViewById(R.id.log_wait_for_ready_location_status))
+                .setText(R.string.log_wait_for_ready_text_waiting);
+        
+        ((TextView) initDataProviderCoordinatorDialog
+                .findViewById(R.id.log_wait_for_ready_accel_status))
+                .setText(R.string.log_wait_for_ready_text_waiting);
+        
+        ((TextView) initDataProviderCoordinatorDialog
+                .findViewById(R.id.log_wait_for_ready_ecu_status))
+                .setText(R.string.log_wait_for_ready_text_waiting);
+        
         try {
-            DATA_PROVIDER_COORDINATOR_HANDLER.setActivity(this);
-            
-            if (dataProviderCoordinator == null) {
-                dataProviderCoordinator = DataProviderCoordinatorFactory
-                        .getInstance().createDataProviderCoordinator(
-                                DATA_PROVIDER_COORDINATOR_HANDLER,
-                                getApplication(), btAdapter);
-            }
-            
-            if (!dataProviderCoordinator.isReady()) {
+            if (!dataProviderCoordinatorService.isInitialized()) {
+                dataProviderCoordinatorService.initialize(new DataProviderCoordinatorHandler(this),
+                        getApplication(), btAdapter);
                 initDataProviderCoordinatorDialog.show();
-                if (!dataProviderCoordinator.isRunning()) {
-                    // Do the start(s) in another thread so that we don't block the UI thread.  Notifications
-                    // are used to apprise the UI of the progress, but we still capture and log any exceptions
-                    // that are thrown.
-                    Thread t = new Thread() {
-                        public void run() {
-                            try {
-                                dataProviderCoordinator.start();
-                            } catch (Exception e) {
-                                LOG.error("Error starting location manager and data provider coordinator.", e);
-                            }
-                        };
-                    };
-                    t.start();
+                
+                // Do the start(s) in another thread so that we don't block the UI thread.  Notifications
+                // are used to apprise the UI of the progress.
+                dataProviderCoordinatorService.startAsynch();
+            } else {
+                dataProviderCoordinatorService.replaceHandler(new DataProviderCoordinatorHandler(this));
+                
+                if (!dataProviderCoordinatorService.isReady()) {
+                    initDataProviderCoordinatorDialog.show();
+                    if (!dataProviderCoordinatorService.isRunning()) {
+                        // Do the start(s) in another thread so that we don't block the UI thread.  Notifications
+                        // are used to apprise the UI of the progress.
+                        dataProviderCoordinatorService.startAsynch();
+                    }
+                } else if (!dataProviderCoordinatorService.isLoggingStartTriggerFired()) {
+                    waitingForStartTriggerDialog.show();
                 }
-            } else if (!dataProviderCoordinator.isLoggingStartTriggerFired()) {
-                waitingForStartTriggerDialog.show();
             }
         } catch (Exception e) {
             LOG.error("Fatal error while initializing data providers and coordinator.", e);
@@ -542,16 +570,13 @@ public class LogActivity extends Activity implements OnCancelListener {
     }
     
     protected void onError(int errorMessage, int title) {
-        initDataProviderCoordinatorDialog.dismiss();
-        waitingForStartTriggerDialog.dismiss();
-        
-        cleanup();
+        cleanup(true);
         
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder
                 .setMessage(errorMessage)
                 .setTitle(title)
-                .setPositiveButton("Ok", new DialogInterface.OnClickListener() {
+                .setPositiveButton(R.string.general_ok, new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int id) {
                         dialog.dismiss();
                         finish();
@@ -563,17 +588,14 @@ public class LogActivity extends Activity implements OnCancelListener {
         }
     }
     
-    protected void onInitDataProviderCoordinatorError() {
-        initDataProviderCoordinatorDialog.dismiss();
-        waitingForStartTriggerDialog.dismiss();
-        
-        cleanup();
+    protected void onInitDataProviderCoordinatorError() {     
+        cleanup(true);
         
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder
                 .setMessage("Error initializing data providers.  Check the logs for more details.")
                 .setTitle("TrackLogger Error")
-                .setPositiveButton("Ok", new DialogInterface.OnClickListener() {
+                .setPositiveButton(R.string.general_ok, new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int id) {
                         dialog.dismiss();
                         finish();
@@ -585,17 +607,14 @@ public class LogActivity extends Activity implements OnCancelListener {
         }
     }
     
-    protected void onDataProviderCoordinatorLoggingError() {
-        initDataProviderCoordinatorDialog.dismiss();
-        waitingForStartTriggerDialog.dismiss();
-        
-        cleanup();
+    protected void onDataProviderCoordinatorLoggingError() {      
+        cleanup(true);
         
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder
                 .setMessage("Error recording log data.  Check the logs for more details.")
                 .setTitle("TrackLogger Error")
-                .setPositiveButton("Ok", new DialogInterface.OnClickListener() {
+                .setPositiveButton(R.string.general_ok, new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int id) {
                         dialog.dismiss();
                         finish();
@@ -711,6 +730,11 @@ public class LogActivity extends Activity implements OnCancelListener {
      * want to take advantage of the graceful shutdown logic in {@link GracefulShutdownThread}.
      */
     protected class DisplayTask extends GracefulShutdownThread {
+        
+        public DisplayTask() {
+            setName("LogActivity-DisplayTask-" + displayTaskCounter.getAndIncrement());
+        }
+        
         @Override
         public void run() {
             while(run) {
@@ -735,14 +759,16 @@ public class LogActivity extends Activity implements OnCancelListener {
     
     protected static class DataProviderCoordinatorHandler extends Handler {
         
-        private volatile LogActivity logActivity;
+        private final WeakReference<LogActivity>  logActivityRef;
         
-        protected void setActivity(LogActivity logActivity) {
-            this.logActivity = logActivity;
+        protected DataProviderCoordinatorHandler(LogActivity logActivity) {
+            logActivityRef = new WeakReference<LogActivity>(logActivity);
         }
         
         @Override
-        public void handleMessage(Message msg) {
+        public synchronized void handleMessage(Message msg) {
+            LogActivity logActivity = logActivityRef.get();
+            
             if (logActivity != null) {
             
                 LOG.debug("Handling data provider coordinator message: {}.", msg);
@@ -750,50 +776,55 @@ public class LogActivity extends Activity implements OnCancelListener {
                 DataProviderCoordinator.NotificationType type = 
                         DataProviderCoordinator.NotificationType.fromInt(msg.what);
                 
-                switch (type) {
-                    case START_FAILED:
-                        logActivity.onInitDataProviderCoordinatorError();
-                        break;
-                    case READY_PROGRESS:
-                        Object[] data = (Object[]) msg.obj;
-                        if (data[0] != null) {
-                            TextView locationStatusView = (TextView) logActivity.initDataProviderCoordinatorDialog
-                                    .findViewById(R.id.log_wait_for_ready_location_status);
+                try {
+                    switch (type) {
+                        case START_FAILED:
+                            logActivity.onInitDataProviderCoordinatorError();
+                            break;
+                        case READY_PROGRESS:
+                            Object[] data = (Object[]) msg.obj;
+                            if (data[0] != null) {
+                                TextView locationStatusView = (TextView) logActivity.initDataProviderCoordinatorDialog
+                                        .findViewById(R.id.log_wait_for_ready_location_status);
+                                
+                                locationStatusView.setText(R.string.log_wait_for_ready_text_ready);
+                            }
                             
-                            locationStatusView.setText("OK");
-                        }
-                        
-                        if(data[1] != null) {
-                            TextView accelStatusView = (TextView) logActivity.initDataProviderCoordinatorDialog
-                                    .findViewById(R.id.log_wait_for_ready_accel_status);
+                            if(data[1] != null) {
+                                TextView accelStatusView = (TextView) logActivity.initDataProviderCoordinatorDialog
+                                        .findViewById(R.id.log_wait_for_ready_accel_status);
+                                
+                                accelStatusView.setText(R.string.log_wait_for_ready_text_ready);
+                            }
                             
-                            accelStatusView.setText("OK");
-                        }
-                        
-                        if(data[2] != null) {
-                            TextView ecuStatusView = (TextView) logActivity.initDataProviderCoordinatorDialog
-                                    .findViewById(R.id.log_wait_for_ready_ecu_status);
+                            if(data[2] != null) {
+                                TextView ecuStatusView = (TextView) logActivity.initDataProviderCoordinatorDialog
+                                        .findViewById(R.id.log_wait_for_ready_ecu_status);
+                                
+                                ecuStatusView.setText(R.string.log_wait_for_ready_text_ready);
+                            }
                             
-                            ecuStatusView.setText("OK");
-                        }
-                        
-                        break;
-                    case READY:
-                        logActivity.initDataProviderCoordinatorDialog.dismiss();
-                        logActivity.waitingForStartTriggerDialog.show();
-                        logActivity.displayTask.start();
-                        break;
-                    case TIMING_START_TRIGGER_FIRED:
-                        logActivity.initDataProviderCoordinatorDialog.dismiss();
-                        logActivity.waitingForStartTriggerDialog.dismiss();
-                        break;
-                    case TIMING_DATA_UPDATE:
-                        TimingData timingData = (TimingData) msg.obj;
-                        logActivity.updateEventBasedUiFields(timingData);
-                        break;
-                    case LOGGING_FAILED:
-                        logActivity.onDataProviderCoordinatorLoggingError();
-                        break;
+                            break;
+                        case READY:
+                            logActivity.initDataProviderCoordinatorDialog.dismiss();
+                            logActivity.waitingForStartTriggerDialog.show();
+                            logActivity.displayTask.start();
+                            break;
+                        case TIMING_START_TRIGGER_FIRED:
+                            logActivity.initDataProviderCoordinatorDialog.dismiss();
+                            logActivity.waitingForStartTriggerDialog.dismiss();
+                            break;
+                        case TIMING_DATA_UPDATE:
+                            TimingData timingData = (TimingData) msg.obj;
+                            logActivity.updateEventBasedUiFields(timingData);
+                            break;
+                        case LOGGING_FAILED:
+                            logActivity.onDataProviderCoordinatorLoggingError();
+                            break;
+                    }
+                } catch (Exception e) {
+                    LOG.error("Error handling message " + msg + ".", e);
+                    logActivity.onDataProviderCoordinatorLoggingError();
                 }
             }
         }

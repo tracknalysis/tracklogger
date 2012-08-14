@@ -15,35 +15,26 @@
  */
 package net.tracknalysis.tracklogger.dataprovider.android;
 
+import net.tracknalysis.common.notification.NotificationStrategy;
 import net.tracknalysis.tracklogger.dataprovider.DataProviderCoordinator;
+import net.tracknalysis.tracklogger.dataprovider.DataProviderCoordinator.NotificationType;
 import android.bluetooth.BluetoothAdapter;
 import android.content.Context;
-import android.os.Handler;
 
 /**
+ * The default factory instance that provides a real coordinator implementation for production use.
+ *
  * @author David Valeri
  */
-public final class DefaultDataProviderCoordinatorFactory
+public final class ServiceBasedDataProviderCoordinatorFactory
         extends DataProviderCoordinatorFactory {
-    
-    private final DataProviderCoordinatorFactoryService service;
-    
-    public DefaultDataProviderCoordinatorFactory(
-            DataProviderCoordinatorFactoryService service) {
-        this.service = service;
-    }
     
     @Override
     public synchronized DataProviderCoordinator createDataProviderCoordinator(
-            Handler handler, Context context, BluetoothAdapter btAdapter) {
-        return service.createDataProviderCoordinator(handler, context, btAdapter);
-    }
-    
-    public synchronized DataProviderCoordinator getDataProviderCoordinator() {
-        return service.getDataProviderCoordinator();
-    }
-    
-    public synchronized void removeDataProviderCoordinator() {
-        service.removeDataProviderCoordinator();
+            DataProviderCoordinatorService dataProviderCoordinatorService,
+            NotificationStrategy<NotificationType> notificationStrategy,
+            Context context, BluetoothAdapter btAdapter) {
+        return new AndroidTrackLoggerDataProviderCoordinator(
+                dataProviderCoordinatorService, notificationStrategy, context, btAdapter); 
     }
 }

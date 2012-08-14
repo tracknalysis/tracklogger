@@ -114,7 +114,7 @@ public class SessionListActivity extends ListActivity {
                 return true;
             case R.id.launchSessionExport:
                 
-                startActivity(new Intent(TrackLogger.SESSION_EXPORT_ACTION, sessionUri));
+                startActivity(new Intent(TrackLogger.ACTION_SESSION_EXPORT_CONFIG, sessionUri));
                 // TODO export session activity
                 return true;
             case R.id.launchSessionDelete:
