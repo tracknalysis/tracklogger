@@ -25,7 +25,6 @@ import net.tracknalysis.tracklogger.TrackLogger;
 import net.tracknalysis.tracklogger.provider.TrackLoggerData;
 import net.tracknalysis.tracklogger.provider.TrackLoggerDataUtil;
 import android.app.Dialog;
-import android.app.ListActivity;
 import android.content.ContentProviderOperation;
 import android.content.ContentUris;
 import android.content.Intent;
@@ -48,7 +47,7 @@ import android.widget.Toast;
  *
  * @author David Valeri
  */
-public class SplitMarkerSetListActivity extends ListActivity {
+public class SplitMarkerSetListActivity extends BaseListActivity {
     
     private static final Logger LOG = LoggerFactory.getLogger(SplitMarkerSetListActivity.class);
     
@@ -56,7 +55,6 @@ public class SplitMarkerSetListActivity extends ListActivity {
     protected static final int ERROR_DIALOG_ID = 1;
     
     private Dialog contextMenuItemConfirmDialog;
-    private Dialog errorDialog;
     
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -68,9 +66,7 @@ public class SplitMarkerSetListActivity extends ListActivity {
                     Intent.ACTION_PICK,
                     getIntent().getAction()});
             
-            errorDialog = ActivityUtil.showErrorDialog(this, true,
-                    R.string.app_name, R.string.general_error,
-                    (Object[]) null);
+            onTerminalError();
         } else {
         
             Cursor splitMarkerSetCursor = managedQuery(
@@ -92,13 +88,18 @@ public class SplitMarkerSetListActivity extends ListActivity {
             setListAdapter(adapter);
             
             getListView().setOnCreateContextMenuListener(this);
-            
-            if (Intent.ACTION_PICK.equals(getIntent().getAction())) {
-                Toast.makeText(
-                        getApplicationContext(),
-                        getString(R.string.split_marker_set_list_pick_instructions),
-                        Toast.LENGTH_LONG).show();
-            }
+        }
+    }
+    
+    @Override
+    protected void onResume() {
+        super.onResume();
+        
+        if (Intent.ACTION_PICK.equals(getIntent().getAction())) {
+            Toast.makeText(
+                    getApplicationContext(),
+                    getString(R.string.split_marker_set_list_pick_instructions),
+                    Toast.LENGTH_LONG).show();
         }
     }
     
@@ -108,9 +109,6 @@ public class SplitMarkerSetListActivity extends ListActivity {
             contextMenuItemConfirmDialog.dismiss();
         }
         
-        if (errorDialog != null) {
-            errorDialog.dismiss();
-        }
         super.onDestroy();
     }
     
@@ -153,7 +151,7 @@ public class SplitMarkerSetListActivity extends ListActivity {
         try {
             info = (AdapterView.AdapterContextMenuInfo) menuInfo;
         } catch (ClassCastException e) {
-            LOG.error("Could not cast {} to {}.", menuInfo,
+            LOG.error("Could not cast [{}] to [{}].", menuInfo,
                     AdapterView.AdapterContextMenuInfo.class);
             return;
         }
@@ -167,8 +165,10 @@ public class SplitMarkerSetListActivity extends ListActivity {
         MenuInflater inflater = getMenuInflater();
         inflater.inflate(R.menu.split_marker_set_list_item_menu, menu);
 
-        menu.setHeaderTitle(cursor.getString(cursor
-                .getColumnIndex(TrackLoggerData.SplitMarkerSet.COLUMN_NAME_NAME)));
+        String splitMarkerSetName = cursor.getString(cursor
+                .getColumnIndex(TrackLoggerData.SplitMarkerSet.COLUMN_NAME_NAME));
+        
+        menu.setHeaderTitle(splitMarkerSetName);
         
         for (int i = 0; i < menu.size(); i++) {
             MenuItem menuItem = menu.getItem(i);
@@ -176,12 +176,12 @@ public class SplitMarkerSetListActivity extends ListActivity {
                 case R.id.split_marker_set_list_item_menu_delete:
                     try {
                         info = (AdapterView.AdapterContextMenuInfo) menuItem.getMenuInfo();
-                        
+
                         if (isInUse((int) info.id)) {
                             menuItem.setEnabled(false);
                         }
                     } catch (ClassCastException e) {
-                        LOG.error("Could not cast {} to {}.", menuItem.getMenuInfo(),
+                        LOG.error("Could not cast [{}] to [{}].", menuItem.getMenuInfo(),
                                 AdapterView.AdapterContextMenuInfo.class);
                         menuItem.setEnabled(false);
                     }       
@@ -197,17 +197,26 @@ public class SplitMarkerSetListActivity extends ListActivity {
         try {
             info = (AdapterView.AdapterContextMenuInfo) item.getMenuInfo();
         } catch (ClassCastException e) {
-            LOG.error("Could not cast {} to {}.", item.getMenuInfo(),
+            LOG.error("Could not cast [{}] to [{}].", item.getMenuInfo(),
                     AdapterView.AdapterContextMenuInfo.class);
             return false;
         }
-
+        
+        Cursor cursor = (Cursor) getListAdapter().getItem(info.position);
+        if (cursor == null) {
+            LOG.error("The cursor is not available from the list adapter.");
+            return false;
+        }
+        
+        String splitMarkerSetName = cursor.getString(cursor
+                .getColumnIndex(TrackLoggerData.SplitMarkerSet.COLUMN_NAME_NAME));
+        
         switch (item.getItemId()) {
             case R.id.split_marker_set_list_item_menu_delete:
-                deleteSplitMarkerSet((int) info.id);
+                confirmDelete((int) info.id, splitMarkerSetName);
                 return true;
             case R.id.split_marker_set_list_item_menu_duplicate:
-                duplicateSplitMarkerSet((int) info.id);
+                duplicate((int) info.id);
                 return true;
             case R.id.split_marker_set_list_item_menu_rename:
                 startActivity(new Intent(TrackLogger.ACTION_RENAME,
@@ -240,12 +249,12 @@ public class SplitMarkerSetListActivity extends ListActivity {
             }
         }
     }
-
+    
     private Uri createSplitMarkerSetUri(int id) {
         return ContentUris.withAppendedId(TrackLoggerData.SplitMarkerSet.CONTENT_URI, id);
     }
     
-    private void duplicateSplitMarkerSet(int id) {
+    private void duplicate(int id) {
         Uri splitMarkerSetUri = createSplitMarkerSetUri(id);
         
         final ArrayList<ContentProviderOperation> operations = new ArrayList<ContentProviderOperation>();
@@ -262,10 +271,7 @@ public class SplitMarkerSetListActivity extends ListActivity {
                 LOG.error(
                         "Wrong number of split marker sets found.  Expected 1 but found [{}].",
                         splitMarkerSetCursor.getCount());
-                
-                errorDialog = ActivityUtil.showErrorDialog(this, false,
-                        R.string.app_name, R.string.general_error,
-                        (Object[]) null);
+                onNonTerminalError();
             } else {
                 splitMarkerSetCursor.moveToFirst();
                 final String name = splitMarkerSetCursor
@@ -277,15 +283,10 @@ public class SplitMarkerSetListActivity extends ListActivity {
                                 name + " Copy");
                 
                 if (newName == null) {
-                    errorDialog = ActivityUtil.showErrorDialog(this, false,
-                            R.string.app_name, R.string.general_error,
-                            (Object[]) null);
+                    onNonTerminalError();
                 } else if (!TrackLoggerDataUtil.isValidSplitMarkerSetName(newName)) {
                     LOG.error("[{}] is an invalid split marker set name.", newName);
-                        
-                    errorDialog = ActivityUtil.showErrorDialog(this, false,
-                            R.string.app_name, R.string.general_error,
-                            (Object[]) null);
+                    onNonTerminalError();
                 } else {
                     operations.add(ContentProviderOperation
                             .newInsert(
@@ -342,10 +343,7 @@ public class SplitMarkerSetListActivity extends ListActivity {
             LOG.error(
                     "Error applying batch operations for split marker set clone.  Operations included ["
                             + operations + "].", e);
-            
-            errorDialog = ActivityUtil.showErrorDialog(this, false,
-                    R.string.app_name, R.string.general_error,
-                    (Object[]) null);
+            onNonTerminalError();
         } finally {
             if (splitMarkerSetCursor != null) {
                 splitMarkerSetCursor.close();
@@ -357,83 +355,51 @@ public class SplitMarkerSetListActivity extends ListActivity {
         }
     }
     
-    private void deleteSplitMarkerSet(final int splitMarkerSetId) {
+    private void confirmDelete(final int splitMarkerSetId, final String splitMarkerSetName) {
+        if (contextMenuItemConfirmDialog != null) {
+            contextMenuItemConfirmDialog.dismiss();
+        }
+        
+        contextMenuItemConfirmDialog = getDialogManager().createConfirmDialog(
+                this,
+                new Runnable() {
+                    @Override
+                    public void run() {
+                        delete(splitMarkerSetId, splitMarkerSetName);
+                    }
+                },
+                null,
+                R.string.app_name,
+                R.string.split_marker_set_list_confirm_delete_prompt,
+                new Object[] { splitMarkerSetName });
+        
+        contextMenuItemConfirmDialog.show();
+    }
+    
+    private void delete(final int splitMarkerSetId, final String splitMarkerSetName) {
         final Uri splitMarkerSetUri = createSplitMarkerSetUri(splitMarkerSetId);
-
-        Cursor cursor = getContentResolver().query(splitMarkerSetUri,
-                null, null, null, null);
-
+        
         try {
-            if (cursor.getCount() != 1) {
+            int count = getContentResolver().delete(splitMarkerSetUri, null, null);
+            
+            if (count != 1) {
                 LOG.error(
-                        "Wrong number of split marker sets found for URI [{}].  Was expecting 1 but found [{}].",
-                        splitMarkerSetUri, cursor.getCount());
-
-                errorDialog = ActivityUtil.showErrorDialog(this, false,
-                        R.string.app_name, R.string.general_error,
-                        (Object[]) null);
-
+                        "Deleted wrong number of rows.  Expecting 1 but got [{}].",
+                        count);
+                onNonTerminalError();
             } else {
-                cursor.moveToFirst();
-
-                final String splitMarkerSetName = cursor
-                        .getString(cursor
-                                .getColumnIndex(TrackLoggerData.SplitMarkerSet.COLUMN_NAME_NAME));
-
-                contextMenuItemConfirmDialog = ActivityUtil.showConfirmDialog(
-                        this,
-                        new Runnable() {
-                            @Override
-                            public void run() {
-
-                                ArrayList<ContentProviderOperation> operations = 
-                                        new ArrayList<ContentProviderOperation>();
-
-                                operations
-                                        .add(ContentProviderOperation
-                                                .newDelete(
-                                                        TrackLoggerData.SplitMarker.CONTENT_URI)
-                                                .withSelection(
-                                                        TrackLoggerData.SplitMarker.COLUMN_NAME_SPLIT_MARKER_SET_ID
-                                                                + " = ?",
-                                                        new String[] { String
-                                                                .valueOf(splitMarkerSetId) })
-                                                .build());
-
-                                operations.add(ContentProviderOperation
-                                        .newDelete(splitMarkerSetUri).build());
-
-                                try {
-                                    getContentResolver().applyBatch(
-                                            TrackLoggerData.AUTHORITY,
-                                            operations);
-                                    Toast.makeText(
-                                            getApplicationContext(),
-                                            getString(
-                                                    R.string.split_marker_set_list_deleted_notification,
-                                                    new Object[] { splitMarkerSetName }),
-                                            Toast.LENGTH_LONG).show();
-                                } catch (Exception e) {
-                                    LOG.error(
-                                            "Error deleting split marker set with URI [" + splitMarkerSetUri
-                                                    + "].  Operations included [" + operations + "].",
-                                            e);
-                                    ActivityUtil.showErrorDialog(SplitMarkerSetListActivity.this,
-                                            false,
-                                            R.string.app_name,
-                                            R.string.general_error,
-                                            (Object[]) null);
-                                }
-                            }
-                        },
-                        null,
-                        R.string.app_name,
-                        R.string.split_marker_set_list_confirm_delete_prompt,
-                        new Object[] { splitMarkerSetName });
+                Toast.makeText(
+                        getApplicationContext(),
+                        getString(
+                                R.string.split_marker_set_list_deleted_notification,
+                                new Object[] { splitMarkerSetName }),
+                        Toast.LENGTH_LONG).show();
             }
-
-        } finally {
-            cursor.close();
+        } catch (Exception e) {
+            LOG.error(
+                    "Error deleting session URI [" + splitMarkerSetUri + "].",
+                    e);
+            onNonTerminalError();
         }
     }
 }

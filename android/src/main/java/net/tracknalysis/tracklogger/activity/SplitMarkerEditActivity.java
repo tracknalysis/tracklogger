@@ -20,8 +20,6 @@ import org.slf4j.LoggerFactory;
 
 import net.tracknalysis.tracklogger.R;
 import net.tracknalysis.tracklogger.provider.TrackLoggerData;
-import android.app.Activity;
-import android.app.Dialog;
 import android.content.ContentValues;
 import android.database.Cursor;
 import android.os.Bundle;
@@ -37,7 +35,7 @@ import android.widget.Toast;
  *
  * @author David Valeri
  */
-public class SplitMarkerEditActivity extends Activity {
+public class SplitMarkerEditActivity extends BaseActivity {
     
     private static final Logger LOG = LoggerFactory.getLogger(SplitMarkerEditActivity.class);
     
@@ -45,7 +43,6 @@ public class SplitMarkerEditActivity extends Activity {
     private TextView promptText;
     private Button okButton;
     private Button cancelButton;
-    private Dialog errorDialog;
     private String currentName;
     private int splitMarkerSetId;
     private int orderIndex;
@@ -61,8 +58,7 @@ public class SplitMarkerEditActivity extends Activity {
                             TrackLoggerData.SplitMarkerSet.ITEM_TYPE,
                             getIntent().getData(), getContentResolver().getType(getIntent().getData())});
             
-            errorDialog = ActivityUtil.showErrorDialog(this, true,
-                    R.string.app_name, R.string.split_marker_edit_error_not_found, (Object[]) null);
+            onTerminalError(R.string.split_marker_edit_error_not_found);
         } else {
             Cursor cursor = null;
             
@@ -74,8 +70,7 @@ public class SplitMarkerEditActivity extends Activity {
                             "Wrong number of split markers found for URI [{}].  Was expecting 1 but found [{}].",
                             getIntent().getData(), cursor.getCount());
                     
-                    errorDialog = ActivityUtil.showErrorDialog(this, true,
-                            R.string.app_name, R.string.split_marker_edit_error_not_found, (Object[]) null);
+                    onTerminalError(R.string.split_marker_edit_error_not_found);
                 } else {
                     cursor.moveToFirst();
                     
@@ -126,15 +121,6 @@ public class SplitMarkerEditActivity extends Activity {
         }
     }
     
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        
-        if (errorDialog != null) {
-            errorDialog.dismiss();
-        }
-    }
-    
     private void onOkButtonClicked() {
         String newName = splitMarkerNameEditText.getText().toString();
         
@@ -143,15 +129,13 @@ public class SplitMarkerEditActivity extends Activity {
         if(!isNameValid(newName)) {
             LOG.error("[{}] is an invalid split marker name.", newName);
             
-            errorDialog = ActivityUtil.showErrorDialog(this, false,
-                    R.string.app_name, R.string.split_marker_edit_error_invalid_name, (Object[]) null);
+            onNonTerminalError(R.string.split_marker_edit_error_invalid_name);
             
             valid = false;
         } else if (isNameDuplicate(newName)) {
             LOG.error("[{}] is a duplicate split marker name.", newName);
             
-            errorDialog = ActivityUtil.showErrorDialog(this, false,
-                    R.string.app_name, R.string.split_marker_edit_error_duplicate_name, (Object[]) null);
+            onNonTerminalError(R.string.split_marker_edit_error_duplicate_name);
             
             valid = false;
         }
@@ -168,8 +152,7 @@ public class SplitMarkerEditActivity extends Activity {
             if (count != 1) {
                 LOG.error("Updated the wrong number of rows.  Expecting 1 but got [{}]", count);
                 
-                errorDialog = ActivityUtil.showErrorDialog(this, true,
-                        R.string.app_name, R.string.general_error, (Object[]) null);
+                onTerminalError();
             } else {
                 int resourceId = R.string.split_marker_edit_success_notification;
                 Object[] args = new Object[] {newName};

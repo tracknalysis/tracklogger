@@ -16,9 +16,12 @@
 package net.tracknalysis.tracklogger;
 
 import java.io.File;
+import java.lang.Thread.UncaughtExceptionHandler;
 import java.util.concurrent.atomic.AtomicInteger;
 
+
 import org.apache.log4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import net.tracknalysis.tracklogger._import.android.SplitMarkerSetFileFormat;
 import net.tracknalysis.tracklogger._import.android.SplitMarkerSetImporterService;
@@ -55,8 +58,8 @@ public class TrackLogger extends Application implements ConfigurationChangeListe
      * <p>
      * Output: nothing.
      */
-    public static final String ACTION_SESSION_EXPORT_CONFIG = TrackLogger.class
-            .getPackage().getName() + "." + "SESSION_EXPORT_CONFIG_ACTION";
+    public static final String ACTION_SESSION_CONFIGURE_EXPORT = TrackLogger.class
+            .getPackage().getName() + "." + "SESSION_CONFIGURE_EXPORT";
     
     /**
      * Start the export process for a session in the background.
@@ -73,7 +76,7 @@ public class TrackLogger extends Application implements ConfigurationChangeListe
      * </ul> 
      */
     public static final String ACTION_SESSION_EXPORT = TrackLogger.class
-            .getPackage().getName() + "." + "SESSION_EXPORT_ACTION";
+            .getPackage().getName() + "." + "SESSION_EXPORT";
     
     /**
      * Start the import process for a split marker set in the background.
@@ -137,6 +140,8 @@ public class TrackLogger extends Application implements ConfigurationChangeListe
     }
     
     protected synchronized void configureLogging(Configuration configuration) {
+        CrashHandler.init();
+        
         Logger.getRootLogger().removeAllAppenders();
         
         File outputDir = new File(Environment.getExternalStorageDirectory(), "TrackLogger");
@@ -157,5 +162,34 @@ public class TrackLogger extends Application implements ConfigurationChangeListe
         LOG_CONFIGURATOR.setRootLevel(configuration.getRootLogLevel());
         LOG_CONFIGURATOR.setMaxFileSize(1024 * 1024 * 5);
         LOG_CONFIGURATOR.configure();
+    }
+    
+    private static final class CrashHandler implements UncaughtExceptionHandler {
+        
+        private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(TrackLogger.class);
+        
+        private final UncaughtExceptionHandler delegate;
+        
+        public static void init() {
+            new CrashHandler();
+        }
+        
+        private CrashHandler() {
+            delegate = Thread.getDefaultUncaughtExceptionHandler();
+            Thread.setDefaultUncaughtExceptionHandler(this);
+        }
+
+        @Override
+        public void uncaughtException(Thread thread, Throwable ex) {
+            try {
+                LOG.error("TrackLogger has crashed due to an uncaught exception.", ex);
+            } catch (Exception e) {
+                // Ignore it
+            } finally {
+                if (delegate != null) {
+                    delegate.uncaughtException(thread, ex);
+                }
+            }
+        }
     }
 }

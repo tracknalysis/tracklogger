@@ -75,12 +75,13 @@ public class SplitMarkerSetViewActivity extends MapActivity {
     private static final Logger LOG = LoggerFactory
             .getLogger(SplitMarkerSetViewActivity.class);
 
+    private final DialogManager dialogManager = new DialogManager();
     private MapView mapView;
-    private Dialog errorDialog;
     private SplitMarkerItemizedOverlay itemizedOverlay;
     private ToggleButton satelliteToggle;
     private int splitMarkerSetId;
     private boolean inUse;
+    private Dialog confirmDialog;
     
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -100,11 +101,7 @@ public class SplitMarkerSetViewActivity extends MapActivity {
                                 getIntent().getData(),
                                 TrackLoggerData.SplitMarkerSet.ITEM_TYPE,
                                 getContentResolver().getType(getIntent().getData()) });
-
-                errorDialog = ActivityUtil.showErrorDialog(this, true,
-                        R.string.app_name,
-                        R.string.split_marker_set_view_error_not_found,
-                        (Object[]) null);
+                dialogManager.onTerminalError(this, R.string.split_marker_set_view_error_not_found);
             } else {
                 populateFromUri(getIntent().getData());
             }
@@ -122,6 +119,7 @@ public class SplitMarkerSetViewActivity extends MapActivity {
                                     getString(R.string.split_marker_set_view_default_new_split_marker_set_name)));
             Uri splitMarkerSetUri = getContentResolver().insert(
                     TrackLoggerData.SplitMarkerSet.CONTENT_URI, cvs);
+            getIntent().setAction(Intent.ACTION_VIEW);
             getIntent().setData(splitMarkerSetUri);
             populateFromUri(splitMarkerSetUri);
             startActivity(new Intent(TrackLogger.ACTION_RENAME, splitMarkerSetUri));
@@ -135,19 +133,16 @@ public class SplitMarkerSetViewActivity extends MapActivity {
                             Intent.ACTION_INSERT,
                             getIntent().getAction() });
     
-            errorDialog = ActivityUtil.showErrorDialog(this, true,
-                    R.string.app_name,
-                    R.string.split_marker_set_view_error_not_found,
-                    (Object[]) null);
+            dialogManager.onTerminalError(this, R.string.split_marker_set_view_error_not_found);
         }
     }
 
     @Override
     protected void onDestroy() {
-        if (errorDialog != null) {
-            errorDialog.dismiss();
+        dialogManager.onDestroy();
+        if (confirmDialog != null) {
+            confirmDialog.dismiss();
         }
-        
         super.onDestroy();
     }
 
@@ -195,19 +190,6 @@ public class SplitMarkerSetViewActivity extends MapActivity {
     }
     
     /**
-     * Shows a terminal error dialog for unexpected errors. The dialog allows
-     * the user to return to the activity and try again.
-     */
-    private void showNonTerminalGenericErrorDialog() {
-        errorDialog = ActivityUtil.showErrorDialog(
-                SplitMarkerSetViewActivity.this,
-                false,
-                R.string.app_name,
-                R.string.general_error,
-                (Object[]) null);
-    }
-    
-    /**
      * Sets up the activity based on the URI of an existing split marker set in the DB.
      *
      * @param uri the URI of the split marker set
@@ -226,10 +208,7 @@ public class SplitMarkerSetViewActivity extends MapActivity {
                         getIntent().getData(),
                         splitMarkerSetCursor.getCount());
 
-                errorDialog = ActivityUtil.showErrorDialog(this, true,
-                        R.string.app_name,
-                        R.string.split_marker_set_view_error_not_found,
-                        (Object[]) null);
+                dialogManager.onTerminalError(this, R.string.split_marker_set_view_error_not_found);
             } else {
                 splitMarkerSetCursor.moveToFirst();
 
@@ -580,7 +559,7 @@ public class SplitMarkerSetViewActivity extends MapActivity {
         }
         
         private void handleError() {
-            showNonTerminalGenericErrorDialog();
+            dialogManager.onNonTerminalError(SplitMarkerSetViewActivity.this);
             // Restore the view from the data source to eliminate any failed state from the user.
             cursor.requery();
             update();
@@ -659,8 +638,7 @@ public class SplitMarkerSetViewActivity extends MapActivity {
         
         private void confirmDelete(final int itemToDeleteIndex) {
             SplitMarkerOverlayItem item = overlayItems.get(itemToDeleteIndex);
-            
-            ActivityUtil.showConfirmDialog(
+            confirmDialog = dialogManager.createConfirmDialog(
                     SplitMarkerSetViewActivity.this,
                     new Runnable() {
                         @Override

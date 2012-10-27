@@ -15,13 +15,17 @@
  */
 package net.tracknalysis.tracklogger.activity;
 
+import java.text.DateFormat;
+import java.util.Date;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import net.tracknalysis.tracklogger.R;
 import net.tracknalysis.tracklogger.TrackLogger;
 import net.tracknalysis.tracklogger.provider.TrackLoggerData;
-import android.app.ListActivity;
+import net.tracknalysis.tracklogger.provider.TrackLoggerDataUtil;
+import android.app.Dialog;
 import android.content.ContentUris;
 import android.content.Intent;
 import android.database.Cursor;
@@ -34,18 +38,26 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.SimpleCursorAdapter;
+import android.widget.TextView;
 import android.widget.Toast;
 
 /**
  * @author David Valeri
  */
-public class SessionListActivity extends ListActivity {
+public class SessionListActivity extends BaseListActivity {
     
     private static final Logger LOG = LoggerFactory.getLogger(SessionListActivity.class);
+    
+    private Dialog contextMenuItemConfirmDialog;
+    private DateFormat dateFormat;
+    private DateFormat timeFormat;
     
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        
+        dateFormat = android.text.format.DateFormat.getMediumDateFormat(this);
+        timeFormat = android.text.format.DateFormat.getTimeFormat(this);
         
         String[] projection = new String[] {
                 TrackLoggerData.Session._ID,
@@ -66,14 +78,40 @@ public class SessionListActivity extends ListActivity {
         SimpleCursorAdapter adapter = new SimpleCursorAdapter(
                   this, R.layout.session_list_item, cursor, from, to);
 
+        adapter.setViewBinder(new SimpleCursorAdapter.ViewBinder() {
+            @Override
+            public boolean setViewValue(View view, Cursor cursor, int columnIndex) {
+                int startTimeColumnIndex = cursor.getColumnIndex(TrackLoggerData.Session.COLUMN_NAME_START_DATE);
+                boolean bound = false;
+                
+                if (startTimeColumnIndex == columnIndex) {
+                    String startDateString = formatSqlDateString(cursor.getString(startTimeColumnIndex));
+                    
+                    if (view instanceof TextView) {
+                        ((TextView) view).setText(startDateString);
+                    } else {
+                        throw new IllegalStateException("This binder can only bind the start time to a text view.");
+                    }
+                    
+                    bound = true;
+                }
+                
+                return bound;
+            }
+        });
+        
+        setContentView(R.layout.session_list);
         setListAdapter(adapter);
         
         getListView().setOnCreateContextMenuListener(this);
-        
-        if (cursor.getCount() == 0) {
-            Toast.makeText(getApplicationContext(), "No stored sessions.",
-                    Toast.LENGTH_SHORT).show();
+    }
+    
+    @Override
+    protected void onDestroy() {
+        if (contextMenuItemConfirmDialog != null) {
+            contextMenuItemConfirmDialog.dismiss();
         }
+        super.onDestroy();
     }
     
     @Override
@@ -97,7 +135,7 @@ public class SessionListActivity extends ListActivity {
         MenuInflater inflater = getMenuInflater();
         inflater.inflate(R.menu.session_list_item_menu, menu);
 
-        menu.setHeaderTitle("Session " + cursor.getString(0));
+        menu.setHeaderTitle(getString(R.string.session_list_context_menu_title, cursor.getInt(0)));
     }
     
     @Override
@@ -108,26 +146,88 @@ public class SessionListActivity extends ListActivity {
         try {
             info = (AdapterView.AdapterContextMenuInfo) item.getMenuInfo();
         } catch (ClassCastException e) {
-            // TODO Log
+            LOG.error("Could not cast {} to {}.", item.getMenuInfo(),
+                    AdapterView.AdapterContextMenuInfo.class);
             return false;
         }
-
-        Uri sessionUri = ContentUris.withAppendedId(TrackLoggerData.Session.CONTENT_URI, info.id);
+        
+        Cursor cursor = (Cursor) getListAdapter().getItem(info.position);
+        if (cursor == null) {
+            LOG.error("The cursor is not available from the list adapter.");
+            return false;
+        }
+        
+        Uri sessionUri = createSessionUri((int) info.id);
         
         switch (item.getItemId()) {
-            case R.id.launchSessionView:
+            case R.id.session_list_item_menu_view:
                 // TODO view session activity
                 return true;
-            case R.id.launchSessionExport:
-                
-                startActivity(new Intent(TrackLogger.ACTION_SESSION_EXPORT_CONFIG, sessionUri));
-                // TODO export session activity
+            case R.id.session_list_item_menu_export:
+                startActivity(new Intent(TrackLogger.ACTION_SESSION_CONFIGURE_EXPORT, sessionUri));
                 return true;
-            case R.id.launchSessionDelete:
-                // TODO delete session activity
+            case R.id.session_list_item_menu_delete:
+                String sqlStartDateString = cursor.getString(cursor
+                        .getColumnIndex(TrackLoggerData.Session.COLUMN_NAME_START_DATE));
+                confirmDelete((int) info.id, formatSqlDateString(sqlStartDateString));
                 return true;
             default:
                 return super.onContextItemSelected(item);
+        }
+    }
+    
+    private Uri createSessionUri(int id) {
+        return ContentUris.withAppendedId(TrackLoggerData.Session.CONTENT_URI, id);
+    }
+    
+    private String formatSqlDateString(String sqlDateString) {
+        Date startDate = TrackLoggerDataUtil.parseSqlDate(sqlDateString);
+        return dateFormat.format(startDate) + " " + timeFormat.format(startDate);
+    }
+    
+    private void confirmDelete(final int sessionId, final String sessionStartDate) {
+        if (contextMenuItemConfirmDialog != null) {
+            contextMenuItemConfirmDialog.dismiss();
+        }
+        
+        contextMenuItemConfirmDialog = getDialogManager().createConfirmDialog(
+                this,
+                new Runnable() {
+                    @Override
+                    public void run() {
+                        delete(sessionId, sessionStartDate);
+                    }
+                },
+                null,
+                R.string.app_name,
+                R.string.session_list_confirm_delete_prompt,
+                new Object[] { sessionId, sessionStartDate });
+        
+        contextMenuItemConfirmDialog.show();
+    }
+    
+    private void delete(int sessionId, String sessionStartDate) {
+        final Uri sessionUri = createSessionUri(sessionId);
+        try {
+            int count = getContentResolver().delete(sessionUri, null, null);
+            
+            if (count != 1) {
+                LOG.error(
+                        "Deleted wrong number of rows.  Expecting 1 but got [{}].",
+                        count);
+                onNonTerminalError();
+            } else {
+                Toast.makeText(
+                        this,
+                        getString(R.string.session_list_deleted_notification,
+                                sessionId, sessionStartDate),
+                        Toast.LENGTH_LONG).show();
+            }
+        } catch (Exception e) {
+            LOG.error(
+                    "Error deleting session URI [" + sessionUri + "].",
+                    e);
+            onNonTerminalError();
         }
     }
 }

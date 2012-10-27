@@ -36,6 +36,7 @@ import net.tracknalysis.tracklogger.config.ConfigurationFactory;
 import net.tracknalysis.tracklogger.export.AbstractSessionToFileExporter;
 import net.tracknalysis.tracklogger.provider.TrackLoggerData;
 import net.tracknalysis.tracklogger.provider.TrackLoggerData.Session;
+import net.tracknalysis.tracklogger.provider.TrackLoggerDataUtil;
 
 /**
  * Exporter for writing insert statements to populate a database equivalent to
@@ -103,13 +104,16 @@ public class AndroidSessionToTrackLoggerSqlExporter extends
                 throw new IllegalStateException("No session found with ID " + sessionId + ".");
             }
             
-            writer.write("INSERT INTO session(_id, start_date, last_modified_date)\r\n");
+            writer.write("INSERT INTO session(_id, start_date, last_modified_date, split_marker_set_id)\r\n");
             writer.write("VALUES ("
                     + sessionId + ", '"
-                    + writeSqlDate(parseSqlDate(sessionCursor.getString(sessionCursor
+                    + TrackLoggerDataUtil.writeSqlDate(TrackLoggerDataUtil.parseSqlDate(sessionCursor.getString(sessionCursor
                             .getColumnIndexOrThrow(Session.COLUMN_NAME_START_DATE)))) + "', '"
-                    + writeSqlDate(parseSqlDate(sessionCursor.getString(sessionCursor
-                            .getColumnIndexOrThrow(Session.COLUMN_NAME_LAST_MODIFIED_DATE)))) +"');");
+                    + TrackLoggerDataUtil.writeSqlDate(TrackLoggerDataUtil.parseSqlDate(sessionCursor.getString(sessionCursor
+                            .getColumnIndexOrThrow(Session.COLUMN_NAME_LAST_MODIFIED_DATE))))  + "', '"
+                    + TrackLoggerDataUtil.writeSqlDate(TrackLoggerDataUtil.parseSqlDate(sessionCursor.getString(sessionCursor
+                            .getColumnIndexOrThrow(Session.COLUMN_NAME_SPLIT_MARKER_SET_ID))))
+                    +"');");
             
             writer.write("\r\n");
             writer.write("\r\n");

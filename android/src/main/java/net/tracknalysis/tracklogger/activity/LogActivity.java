@@ -65,7 +65,7 @@ import android.widget.TextView;
 /**
  * @author David Valeri
  */
-public class LogActivity extends Activity implements OnCancelListener {
+public class LogActivity extends BaseActivity implements OnCancelListener {
     
     private static final Logger LOG = LoggerFactory.getLogger(LogActivity.class);
     
@@ -105,7 +105,6 @@ public class LogActivity extends Activity implements OnCancelListener {
     private TextView splitMarkerSetNameTextView;
     private Dialog initDataProviderCoordinatorDialog;
     private ProgressDialog waitingForStartTriggerDialog;
-    private Dialog errorDialog;
         
     /**
      *  Elapsed time in the current lap.
@@ -477,7 +476,7 @@ public class LogActivity extends Activity implements OnCancelListener {
                 dpcManagerService = binder.getService();
                 
                 if (btAdapter == null) {
-                    onTerminalError(R.string.error_bt_not_supported, R.string.error_alert_title);
+                    onTerminalError(R.string.error_bt_not_supported);
                 } else {
                     if (!btAdapter.isEnabled()) {
                         // BT is off so the coordinator cannot possibly be working.  We will uninit it
@@ -555,9 +554,7 @@ public class LogActivity extends Activity implements OnCancelListener {
             waitingForStartTriggerDialog.dismiss();
         }
         
-        if (errorDialog != null) {
-            errorDialog.dismiss();
-        }
+        getDialogManager().onDestroy();
         
         if (dpcManagerService != null && dpcManagerService.isInitialized()) {
             
@@ -702,56 +699,6 @@ public class LogActivity extends Activity implements OnCancelListener {
                 .setText(R.string.log_wait_for_ready_text_waiting);
         
         initDataProviderCoordinatorDialog.show();
-    }
-    
-    /**
-     * Displays an error dialog that on dismissal does not terminate the activity.
-     *
-     * @param errorMessage the resource ID of the error message text
-     */
-    private void onNonTerminalError(int errorMessage) {
-        onNonTerminalError(R.string.app_name, errorMessage, new Object[0]);
-    }
-    
-    /**
-     * Displays an error dialog that on dismissal does not terminate the activity.
-     *
-     * @param errorMessage the resource ID of the error message text
-     * @param args optional arguments for the error message template text
-     */
-    private void onNonTerminalError(int errorMessage, Object... args) {
-        if (errorDialog != null) {
-            errorDialog.dismiss();
-        }
-        
-        ActivityUtil.showErrorDialog(this, false, R.string.error_alert_title,
-                errorMessage, args);
-    }
-    
-    /**
-     * Displays an error dialog that on dismissal terminates the activity.
-     *
-     * @param errorMessage the resource ID of the error message text
-     */
-    private void onTerminalError(int errorMessage) {
-        onTerminalError(errorMessage, new Object[0]);
-    }
-    
-    /**
-     * Displays an error dialog that on dismissal terminates the activity.
-     *
-     * @param errorMessage the resource ID of the error message text
-     * @param args optional arguments for the error message template text
-     */
-    private void onTerminalError(int errorMessage, Object... args) {
-        cleanup(true);
-        
-        if (errorDialog != null) {
-            errorDialog.dismiss();
-        }
-        
-        errorDialog = ActivityUtil.showErrorDialog(this, true, R.string.error_alert_title,
-                errorMessage, args);
     }
     
     private void onInitDataProviderCoordinatorError() {     

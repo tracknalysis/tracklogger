@@ -231,7 +231,7 @@ public class SessionExporterService extends
         protected Intent getRunningNotificationIntent(
                 RequestState<SessionExportRequest> requestState,
                 Context context) {
-            return new Intent(TrackLogger.ACTION_SESSION_EXPORT_CONFIG, requestState.getIntent().getData());
+            return new Intent(TrackLogger.ACTION_SESSION_CONFIGURE_EXPORT, requestState.getIntent().getData());
         }
         
         @Override

@@ -147,7 +147,7 @@ public class SessionConfigureExportActivity extends Activity {
         
         Intent intent = getIntent();
         
-        if (!TrackLogger.ACTION_SESSION_EXPORT_CONFIG.equals(intent.getAction())) {
+        if (!TrackLogger.ACTION_SESSION_CONFIGURE_EXPORT.equals(intent.getAction())) {
             LOG.error(
                     "The Activity was launched with action {}, but the activity does not understand this action.",
                     intent.getAction());

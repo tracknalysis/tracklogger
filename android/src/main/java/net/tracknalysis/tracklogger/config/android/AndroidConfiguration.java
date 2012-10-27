@@ -76,7 +76,7 @@ public class AndroidConfiguration implements Configuration, OnSharedPreferenceCh
     @Override
     public Level getRootLogLevel() {
         return Level.toLevel(sharedPrefs.getString(
-                ROOT_LOG_LEVEL_KEY, Level.INFO.toString()));
+                ROOT_LOG_LEVEL_KEY, Level.WARN.toString()));
     }
     
     @Override
@@ -92,7 +92,7 @@ public class AndroidConfiguration implements Configuration, OnSharedPreferenceCh
     
     @Override
     public boolean isLogToFile() {
-        return sharedPrefs.getBoolean(LOG_TO_FILE_KEY, false);
+        return sharedPrefs.getBoolean(LOG_TO_FILE_KEY, true);
     }
     
     @Override

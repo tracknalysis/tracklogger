@@ -17,8 +17,20 @@
 <!-- 
 Authors: David Valeri
  -->
-<menu xmlns:android="http://schemas.android.com/apk/res/android">
-  <item android:id="@+id/session_list_item_menu_export" android:title="@string/menu_item_export" />
-  <item android:id="@+id/session_list_item_menu_delete" android:title="@string/menu_item_delete" />
-  <item android:id="@+id/session_list_item_menu_view" android:title="@string/menu_item_view" />
-</menu>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="fill_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="8dp">
+
+    <ListView 
+        android:id="@android:id/list"
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent" />
+    
+    <TextView android:id="@android:id/empty"
+               android:layout_width="match_parent"
+               android:layout_height="match_parent"
+               android:text="@string/session_list_empty"/>
+
+</LinearLayout>

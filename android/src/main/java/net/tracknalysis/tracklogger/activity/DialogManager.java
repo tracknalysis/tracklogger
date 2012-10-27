@@ -15,38 +15,125 @@
  */
 package net.tracknalysis.tracklogger.activity;
 
-import net.tracknalysis.tracklogger.R;
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.app.Dialog;
+import android.content.Context;
 import android.content.DialogInterface;
+import net.tracknalysis.tracklogger.R;
 
 /**
- * Utility class for common actions performed in activities.
+ * Handler for managing common dialogs and their lifecycles.
  * 
  * @author David Valeri
  */
-public final class ActivityUtil {
+class DialogManager {
+
+    private Dialog errorDialog;
 
     /**
-     * Hidden in utility class.
+     * Displays the generic error dialog that on dismissal does not terminate
+     * the activity.
+     * 
+     * @param errorMessage
+     *            the resource ID of the error message text
      */
-    private ActivityUtil() {
+    public void onNonTerminalError(Activity activity) {
+        onNonTerminalError(activity, R.string.general_error);
     }
 
     /**
-     * Displays and returns an alert dialog with the title text containing the
+     * Displays an error dialog that on dismissal does not terminate the
+     * activity.
+     * 
+     * @param errorMessage
+     *            the resource ID of the error message text
+     */
+    public void onNonTerminalError(Activity activity, int errorMessage) {
+        onNonTerminalError(activity, R.string.app_name, errorMessage,
+                new Object[0]);
+    }
+
+    /**
+     * Displays an error dialog that on dismissal does not terminate the
+     * activity.
+     * 
+     * @param errorMessage
+     *            the resource ID of the error message text
+     * @param args
+     *            optional arguments for the error message template text
+     */
+    public void onNonTerminalError(Activity activity, int errorMessage,
+            Object... args) {
+        if (errorDialog != null) {
+            errorDialog.dismiss();
+        }
+
+        errorDialog = createErrorDialog(activity, false,
+                R.string.error_alert_title, errorMessage, args);
+
+        if (!activity.isFinishing()) {
+            errorDialog.show();
+        }
+    }
+
+    /**
+     * Displays the generic error dialog that on dismissal terminates the
+     * activity.
+     * 
+     * @param errorMessage
+     *            the resource ID of the error message text
+     */
+    public void onTerminalError(Activity activity) {
+        onTerminalError(activity, R.string.general_error);
+    }
+
+    /**
+     * Displays an error dialog that on dismissal terminates the activity.
+     * 
+     * @param errorMessage
+     *            the resource ID of the error message text
+     */
+    public void onTerminalError(Activity activity, int errorMessage) {
+        onTerminalError(activity, errorMessage, new Object[0]);
+    }
+
+    /**
+     * Displays an error dialog that on dismissal terminates the activity.
+     * 
+     * @param errorMessage
+     *            the resource ID of the error message text
+     * @param args
+     *            optional arguments for the error message template text
+     */
+    public void onTerminalError(Activity activity, int errorMessage,
+            Object... args) {
+        if (errorDialog != null) {
+            errorDialog.dismiss();
+        }
+
+        errorDialog = createErrorDialog(activity, true,
+                R.string.error_alert_title, errorMessage, args);
+
+        if (!activity.isFinishing()) {
+            errorDialog.show();
+        }
+    }
+
+    /**
+     * Creates and returns an alert dialog with the title text containing the
      * string with ID {@code title} and an confirmation message containing the
      * string with ID {@code message} and optional arguments {@code args}. The
      * OK button on the dialog triggers the optional positive handler of this
      * dialog while the Cancel button and back button trigger the optional
      * negative handler.
      * 
-     * @param avtivity
-     *            the activity that owns this dialog
+     * @param context
+     *            the context that owns this dialog
      * @param positiveRunnable
      *            a runnable executed on the click of the positive button
      * @param negativeRunnable
-     *            a runnable executed on the click of the negative button            
+     *            a runnable executed on the click of the negative button
      * @param title
      *            the string ID for the dialog title
      * @param message
@@ -55,14 +142,12 @@ public final class ActivityUtil {
      *            the optional arguments for token replacement in the string
      *            with ID {@code errorMessage}
      */
-    public static AlertDialog showConfirmDialog(
-            final Activity activity,
-            final Runnable positiveRunnable,
-            final Runnable negativeRunnable,
+    public AlertDialog createConfirmDialog(final Context context,
+            final Runnable positiveRunnable, final Runnable negativeRunnable,
             int title, int message, Object... args) {
 
-        AlertDialog.Builder builder = new AlertDialog.Builder(activity);
-        builder.setMessage(activity.getString(message, args))
+        AlertDialog.Builder builder = new AlertDialog.Builder(context);
+        builder.setMessage(context.getString(message, args))
                 .setTitle(title)
                 .setPositiveButton(R.string.general_ok,
                         new DialogInterface.OnClickListener() {
@@ -91,16 +176,11 @@ public final class ActivityUtil {
                     }
                 });
 
-        AlertDialog dialog = builder.create();
-        if (!activity.isFinishing()) {
-            dialog.show();
-        }
-
-        return dialog;
+        return builder.create();
     }
 
     /**
-     * Displays and returns an alert dialog with the title text containing the
+     * Creates and returns an alert dialog with the title text containing the
      * string with ID {@code title} and an error message containing the string
      * with ID {@code errorMessage} and optional arguments {@code args}. The OK
      * button on the dialog triggers the finishing of this activity if
@@ -119,7 +199,7 @@ public final class ActivityUtil {
      *            the optional arguments for token replacement in the string
      *            with ID {@code errorMessage}
      */
-    public static AlertDialog showErrorDialog(final Activity activity,
+    public AlertDialog createErrorDialog(final Activity activity,
             final boolean finish, int title, int errorMessage, Object... args) {
 
         AlertDialog.Builder builder = new AlertDialog.Builder(activity);
@@ -135,11 +215,12 @@ public final class ActivityUtil {
                             }
                         });
 
-        AlertDialog dialog = builder.create();
-        if (!activity.isFinishing()) {
-            dialog.show();
-        }
+        return builder.create();
+    }
 
-        return dialog;
+    void onDestroy() {
+        if (errorDialog != null) {
+            errorDialog.dismiss();
+        }
     }
 }

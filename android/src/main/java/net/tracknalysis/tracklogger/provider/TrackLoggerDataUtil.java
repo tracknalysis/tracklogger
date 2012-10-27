@@ -15,6 +15,11 @@
  */
 package net.tracknalysis.tracklogger.provider;
 
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,7 +42,12 @@ import android.database.Cursor;
  */
 public final class TrackLoggerDataUtil {
     
-    private static final Logger LOG = LoggerFactory.getLogger(TrackLoggerDataUtil.class); 
+    private static final Logger LOG = LoggerFactory.getLogger(TrackLoggerDataUtil.class);
+    private static final DateFormat SQL_DATE_FORMATTER = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss"); 
+    
+    static {
+        TrackLoggerDataUtil.SQL_DATE_FORMATTER.setLenient(false);
+    }
     
     private TrackLoggerDataUtil() {        
     }
@@ -190,5 +200,17 @@ public final class TrackLoggerDataUtil {
                 timingData.getSplitTime());
         
         return cv;
+    }
+
+    public static synchronized String writeSqlDate(Date date) {
+        return SQL_DATE_FORMATTER.format(date);
+    }
+
+    public static synchronized Date parseSqlDate(String dateString) {
+        try {
+            return SQL_DATE_FORMATTER.parse(dateString);
+        } catch (ParseException e) {
+            throw new IllegalStateException("Error parsing SQL formatted date.", e);
+        }
     }
 }

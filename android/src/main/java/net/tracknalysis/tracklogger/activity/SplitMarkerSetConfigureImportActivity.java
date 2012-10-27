@@ -25,11 +25,8 @@ import net.tracknalysis.tracklogger.TrackLogger;
 import net.tracknalysis.tracklogger._import.android.SplitMarkerSetFileFormat;
 import net.tracknalysis.tracklogger._import.android.SplitMarkerSetImporterService;
 import net.tracknalysis.tracklogger.config.ConfigurationFactory;
-import net.tracknalysis.tracklogger.provider.TrackLoggerData;
-import android.app.Activity;
-import android.app.Dialog;
+import net.tracknalysis.tracklogger.provider.TrackLoggerDataUtil;
 import android.content.Intent;
-import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Parcelable;
@@ -47,7 +44,7 @@ import android.widget.Toast;
  * 
  * @author David Valeri
  */
-public class SplitMarkerSetConfigureImportActivity extends Activity {
+public class SplitMarkerSetConfigureImportActivity extends BaseActivity {
     
     /**
      * The ID of the file chooser activity launched from this activity.
@@ -69,7 +66,6 @@ public class SplitMarkerSetConfigureImportActivity extends Activity {
     private File file;
     private TextView fileNameTextView;
     private EditText splitMarkerSetNameEditText;
-    private Dialog errorDialog;
     
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -141,35 +137,15 @@ public class SplitMarkerSetConfigureImportActivity extends Activity {
         }
     }
     
-    @Override
-    protected void onDestroy() {
-        if (errorDialog != null) {
-            errorDialog.dismiss();
-        }
-        super.onDestroy();
-    }
-    
     /**
      * Handle what happens when the user clicks the import button in the activity.
      */
     protected void onImportButtonClicked() {
         if (file == null) {
-            errorDialog = ActivityUtil
-                    .showErrorDialog(
-                            SplitMarkerSetConfigureImportActivity.this,
-                            false,
-                            R.string.app_name,
-                            R.string.split_marker_set_config_import_missing_source,
-                            (Object[]) null);
+            onNonTerminalError(R.string.split_marker_set_config_import_missing_source);
             return;
         } else if (importFormatSpinner.getSelectedItemPosition() == AdapterView.INVALID_POSITION) {
-            errorDialog = ActivityUtil
-                    .showErrorDialog(
-                            SplitMarkerSetConfigureImportActivity.this,
-                            false,
-                            R.string.app_name,
-                            R.string.split_marker_set_config_import_invalid_format,
-                            (Object[]) null);
+            onNonTerminalError(R.string.split_marker_set_config_import_invalid_format);
             return;
         } else {
         
@@ -180,23 +156,13 @@ public class SplitMarkerSetConfigureImportActivity extends Activity {
                             .getSelectedItemPosition()].getId());
             intent.setData(Uri.fromFile(file));
             if (splitMarkerSetNameEditText.getText().length() != 0) {
+                String name = splitMarkerSetNameEditText.getText().toString();
                 
-                Cursor splitMarkerSetCursor = managedQuery(
-                        TrackLoggerData.SplitMarkerSet.CONTENT_URI,
-                        null,
-                        TrackLoggerData.SplitMarkerSet.COLUMN_NAME_NAME + " = ?",
-                        new String[] {splitMarkerSetNameEditText.getText().toString()},
-                        null);
-                
-                if (splitMarkerSetCursor.getCount() != 0) {
-                    errorDialog = ActivityUtil
-                            .showErrorDialog(
-                                    SplitMarkerSetConfigureImportActivity.this,
-                                    false,
-                                    R.string.app_name,
-                                    R.string.split_marker_set_config_import_duplicate_name,
-                                    splitMarkerSetNameEditText
-                                            .getText().toString());
+                if (!TrackLoggerDataUtil.isValidSplitMarkerSetName(name)) {
+                    // TODO: Error dialog here
+                    return;
+                } else if (TrackLoggerDataUtil.isDuplicateSplitMarkerSetName(getContentResolver(), name)) {
+                    onNonTerminalError(R.string.split_marker_set_config_import_duplicate_name);
                     return;
                 }
                 

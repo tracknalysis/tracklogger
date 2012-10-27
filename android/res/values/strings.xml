@@ -87,6 +87,11 @@ Authors: David Valeri
     <string name="log_batv_title">Battery Voltage</string>
     
     
+    <string name="session_list_empty">No sessions exist.  Log some data to create a session.</string>
+    <string name="session_list_confirm_delete_prompt">Are you sure you want to delete session %1$d from %2$s?</string>
+    <string name="session_list_context_menu_title">Session %d</string>
+    <string name="session_list_deleted_notification">Deleted session %1$d from %2$s.</string>
+    
     <string name="export_error_session_not_found">The selected session could not be found.  Please try again.</string>
     <string name="export_queued">Session export queued.</string>
     <string name="export_total_laps">Total Laps:</string>
@@ -99,7 +104,7 @@ Authors: David Valeri
     <string name="export_progress_notification_error_content_text">Error exporting session %d data.</string>
     
     
-    <string name="split_marker_set_rename_prompt">Enter a new name for the split marker set with the name %s</string>
+    <string name="split_marker_set_rename_prompt">Enter a new name for the split marker set with the name \'%s\'.</string>
     <string name="split_marker_set_rename_toast">Renamed \'%1$s\' to \'%2$s\'.</string>
     <string name="split_marker_set_rename_error_not_found">The requested split marker set could not be found.</string>
     <string name="split_marker_set_rename_error_invalid_name">The name entered is not a valid split marker set name.</string>
@@ -114,29 +119,29 @@ Authors: David Valeri
     <string name="split_marker_set_view_marker_deleted_notification">\'%s\' deleted.</string>
     <string name="split_marker_set_view_marker_renamed_notification">\'%1$s\' renamed to \'%2$s\'.</string>
     <string name="split_marker_set_view_menu_item_zoom_to_show_all">Show all</string>
-    <string name="split_marker_set_view_confirm_delete_marker_prompt">Are you sure you want to delete \'%s\'</string>
+    <string name="split_marker_set_view_confirm_delete_marker_prompt">Are you sure you want to delete \'%s\'?</string>
     <string name="split_marker_set_view_default_new_split_marker_set_name">New Split Marker Set</string>
     
     <string name="split_marker_set_list_empty">No split marker sets exist.  Choose an option from the menu to import or create a new set.</string>
-    <string name="split_marker_set_list_confirm_delete_prompt">Are you sure you want to delete the split marker set named %s?</string>
+    <string name="split_marker_set_list_confirm_delete_prompt">Are you sure you want to delete the split marker set named \'%s\'?</string>
     <string name="split_marker_set_list_deleted_notification">Deleted the split marker set named \'%s\'.</string>
     <string name="split_marker_set_list_duplicated_notification">Copied \'%1$s\' to \'%2$s\'.</string>
     <string name="split_marker_set_list_pick_instructions">Short tap an item to select it.  Long tap for more options.</string>
     
-    <string name="split_marker_set_config_import_duplicate_name">Could not import split marker set with name %s.  A split marker set already exists with that name.</string>
+    <string name="split_marker_set_config_import_duplicate_name">Could not import split marker set with name \'%s\'.  A split marker set already exists with that name.</string>
     <string name="split_marker_set_config_import_missing_source">Please select a source to import.</string>
     <string name="split_marker_set_config_import_invalid_format">Please select a valid input source format.</string>
 
-    <string name="split_marker_set_import_notification_running_ticker_message">Importing split marker set %s…</string>
+    <string name="split_marker_set_import_notification_running_ticker_message">Importing split marker set \'%s\'…</string>
     <string name="split_marker_set_import_notification_running_content_text">Importing split marker %1$d of %2$d.</string>
     <string name="split_marker_set_import_notification_running_indeterminate_content_text">Importing split marker %1$d.</string>
     <string name="split_marker_set_import_notification_finished_ticker_message">Import finished.</string>
-    <string name="split_marker_set_import_notification_finished_content_text">Finished importing split marker set %s.</string>
+    <string name="split_marker_set_import_notification_finished_content_text">Finished importing split marker set \'%s\'.</string>
     <string name="split_marker_set_import_notification_error_ticker_message">Import failed.</string>
-    <string name="split_marker_set_import_notification_error_content_text">Error importing split marker set %s.</string>
+    <string name="split_marker_set_import_notification_error_content_text">Error importing split marker set \'%s\'.</string>
         
     
-    <string name="split_marker_edit_prompt">Enter a new name for the split marker with the name \'%s\'</string>
+    <string name="split_marker_edit_prompt">Enter a new name for the split marker with the name \'%s\'.</string>
     <string name="split_marker_edit_success_no_name_notification">\'Split Marker %s\' updated.</string>
     <string name="split_marker_edit_success_notification">Split marker \'%s\' updated.</string>
     <string name="split_marker_edit_error_not_found">The requested split marker could not be found.</string>

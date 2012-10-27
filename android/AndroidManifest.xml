@@ -46,7 +46,7 @@
     
     <activity android:name=".activity.SessionConfigureExportActivity" android:exported="false">
       <intent-filter>
-        <action android:name="net.tracknalysis.tracklogger.SESSION_EXPORT_CONFIG_ACTION" />
+        <action android:name="net.tracknalysis.tracklogger.SESSION_CONFIGURE_EXPORT" />
         <category android:name="android.intent.category.DEFAULT" />
         <data android:mimeType="vnd.android.cursor.item/net.tracknalysis.tracklogger.session" />
       </intent-filter>  
@@ -129,7 +129,7 @@
     
     <service android:name=".export.android.SessionExporterService" android:exported="false">
        <intent-filter>
-        <action android:name="net.tracknalysis.tracklogger.SESSION_EXPORT_ACTION" />
+        <action android:name="net.tracknalysis.tracklogger.SESSION_EXPORT" />
         <category android:name="android.intent.category.DEFAULT" />
         <data android:mimeType="vnd.android.cursor.item/net.tracknalysis.tracklogger.session" />
       </intent-filter>

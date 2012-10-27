@@ -21,8 +21,6 @@ import org.slf4j.LoggerFactory;
 import net.tracknalysis.tracklogger.R;
 import net.tracknalysis.tracklogger.provider.TrackLoggerData;
 import net.tracknalysis.tracklogger.provider.TrackLoggerDataUtil;
-import android.app.Activity;
-import android.app.Dialog;
 import android.content.ContentValues;
 import android.database.Cursor;
 import android.os.Bundle;
@@ -38,7 +36,7 @@ import android.widget.Toast;
  *
  * @author David Valeri
  */
-public class SplitMarkerSetRenameActivity extends Activity {
+public class SplitMarkerSetRenameActivity extends BaseActivity {
     
     private static final Logger LOG = LoggerFactory.getLogger(SplitMarkerSetRenameActivity.class);
     
@@ -46,7 +44,6 @@ public class SplitMarkerSetRenameActivity extends Activity {
     private TextView promptText;
     private Button okButton;
     private Button cancelButton;
-    private Dialog errorDialog;
     private String currentName;
     
     @Override
@@ -60,8 +57,7 @@ public class SplitMarkerSetRenameActivity extends Activity {
                             TrackLoggerData.SplitMarkerSet.ITEM_TYPE,
                             getIntent().getData(), getContentResolver().getType(getIntent().getData())});
             
-            errorDialog = ActivityUtil.showErrorDialog(this, true,
-                    R.string.app_name, R.string.split_marker_set_rename_error_not_found, (Object[]) null);
+            onTerminalError(R.string.split_marker_set_rename_error_not_found);
         } else {
             Cursor cursor = null;
             
@@ -73,8 +69,7 @@ public class SplitMarkerSetRenameActivity extends Activity {
                             "Wrong number of split marker sets found for URI [{}].  Was expecting 1 but found [{}].",
                             getIntent().getData(), cursor.getCount());
                     
-                    errorDialog = ActivityUtil.showErrorDialog(this, true,
-                            R.string.app_name, R.string.split_marker_set_rename_error_not_found, (Object[]) null);
+                    onTerminalError(R.string.split_marker_set_rename_error_not_found);
                 } else {
                     cursor.moveToFirst();
                     
@@ -118,15 +113,6 @@ public class SplitMarkerSetRenameActivity extends Activity {
         }
     }
     
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        
-        if (errorDialog != null) {
-            errorDialog.dismiss();
-        }
-    }
-    
     private void onOkButtonClicked() {
         String newName = splitMarkerSetNameEditText.getText().toString();
         
@@ -134,24 +120,18 @@ public class SplitMarkerSetRenameActivity extends Activity {
         
             if (!TrackLoggerDataUtil.isValidSplitMarkerSetName(newName)) {
                 LOG.error("[{}] is an invalid split marker set name.", newName);
-                
-                errorDialog = ActivityUtil.showErrorDialog(this, false,
-                        R.string.app_name, R.string.split_marker_set_rename_error_invalid_name, (Object[]) null);
+                onNonTerminalError(R.string.split_marker_set_rename_error_invalid_name);
             } else {
                 if (TrackLoggerDataUtil.isDuplicateSplitMarkerSetName(getContentResolver(), newName)) {
                     LOG.error("[{}] is a duplicate split marker set name.", newName);
-                    
-                    errorDialog = ActivityUtil.showErrorDialog(this, false,
-                            R.string.app_name, R.string.split_marker_set_rename_error_duplicate, (Object[]) null);
+                    onNonTerminalError(R.string.split_marker_set_rename_error_duplicate);
                 } else {
                     ContentValues cvs = new ContentValues();
                     cvs.put(TrackLoggerData.SplitMarkerSet.COLUMN_NAME_NAME, newName);
                     int count = getContentResolver().update(getIntent().getData(), cvs, null, (String[]) null); 
                     if (count != 1) {
                         LOG.error("Updated the wrong number of rows.  Expecting 1 but got [{}]", count);
-                        
-                        errorDialog = ActivityUtil.showErrorDialog(this, true,
-                                R.string.app_name, R.string.general_error, (Object[]) null);
+                        onNonTerminalError();
                     } else {
                         Toast.makeText(
                                 getApplicationContext(),
@@ -159,7 +139,7 @@ public class SplitMarkerSetRenameActivity extends Activity {
                                         R.string.split_marker_set_rename_toast,
                                         currentName, newName),
                                 Toast.LENGTH_LONG).show();
-                        
+                        finish();
                     }
                 }
             }

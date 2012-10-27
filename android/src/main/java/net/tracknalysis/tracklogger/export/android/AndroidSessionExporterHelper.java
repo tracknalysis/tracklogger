@@ -15,14 +15,12 @@
  */
 package net.tracknalysis.tracklogger.export.android;
 
-import java.text.DateFormat;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.Date;
 
 import org.slf4j.Logger;
 
 import net.tracknalysis.tracklogger.provider.TrackLoggerData;
+import net.tracknalysis.tracklogger.provider.TrackLoggerDataUtil;
 import android.content.ContentResolver;
 import android.database.Cursor;
 
@@ -32,12 +30,6 @@ import android.database.Cursor;
  * @author David Valeri
  */
 class AndroidSessionExporterHelper {
-    
-    private static final DateFormat SQL_DATE_FORMATTER = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-    
-    static {
-        SQL_DATE_FORMATTER.setLenient(false);
-    }
     
     private AndroidSessionExporterHelper() {
     }
@@ -56,18 +48,6 @@ class AndroidSessionExporterHelper {
     
     static Long getLongOrNull(int columnIndex, Cursor cursor) {
         return cursor.isNull(columnIndex) ? null : cursor.getLong(columnIndex);
-    }
-    
-    static synchronized String writeSqlDate(Date date) {
-        return SQL_DATE_FORMATTER.format(date);
-    }
-    
-    static synchronized Date parseSqlDate(String dateString) {
-        try {
-            return SQL_DATE_FORMATTER.parse(dateString);
-        } catch (ParseException e) {
-            throw new IllegalStateException("Error parsing SQL formatted date.", e);
-        }
     }
     
     /**
@@ -97,7 +77,7 @@ class AndroidSessionExporterHelper {
             String startDateString = sessionCursor.getString(sessionCursor
                     .getColumnIndex(TrackLoggerData.Session.COLUMN_NAME_START_DATE)); 
             
-            return parseSqlDate(startDateString);
+            return TrackLoggerDataUtil.parseSqlDate(startDateString);
         } finally {
             if (sessionCursor != null) {
                 sessionCursor.close();

@@ -411,7 +411,7 @@ public class TrackLoggerDataProvider extends ContentProvider {
             throw new SQLException("Failed to insert row into " + uri);
         }
     }
-
+    
     /**
      * {@inheritDoc}
      *
@@ -421,26 +421,35 @@ public class TrackLoggerDataProvider extends ContentProvider {
     public int delete(Uri uri, String where, String[] whereArgs) {
 
         SQLiteDatabase db = databaseHelper.getWritableDatabase();
-        int count;
+        int count = 0;
 
         switch (URI_MATCHER.match(uri)) {
 
             case SESSION:
-                count = db.delete(TrackLoggerData.Session.TABLE_NAME,
-                        where,
-                        whereArgs);
+                count = cascadeDeletesForTable(
+                        TrackLoggerData.Session.TABLE_NAME,
+                        TrackLoggerData.Session._ID,
+                        db,
+                        where, whereArgs,
+                        new SessionDeleteCascadeStrategy());
                 break;
             case SESSION_ID:
-                count = doSingleDelete(TrackLoggerData.Session._ID,
-                        uri.getPathSegments().get(TrackLoggerData.Session.ID_PATH_POSITION),
-                        TrackLoggerData.Session.TABLE_NAME, where, whereArgs);
+                String sessionId = uri.getPathSegments().get(TrackLoggerData.Session.ID_PATH_POSITION);
+                
+                count = cascadeDeletesForTable(
+                        TrackLoggerData.Session.TABLE_NAME,
+                        TrackLoggerData.Session._ID,
+                        db,
+                        getWhereForSingleDelete(TrackLoggerData.Session._ID, sessionId, where),
+                        whereArgs,
+                        new SessionDeleteCascadeStrategy());
                 break;
             case LOG_ENTRY:
                 count = db.delete(TrackLoggerData.LogEntry.TABLE_NAME,
                         where,
                         whereArgs);
             case LOG_ENTRY_ID:
-                count = doSingleDelete(TrackLoggerData.LogEntry._ID,
+                count = doSingleDelete(db, TrackLoggerData.LogEntry._ID,
                         uri.getPathSegments().get(TrackLoggerData.LogEntry.ID_PATH_POSITION),
                         TrackLoggerData.LogEntry.TABLE_NAME, where, whereArgs);
                 break;
@@ -449,19 +458,28 @@ public class TrackLoggerDataProvider extends ContentProvider {
                         where,
                         whereArgs);
             case TIMING_ENTRY_ID:
-                count = doSingleDelete(TrackLoggerData.TimingEntry._ID,
+                count = doSingleDelete(db, TrackLoggerData.TimingEntry._ID,
                         uri.getPathSegments().get(TrackLoggerData.TimingEntry.ID_PATH_POSITION),
                         TrackLoggerData.TimingEntry.TABLE_NAME, where, whereArgs);
                 break;
             case SPLIT_MARKER_SET:
-                count = db.delete(TrackLoggerData.SplitMarkerSet.TABLE_NAME,
-                        where,
-                        whereArgs);
+                count = cascadeDeletesForTable(
+                        TrackLoggerData.SplitMarkerSet.TABLE_NAME,
+                        TrackLoggerData.SplitMarkerSet._ID,
+                        db,
+                        where, whereArgs,
+                        new SplitMarkerSetDeleteCascadeStrategy());
                 break;
             case SPLIT_MARKER_SET_ID:
-                count = doSingleDelete(TrackLoggerData.SplitMarkerSet._ID,
-                        uri.getPathSegments().get(TrackLoggerData.SplitMarkerSet.ID_PATH_POSITION),
-                        TrackLoggerData.SplitMarkerSet.TABLE_NAME, where, whereArgs);
+                String splitMarkerSetId = uri.getPathSegments().get(TrackLoggerData.Session.ID_PATH_POSITION);
+                
+                count = cascadeDeletesForTable(
+                        TrackLoggerData.SplitMarkerSet.TABLE_NAME,
+                        TrackLoggerData.SplitMarkerSet._ID,
+                        db,
+                        getWhereForSingleDelete(TrackLoggerData.Session._ID, splitMarkerSetId, where),
+                        whereArgs,
+                        new SplitMarkerSetDeleteCascadeStrategy());
                 break;
             case SPLIT_MARKER:
                 count = db.delete(TrackLoggerData.SplitMarker.TABLE_NAME,
@@ -469,7 +487,7 @@ public class TrackLoggerDataProvider extends ContentProvider {
                         whereArgs);
                 break;
             case SPLIT_MARKER_ID:
-                count = doSingleDelete(TrackLoggerData.SplitMarker._ID,
+                count = doSingleDelete(db, TrackLoggerData.SplitMarker._ID,
                         uri.getPathSegments().get(TrackLoggerData.SplitMarker.ID_PATH_POSITION),
                         TrackLoggerData.SplitMarker.TABLE_NAME, where, whereArgs);
                 break;
@@ -580,21 +598,28 @@ public class TrackLoggerDataProvider extends ContentProvider {
         return count;
     }
     
-    protected int doSingleDelete(String idColumnName, String id, String tableName,
+    private int doSingleDelete(SQLiteDatabase db, String idColumnName, String id, String tableName,
             String where, String[] whereArgs) {
+        
+        String finalWhere = getWhereForSingleDelete(idColumnName, id, where);
+
+        return db.delete(tableName,
+                finalWhere,
+                whereArgs);
+    }
+    
+    private String getWhereForSingleDelete(String idColumnName, String id, String where) {
         
         String finalWhere = idColumnName + " = " + id;
 
         if (where != null) {
             finalWhere = finalWhere + " AND (" + where + ")";
         }
-
-        return databaseHelper.getWritableDatabase().delete(tableName,
-                finalWhere,
-                whereArgs);
+        
+        return finalWhere;
     }
     
-    protected String getDefaultSortOrder(int uriType) {
+    private String getDefaultSortOrder(int uriType) {
         switch (uriType) {
             case SESSION:
             case SESSION_ID:
@@ -613,6 +638,95 @@ public class TrackLoggerDataProvider extends ContentProvider {
                 return TrackLoggerData.SplitMarker.DEFAULT_SORT_ORDER;
             default:
                 throw new IllegalArgumentException("Unknown URI type: " + uriType);
+        }
+    }
+    
+    /**
+     * Performs a deletion of the matching rows in the given table, after
+     * applying the cascading strategy for each matching row.
+     * 
+     * @param tableName
+     *            the name of the table to start deleting from
+     * @param idColumnName
+     *            the name of the column in the starting table that serves as
+     *            the key for the cascading relationship
+     * @param db
+     *            the database to use
+     * @param where
+     *            the where clause
+     * @param whereArgs
+     *            the arguments to the where clause
+     * @param cascadeStrategy
+     *            the strategy to use for performing the cascading delete
+     * @return the number of rows deleted from {@code tableName}
+     */
+    private int cascadeDeletesForTable(
+            String tableName, String idColumnName,
+            SQLiteDatabase db, String where, String[] whereArgs,
+            CascadeStrategy cascadeStrategy) {
+        
+        Cursor cursor = null;
+        int count = 0;
+        
+        db.beginTransaction();
+        
+        try {
+            cursor = db.query(tableName,
+                    new String[] { idColumnName },
+                    where, whereArgs, null, null, null);
+            
+            if (cursor.getCount() > 0) {
+                cursor.moveToFirst();
+                while (!cursor.isAfterLast()) {
+                    int parentId =  cursor.getInt(0);
+                    cascadeStrategy.cascade(db, parentId);
+                    count += doSingleDelete(db, idColumnName, String.valueOf(parentId), tableName, null, null);
+                    
+                    cursor.moveToNext();
+                }
+            }
+            
+            db.setTransactionSuccessful();
+        } finally {
+            if (cursor != null) {
+                cursor.close();
+            }
+            
+            db.endTransaction();
+        }
+        
+        return count;
+    }
+    
+    /**
+     * Interface for passing cascading database operations to the cascade helper methods.
+     */
+    private interface CascadeStrategy {
+        void cascade(SQLiteDatabase db, int parentId);
+    }
+    
+    private static final class SessionDeleteCascadeStrategy implements CascadeStrategy {
+
+        @Override
+        public void cascade(SQLiteDatabase db, int parentId) {
+            db.delete(TrackLoggerData.LogEntry.TABLE_NAME,
+                    TrackLoggerData.LogEntry.COLUMN_NAME_SESSION_ID + " = ?",
+                    new String[] {String.valueOf(parentId)});
+            
+            db.delete(TrackLoggerData.TimingEntry.TABLE_NAME,
+                    TrackLoggerData.TimingEntry.COLUMN_NAME_SESSION_ID + " = ?",
+                    new String[] {String.valueOf(parentId)});
+        }
+        
+    }
+    
+    private static final class SplitMarkerSetDeleteCascadeStrategy implements CascadeStrategy {
+
+        @Override
+        public void cascade(SQLiteDatabase db, int parentId) {
+            db.delete(TrackLoggerData.SplitMarker.TABLE_NAME,
+                    TrackLoggerData.SplitMarker.COLUMN_NAME_SPLIT_MARKER_SET_ID + " = ?",
+                    new String[] {String.valueOf(parentId)});
         }
     }
 }
