@@ -55,7 +55,7 @@ public class EcuData extends AbstractData {
     }
 
     /**
-     * Returns the throttle position % (0-1).
+     * Returns the throttle position % (0-100).
      */
     public double getThrottlePosition() {
         return throttlePosition;
@@ -147,106 +147,123 @@ public class EcuData extends AbstractData {
     
     public static class EcuDataBuilder extends AbstractDataBuilder<EcuData> {
         
-        /**
-         * Engine RPM.
-         */
         private int rpm;
-        
-        /**
-         * Manifold absolute pressure in KPa.
-         */
         private double manifoldAbsolutePressure;
-        
-        /**
-         * Throttle position % (0-1).
-         */
         private double throttlePosition;
-        
-        /**
-         * Air fuel ratio.
-         */
         private double airFuelRatio;
-        
-        /**
-         * Manifold air temperature in degrees Celsius.
-         */
         private double manifoldAirTemperature;
-        
-        /**
-         * Coolant temperature in degrees Celsius.
-         */
         private double coolantTemperature;
-        
-        /**
-         * Ignition advance in degrees BTDC.
-         */
         private double ignitionAdvance;
-        
-        /**
-         * Battery voltage in Volts.
-         */
         private double batteryVoltage;
         
+        /**
+         * @see EcuData#getRpm()
+         */
         public int getRpm() {
             return rpm;
         }
 
+        /**
+         * @see EcuData#getRpm()
+         */
         public void setRpm(int rpm) {
             this.rpm = rpm;
         }
 
+        /**
+         * @see EcuData#getManifoldAbsolutePressure()
+         */
         public double getManifoldAbsolutePressure() {
             return manifoldAbsolutePressure;
         }
 
+        /**
+         * @see EcuData#getManifoldAbsolutePressure()
+         */
         public void setManifoldAbsolutePressure(double manifoldAbsolutePressure) {
             this.manifoldAbsolutePressure = manifoldAbsolutePressure;
         }
 
+        /**
+         * @see EcuData#getThrottlePosition()
+         */
         public double getThrottlePosition() {
             return throttlePosition;
         }
 
+        /**
+         * @see EcuData#getThrottlePosition()
+         */
         public void setThrottlePosition(double throttlePosition) {
             this.throttlePosition = throttlePosition;
         }
 
+        /**
+         * @see EcuData#getAirFuelRatio()
+         */
         public double getAirFuelRatio() {
             return airFuelRatio;
         }
 
+        /**
+         * @see EcuData#getAirFuelRatio()
+         */
         public void setAirFuelRatio(double airFuelRatio) {
             this.airFuelRatio = airFuelRatio;
         }
 
+        /**
+         * @see EcuData#getManifoldAirTemperature()
+         */
         public double getManifoldAirTemperature() {
             return manifoldAirTemperature;
         }
 
+        /**
+         * @see EcuData#getManifoldAirTemperature()
+         */
         public void setManifoldAirTemperature(double manifoldAirTemperature) {
             this.manifoldAirTemperature = manifoldAirTemperature;
         }
 
+        /**
+         * @see EcuData#getCoolantTemperature()
+         */
         public double getCoolantTemperature() {
             return coolantTemperature;
         }
 
+        /**
+         * @see EcuData#getCoolantTemperature()
+         */
         public void setCoolantTemperature(double coolantTemperature) {
             this.coolantTemperature = coolantTemperature;
         }
 
+        /**
+         * @see EcuData#getIgnitionAdvance()
+         */
         public double getIgnitionAdvance() {
             return ignitionAdvance;
         }
 
+        /**
+         * @see EcuData#getIgnitionAdvance()
+         */
         public void setIgnitionAdvance(double ignitionAdvance) {
             this.ignitionAdvance = ignitionAdvance;
         }
 
+        /**
+         * @see EcuData#getBatteryVoltage()
+         */
         public double getBatteryVoltage() {
             return batteryVoltage;
         }
 
+        /**
+         * @see EcuData#getBatteryVoltage()
+         */
         public void setBatteryVoltage(double batteryVoltage) {
             this.batteryVoltage = batteryVoltage;
         }

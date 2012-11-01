@@ -15,6 +15,8 @@
  */
 package net.tracknalysis.tracklogger.dataprovider.ecu;
 
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -32,6 +34,7 @@ import net.tracknalysis.ecu.ms.MegasquirtFactoryException;
 import net.tracknalysis.ecu.ms.SignatureException;
 import net.tracknalysis.ecu.ms.TableManager;
 import net.tracknalysis.ecu.ms.io.DirectMegasquirtIoManager;
+import net.tracknalysis.ecu.ms.io.DebugLogWriterMegasquirtIoManager;
 import net.tracknalysis.ecu.ms.io.MegasquirtIoManager;
 import net.tracknalysis.ecu.ms.log.Log;
 import net.tracknalysis.tracklogger.dataprovider.AbstractDataProvider;
@@ -48,12 +51,14 @@ public class MegasquirtEcuDataProvider extends AbstractDataProvider<EcuData>
     
     private final SocketManager socketManager;
     private final TableManager tableManager;
+    private final File ioLogFile; 
     private Megasquirt ms;
     private MegasquirtConfiguration msConfig;
     private volatile EcuData currentEcuData;
     
-    public MegasquirtEcuDataProvider(SocketManager socketManager) {
+    public MegasquirtEcuDataProvider(SocketManager socketManager, File ioLogFile) {
         this.socketManager = socketManager;
+        this.ioLogFile = ioLogFile;
         tableManager = new DefaultTableManager();
     }
 
@@ -62,9 +67,6 @@ public class MegasquirtEcuDataProvider extends AbstractDataProvider<EcuData>
         if (ms == null) {
             // Make sure we are connected if not previously connected.
             try {
-                socketManager.connect();
-                
-                MegasquirtIoManager msiom = new DirectMegasquirtIoManager(socketManager);
                 msConfig = new DefaultMegasquirtConfiguration(
                         new HashSet<String>(Arrays.asList(
                                 // Note: We want...
@@ -72,6 +74,9 @@ public class MegasquirtEcuDataProvider extends AbstractDataProvider<EcuData>
                                 //       Pressure in kPa (default)
                                 //       Temp in Celsius
                                 "CELSIUS")));
+                
+                MegasquirtIoManager msiom = createIoManager(socketManager);
+                msiom.connect();
                 
                 ms = MegasquirtFactory.getInstance().getMegasquirt(
                         msiom, 
@@ -116,6 +121,16 @@ public class MegasquirtEcuDataProvider extends AbstractDataProvider<EcuData>
     @Override
     protected Logger getLogger() {
         return LOG;
+    }
+    
+    protected MegasquirtIoManager createIoManager(SocketManager socketManager) throws IOException {
+        MegasquirtIoManager msiom = new DirectMegasquirtIoManager(socketManager);
+        if (ioLogFile != null) {
+            ioLogFile.delete();
+            msiom = new DebugLogWriterMegasquirtIoManager(msiom, new FileOutputStream(ioLogFile));
+        }
+        
+        return msiom;
     }
     
     protected class MegasquirtDataProviderLog implements Log {

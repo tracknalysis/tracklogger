@@ -160,7 +160,7 @@ public final class TrackLoggerDataUtil {
                     ecuData.getRpm());
             cv.put(TrackLoggerData.LogEntry.COLUMN_NAME_MAP,
                     ecuData.getManifoldAbsolutePressure());
-            cv.put(TrackLoggerData.LogEntry.COLUMN_NAME_TP,
+            cv.put(TrackLoggerData.LogEntry.COLUMN_NAME_THROTTLE_POSITION,
                     ecuData.getThrottlePosition());
             cv.put(TrackLoggerData.LogEntry.COLUMN_NAME_AFR,
                     ecuData.getAirFuelRatio());

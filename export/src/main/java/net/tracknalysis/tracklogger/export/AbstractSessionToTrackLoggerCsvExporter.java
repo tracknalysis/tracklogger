@@ -21,14 +21,21 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.UnsupportedEncodingException;
 import java.io.Writer;
+import java.util.Date;
 
 import net.tracknalysis.common.notification.NotificationStrategy;
+import net.tracknalysis.common.util.TimeUtil;
 
 /**
  * @author David Valeri
  */
 public abstract class AbstractSessionToTrackLoggerCsvExporter extends
         AbstractSessionToFileExporter {
+    
+    protected static final String TRACKLOGGER_CSV_1_0_b = "TrackLogger CSV 1.0b";
+    
+    private long lastSyncTimestamp = -1;
+    private long runningTime = 0;
 
     public AbstractSessionToTrackLoggerCsvExporter(File exportDir,
             NotificationStrategy<SessionExporterNotificationType> notificationStrategy) {
@@ -60,6 +67,8 @@ public abstract class AbstractSessionToTrackLoggerCsvExporter extends
     
     protected abstract void exportEntries(Writer writer, int sessionId,
             Integer startLap, Integer endLap) throws IOException;
+    
+    protected abstract String getSplitMarkerSetName();
 
     protected final void writeEntry(Writer writer,
             long logSynchTimestamp,
@@ -68,6 +77,21 @@ public abstract class AbstractSessionToTrackLoggerCsvExporter extends
             Long ecuCaptureTimestamp, Integer rpm, Double map, Double tp, Double afr, Double mat, Double clt, Double ignAdv, Double batV,
             Long timingCaptureTimestamp, int lap, int splitIndex) throws IOException {
         
+        if (lastSyncTimestamp == -1) {
+            lastSyncTimestamp = logSynchTimestamp;
+        }
+        
+        if (logSynchTimestamp < lastSyncTimestamp) {
+            // We rolled over days so we need to account for that in the maths.
+            runningTime += (TimeUtil.MS_IN_DAY + logSynchTimestamp) - lastSyncTimestamp;
+        } else {
+            runningTime += logSynchTimestamp - lastSyncTimestamp;
+        }
+        
+        lastSyncTimestamp = logSynchTimestamp;
+        
+        writer.write(String.valueOf(runningTime));
+        writer.write(",");
         writer.write(String.valueOf(logSynchTimestamp));
         writer.write(",");
         writer.write(accelCaptureTimestamp == null ? "" : accelCaptureTimestamp.toString());
@@ -128,9 +152,13 @@ public abstract class AbstractSessionToTrackLoggerCsvExporter extends
     }
     
     private void writeHeader(Writer writer, int sessionId) throws IOException {
-        writer.write("Session " + sessionId + " - " + getSessionStartTime(sessionId) + "\r\n");
+        writer.write("Session Title: " + sessionId + " - " + getSessionStartTime() + "\r\n");
+        writer.write("Split Marker Set: " + getSplitMarkerSetName() + "\r\n");
+        writer.write("Export Time: " + new Date() + "\r\n");
+        writer.write("Format: " + TRACKLOGGER_CSV_1_0_b + "\r\n\r\n");
         
-        writer.write("synch_timestamp,accel_capture_timestamp,longitudinal_accel,lateral_accel,vertical_accel," 
+        writer.write("running_time,"
+                + "synch_timestamp,accel_capture_timestamp,longitudinal_accel,lateral_accel,vertical_accel," 
                 + "location_capture_timestamp,latitude,longitude,altitude,speed,bearing,"
                 + "ecu_capture_timestamp,rpm,map,throttle_position,afr,mat,clt,ignition_advance,battery_voltage,"
                 + "lap_capture_timestamp,lap,split\r\n");

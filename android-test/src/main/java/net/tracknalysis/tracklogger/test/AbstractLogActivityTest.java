@@ -97,12 +97,7 @@ public abstract class AbstractLogActivityTest extends ActivityInstrumentationTes
                     ContentUris.withAppendedId(
                             TrackLoggerData.SplitMarkerSet.CONTENT_URI, 1),
                     null, null);
-            
-            context.getContentResolver().delete(
-                    TrackLoggerData.SplitMarker.CONTENT_URI,
-                    TrackLoggerData.SplitMarker.COLUMN_NAME_SPLIT_MARKER_SET_ID
-                            + " = ?", new String[] { "1" });
-            
+                        
             ContentValues splitMarkerSetCvs = new ContentValues();
             splitMarkerSetCvs.put(TrackLoggerData.SplitMarkerSet.COLUMN_NAME_NAME, "TEST");
             splitMarkerSetCvs.put(TrackLoggerData.SplitMarkerSet._ID, 1);

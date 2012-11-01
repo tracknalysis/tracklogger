@@ -306,10 +306,10 @@ public final class TrackLoggerData {
         public static final String COLUMN_NAME_MAP = "map";
         
         /**
-         * Column name for throttle position % (0-1).
+         * Column name for throttle position % (0-100).
          * <p>Type: DOUBLE</p>
          */
-        public static final String COLUMN_NAME_TP = "tp";
+        public static final String COLUMN_NAME_THROTTLE_POSITION = "throttle_position";
         
         /**
          * Column name for air fuel ratio.

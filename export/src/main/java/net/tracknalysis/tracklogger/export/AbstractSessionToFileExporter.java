@@ -84,17 +84,28 @@ public abstract class AbstractSessionToFileExporter extends AbstractSessionExpor
     protected abstract void export(OutputStream out, int sessionId,
             Integer startLap, Integer endLap) throws IOException;
     
-    protected abstract Date getSessionStartTime(int sessionId);
+    protected abstract Date getSessionStartTime();
     
     /**
      * Returns the file extension to append to the default file name.
      */
     protected abstract String getFileExtension();
     
+    /**
+     * Hook for subclasses to do any initialization necessary for performing the export.  Called before
+     * any calls to the get methods for session info and before the actual export is performed.
+     *
+     * @param sessionId the ID of the session being exported
+     */
+    protected void init(int sessionId) {
+    }
+    
     private void runExport(int sessionId, Integer startLap, Integer endLap) {
         try {
             LOG.debug("Starting export.");
             notificationStrategy.sendNotification(SessionExporterNotificationType.EXPORT_STARTING);
+            
+            init(sessionId);
             
             try {
                 createLogFile(sessionId, startLap, endLap);
@@ -131,7 +142,7 @@ public abstract class AbstractSessionToFileExporter extends AbstractSessionExpor
     }
     
     private void createLogFile(int sessionId, Integer startLap, Integer endLap) throws FileNotFoundException {
-        String fileName = sessionId + "-" + dateFormat.format(getSessionStartTime(sessionId));
+        String fileName = sessionId + "-" + dateFormat.format(getSessionStartTime());
         
         fileName = fileName + "." + getFileExtension();
         

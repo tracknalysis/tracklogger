@@ -15,6 +15,7 @@
  */
 package net.tracknalysis.tracklogger.dataprovider.android;
 
+import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.LinkedList;
@@ -170,7 +171,10 @@ public class ServiceBasedTrackLoggerDataProviderCoordinator extends
         if (config.isEcuEnabled()) {
             ecuSocketManager = new BtSocketManager(config.getEcuBtAddress(),
                     btAdapter, BtProfile.SPP);
-            ecuDataProvider = new MegasquirtEcuDataProvider(ecuSocketManager);
+            
+            String dataDir = ConfigurationFactory.getInstance().getConfiguration().getDataDirectory();
+            
+            ecuDataProvider = new MegasquirtEcuDataProvider(ecuSocketManager, new File(dataDir, "megasquirt.log"));
         }
     }
     
@@ -242,6 +246,7 @@ public class ServiceBasedTrackLoggerDataProviderCoordinator extends
     }   
     
     @Override
+    @SuppressWarnings("deprecation") // Fix not available until API 11
     protected void preStart() {
         Notification notification = new Notification(R.drawable.icon, this.dataProviderCoordinatorService.getText(R.string.log_notification_message),
                 System.currentTimeMillis());

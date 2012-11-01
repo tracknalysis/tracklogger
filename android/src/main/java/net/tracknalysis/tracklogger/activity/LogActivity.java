@@ -912,6 +912,7 @@ public class LogActivity extends BaseActivity implements OnCancelListener {
                 try {
                     switch (type) {
                         case STARTING:
+                            // TODO: Figure out what is being done on the main thread that is delaying this handler
                             logActivity.getSetupSessionDialog().dismiss();
                             logActivity.showInitDataProviderCoordinatorDialog();
                             break;
@@ -919,6 +920,7 @@ public class LogActivity extends BaseActivity implements OnCancelListener {
                             logActivity.onInitDataProviderCoordinatorError();
                             break;
                         case READY_PROGRESS:
+                            logActivity.showInitDataProviderCoordinatorDialog();
                             Object[] data = (Object[]) msg.obj;
                             if (data[0] != null) {
                                 TextView locationStatusView = (TextView) logActivity

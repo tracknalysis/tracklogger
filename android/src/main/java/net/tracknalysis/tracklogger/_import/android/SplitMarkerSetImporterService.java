@@ -259,6 +259,7 @@ public class SplitMarkerSetImporterService extends
             Uri splitMarkerSetUri = ContentUris.withAppendedId(
                     TrackLoggerData.SplitMarkerSet.CONTENT_ID_URI_BASE, splitMarkerSetId);
             
+            // TODO handle back stack
             return new Intent(Intent.ACTION_VIEW, splitMarkerSetUri);
         }
 
@@ -280,13 +281,5 @@ public class SplitMarkerSetImporterService extends
                             R.string.split_marker_set_import_notification_error_content_text,
                             importer.getName());
         }
-
-        @Override
-        protected Intent getFailedNotificationIntent(
-                RequestState<SplitMarkerSetImportRequest> requestState,
-                Context context) {
-            return new Intent(context, SplitMarkerSetListActivity.class);
-        }
-        
     };
 }

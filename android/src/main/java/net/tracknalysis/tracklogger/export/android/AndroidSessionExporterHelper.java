@@ -15,13 +15,6 @@
  */
 package net.tracknalysis.tracklogger.export.android;
 
-import java.util.Date;
-
-import org.slf4j.Logger;
-
-import net.tracknalysis.tracklogger.provider.TrackLoggerData;
-import net.tracknalysis.tracklogger.provider.TrackLoggerDataUtil;
-import android.content.ContentResolver;
 import android.database.Cursor;
 
 /**
@@ -49,40 +42,4 @@ class AndroidSessionExporterHelper {
     static Long getLongOrNull(int columnIndex, Cursor cursor) {
         return cursor.isNull(columnIndex) ? null : cursor.getLong(columnIndex);
     }
-    
-    /**
-     * Returns the date at which the session with the given ID started.
-     *
-     * @param sessionId the ID of the session to get the start time for
-     * @param cr the content resolver to use for querying the DB
-     * @param log the logger to use for writing log output
-     *
-     * @return the date that the session started.
-     */
-    static Date getSessionStartTime(int sessionId, ContentResolver cr, Logger log) {
-        Cursor sessionCursor = null;
-        
-        try {
-            sessionCursor = cr.query(TrackLoggerData.Session.CONTENT_URI,
-                    new String[] {TrackLoggerData.Session.COLUMN_NAME_START_DATE}, 
-                    TrackLoggerData.Session._ID + "= ?",
-                    new String[] {Integer.toString(sessionId)},
-                    null);
-        
-            if (!sessionCursor.moveToFirst()) {
-                log.error("No session found for session ID '{}'.", sessionId);
-                throw new IllegalStateException("No session found for ID " + sessionId);
-            }
-            
-            String startDateString = sessionCursor.getString(sessionCursor
-                    .getColumnIndex(TrackLoggerData.Session.COLUMN_NAME_START_DATE)); 
-            
-            return TrackLoggerDataUtil.parseSqlDate(startDateString);
-        } finally {
-            if (sessionCursor != null) {
-                sessionCursor.close();
-            }
-        }
-    }
-
 }

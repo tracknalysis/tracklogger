@@ -202,6 +202,8 @@ public class SessionExporterService extends
                     onFinished();
                     break;
                 case EXPORT_FAILED:
+                    Exception e = (Exception) msg.obj;
+                    LOG.error("Export failed.", e);
                     onFailed();
                     break;
             }
@@ -282,7 +284,11 @@ public class SessionExporterService extends
                 RequestState<SessionExportRequest> requestState,
                 Context context) {
             
+            Intent notificationIntent = null;
+            
+            
             String mimeType = exporter.getMimeType();
+            
             Uri resultUri = null;
             if (exporter instanceof SessionToFileExporter) {
                 resultUri = Uri.fromFile(new File(
@@ -290,22 +296,14 @@ public class SessionExporterService extends
                                 .getExportFileAbsolutePath()));
             }
             
-            Intent notificationIntent = null;
-
             if (resultUri != null) {
-                // TODO https://tracknalysis.atlassian.net/browse/TRKLGR-30
-                notificationIntent = new Intent(Intent.ACTION_VIEW);
-                if (mimeType != null) {
-                    notificationIntent.setDataAndType(resultUri, mimeType);
-                } else {
-                    notificationIntent.setData(resultUri);
-                }
-            } else {
-                // TODO https://tracknalysis.atlassian.net/browse/TRKLGR-30
-                notificationIntent = new Intent(Intent.ACTION_MAIN);
-                notificationIntent.addCategory(Intent.CATEGORY_HOME);
-                //notificationIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            }
+                
+                Intent shareIntent = new Intent(Intent.ACTION_SEND);
+                shareIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_WHEN_TASK_RESET);
+                shareIntent.putExtra(Intent.EXTRA_STREAM, resultUri);
+                shareIntent.setType(mimeType);
+                notificationIntent = Intent.createChooser(shareIntent, null);
+            } 
             
             return notificationIntent;
         }
@@ -324,19 +322,6 @@ public class SessionExporterService extends
                 Context context) {
             return context.getString(R.string.export_progress_notification_error_content_text, 
                     requestState.getRequest().getSessionId());
-        }
-
-        @Override
-        protected Intent getFailedNotificationIntent(
-                RequestState<SessionExportRequest> requestState,
-                Context context) {
-            
-            // TODO https://tracknalysis.atlassian.net/browse/TRKLGR-30
-            Intent notificationIntent = new Intent(Intent.ACTION_MAIN);
-            notificationIntent.addCategory(Intent.CATEGORY_HOME);
-            //notificationIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            
-            return notificationIntent; 
         }
     };
 }

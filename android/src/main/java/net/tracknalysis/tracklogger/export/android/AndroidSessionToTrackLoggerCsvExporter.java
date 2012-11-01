@@ -30,7 +30,9 @@ import net.tracknalysis.tracklogger.config.ConfigurationFactory;
 import net.tracknalysis.tracklogger.export.AbstractSessionToTrackLoggerCsvExporter;
 import net.tracknalysis.tracklogger.export.SessionExporter;
 import net.tracknalysis.tracklogger.provider.TrackLoggerData;
+import net.tracknalysis.tracklogger.provider.TrackLoggerDataUtil;
 import android.content.ContentResolver;
+import android.content.ContentUris;
 import android.content.Context;
 import android.database.Cursor;
 
@@ -43,7 +45,10 @@ public class AndroidSessionToTrackLoggerCsvExporter extends AbstractSessionToTra
     
     private static final Logger LOG = LoggerFactory.getLogger(AndroidSessionToTrackLoggerCsvExporter.class);
     
-    private Context context;
+    private final Context context;
+    private Date sessionStartDate;
+    private String splitMarkerSetName;
+    private int splitMarkerCount;
 
     public AndroidSessionToTrackLoggerCsvExporter(Context context,
             NotificationStrategy<SessionExporterNotificationType> notificationStrategy) {
@@ -51,6 +56,75 @@ public class AndroidSessionToTrackLoggerCsvExporter extends AbstractSessionToTra
                 new File(ConfigurationFactory.getInstance().getConfiguration().getDataDirectory()),
                 notificationStrategy);
         this.context = context;
+    }
+    
+    @Override
+    protected void init(int sessionId) {
+        
+        Cursor sessionCursor = null;
+        Cursor splitMarkerSetCursor = null;
+        Cursor splitMarkerCursor = null;
+        
+        try {
+            sessionCursor = context.getContentResolver().query(TrackLoggerData.Session.CONTENT_URI,
+                    null, 
+                    TrackLoggerData.Session._ID + "= ?",
+                    new String[] {Integer.toString(sessionId)},
+                    null);
+        
+            if (!sessionCursor.moveToFirst()) {
+                LOG.error("No session found for session ID {}.", sessionId);
+                throw new IllegalStateException("No session found for ID " + sessionId);
+            }
+            
+            String startDateString = sessionCursor.getString(sessionCursor
+                    .getColumnIndex(TrackLoggerData.Session.COLUMN_NAME_START_DATE)); 
+            
+            sessionStartDate = TrackLoggerDataUtil.parseSqlDate(startDateString);
+            int splitMarkerSetId = sessionCursor.getInt(sessionCursor
+                    .getColumnIndex(TrackLoggerData.Session.COLUMN_NAME_SPLIT_MARKER_SET_ID));
+            
+            splitMarkerSetCursor = context
+                    .getContentResolver()
+                    .query(ContentUris
+                            .withAppendedId(
+                                    TrackLoggerData.SplitMarkerSet.CONTENT_URI,
+                                    splitMarkerSetId),
+                            null, null, null, null);
+            
+            if (!splitMarkerSetCursor.moveToFirst()) {
+                LOG.error("No split marker set found for split marker set ID {}.", splitMarkerSetId);
+                throw new IllegalStateException(
+                        "No split marker set found for split marker set ID "
+                                + splitMarkerSetId);
+            }
+            
+            splitMarkerSetName = splitMarkerSetCursor
+                    .getString(splitMarkerSetCursor
+                            .getColumnIndex(TrackLoggerData.SplitMarkerSet.COLUMN_NAME_NAME));
+            
+            splitMarkerCursor = context.getContentResolver().query(
+                    TrackLoggerData.SplitMarker.CONTENT_URI,
+                    null,
+                    TrackLoggerData.SplitMarker.COLUMN_NAME_SPLIT_MARKER_SET_ID
+                            + " = ?",
+                    new String[] { String.valueOf(splitMarkerSetId) },
+                    null);
+            
+            splitMarkerCount = splitMarkerCursor.getCount();
+        } finally {
+            if (sessionCursor != null) {
+                sessionCursor.close();
+            }
+            
+            if (splitMarkerCursor != null) {
+                splitMarkerCursor.close();
+            }
+            
+            if (splitMarkerSetCursor != null) {
+                splitMarkerSetCursor.close();
+            }
+        }
     }
     
     @Override
@@ -124,7 +198,7 @@ public class AndroidSessionToTrackLoggerCsvExporter extends AbstractSessionToTra
             final int mapColumnIndex = logEntryCursor
                     .getColumnIndex(TrackLoggerData.LogEntry.COLUMN_NAME_MAP);
             final int tpColumnIndex = logEntryCursor
-                    .getColumnIndex(TrackLoggerData.LogEntry.COLUMN_NAME_TP);
+                    .getColumnIndex(TrackLoggerData.LogEntry.COLUMN_NAME_THROTTLE_POSITION);
             final int afrColumnIndex = logEntryCursor
                     .getColumnIndex(TrackLoggerData.LogEntry.COLUMN_NAME_AFR);
             final int matColumnIndex = logEntryCursor
@@ -189,6 +263,18 @@ public class AndroidSessionToTrackLoggerCsvExporter extends AbstractSessionToTra
 
                 logSynchTimestamp = logEntryCursor
                         .getLong(logEntrySynchColumnIndex);
+                
+                // The events in the DB are logged on the completion of a lap/split; however, they also
+                // represent the instant at which the next lap/split is beginning.  In the export, we want
+                // the alignment to be in tune with the later arrangement rather than the former.
+                // For instance, the first timing entry should be for lap 1 and not the last time in lap 0.
+                if (logSynchTimestamp == timingSynchTimestamp) {
+                    splitIndex++;
+                    if (splitIndex == splitMarkerCount) {
+                        splitIndex = 0;
+                        lap++;
+                    }
+                }
 
                 if ((startLap == null || startLap >= lap) && (endLap == null || lap <= endLap)) {
                     LOG.trace("Writing entry for lap {} and split index {}.",
@@ -243,7 +329,9 @@ public class AndroidSessionToTrackLoggerCsvExporter extends AbstractSessionToTra
                         timingCaptureTimestamp = timingEntryCursor
                                 .getLong(timingCaptureTimestampColumnIndex);
                     } else {
-                        // TODO figure out what the proper lap and split index are for whatever would come next
+                        // We are already sitting on the right values for the remainder of the log data
+                        // so just move the timing synch out of the way so we will never match it again.
+                        timingSynchTimestamp = Long.MAX_VALUE;
                     }
                 }
                 
@@ -263,8 +351,12 @@ public class AndroidSessionToTrackLoggerCsvExporter extends AbstractSessionToTra
     }
 
     @Override
-    protected Date getSessionStartTime(int sessionId) {
-        ContentResolver cr = context.getContentResolver();
-        return AndroidSessionExporterHelper.getSessionStartTime(sessionId, cr, LOG);
+    protected Date getSessionStartTime() {
+        return sessionStartDate;
+    }
+    
+    @Override
+    protected String getSplitMarkerSetName() {
+        return splitMarkerSetName;
     }
 }

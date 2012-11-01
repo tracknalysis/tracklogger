@@ -357,6 +357,7 @@ public class SplitMarkerSetViewActivity extends MapActivity {
                         index++;
                     }
                 } else {
+                    originalTouchPoint = new Point(x, y);
                     result = true;
                 }
             } else if (action == MotionEvent.ACTION_MOVE && itemIndex != -1) {
@@ -374,6 +375,10 @@ public class SplitMarkerSetViewActivity extends MapActivity {
                         move(itemIndex, newGeoPoint, false);
                     }
                 }
+                result = true;
+            } else if (action == MotionEvent.ACTION_MOVE && inAddMode) {
+                // Don't let the map get dragged if the user leaves their finger on the screen
+                // or moves it before releasing.
                 result = true;
             } else if (action == MotionEvent.ACTION_UP && itemIndex != -1) {
                 if (inDrag) {
@@ -403,8 +408,11 @@ public class SplitMarkerSetViewActivity extends MapActivity {
 
                 result = true;
             } else if (action == MotionEvent.ACTION_UP && inAddMode) {
-                add(mapView.getProjection().fromPixels(x, y));
+                // Make sure to use the original touch point in case the person moved their finger around.
+                add(mapView.getProjection().fromPixels(originalTouchPoint.x, originalTouchPoint.y));
+                
                 inAddMode = false;
+                originalTouchPoint = null;
             }
 
             return (result || super.onTouchEvent(event, mapView));
@@ -650,6 +658,7 @@ public class SplitMarkerSetViewActivity extends MapActivity {
                     R.string.app_name,
                     R.string.split_marker_set_view_confirm_delete_marker_prompt,
                     new Object[] { item.getSnippet() != null ? item.getSnippet() : item.getTitle() });
+            confirmDialog.show();
         }
         
         private void delete(int itemToDeleteIndex) {

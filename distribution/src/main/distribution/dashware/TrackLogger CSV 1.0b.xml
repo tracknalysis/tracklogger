@@ -1,0 +1,174 @@
+<!--
+  Copyright 2012 the original author or authors.
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+  -->
+<!-- 
+Authors: David Valeri
+ -->
+<DataProfile version="2" readOnly="True" startFinishDistanceThreshold="40" showDistanceThreshold="True" ignoreFirstLap="False" ignoreLastLap="False" lapTimeHoldSecs="5" isChaseCamData="False" isAimData="False" isDriftBoxData="False" sortByTime="False" autoSync="False" autoSyncOffset="0">
+  <HeaderLines>
+    <HeaderLineIndex>5</HeaderLineIndex>
+  </HeaderLines>
+  <DataStartLineIndex>6</DataStartLineIndex>
+  <DataValueSeparators>,</DataValueSeparators>
+  <UseEuroDecimalFormat>False</UseEuroDecimalFormat>
+  <FileLineMatchers>
+    <FileLineMatcher dataLineIndex="3" matchText="TrackLogger CSV 1.0b" matchMode="Contains" ignoreCase="False" />
+  </FileLineMatchers>
+  <Calculators>
+    <DegreesToCartesianConverter inputUnit="Degrees" outputUnit="Feet" algorithm="SphericalMercator">
+      <InputColumns>
+        <InputColumn>longitude</InputColumn>
+        <InputColumn>latitude</InputColumn>
+      </InputColumns>
+      <OutputColumns>
+        <OutputColumn>GPS_X</OutputColumn>
+        <OutputColumn>GPS_Y</OutputColumn>
+      </OutputColumns>
+    </DegreesToCartesianConverter>
+    <DistanceTravelledCalculator inputUnit="Feet" outputUnit="Feet">
+      <InputColumns>
+        <InputColumn>GPS_X</InputColumn>
+        <InputColumn>GPS_Y</InputColumn>
+      </InputColumns>
+      <OutputColumns>
+        <OutputColumn>DISTANCE_FEET</OutputColumn>
+      </OutputColumns>
+    </DistanceTravelledCalculator>
+    <DistanceConverter inputUnit="Feet" outputUnit="Meters">
+      <InputColumns>
+        <InputColumn>DISTANCE_FEET</InputColumn>
+      </InputColumns>
+      <OutputColumns>
+        <OutputColumn>DISTANCE_METERS</OutputColumn>
+      </OutputColumns>
+    </DistanceConverter>
+    <MathCalculator mathOperation="Divide" parameter="9.80665" useConstantParameter="True">
+      <InputColumns>
+        <InputColumn>longitudinal_accel</InputColumn>
+        <InputColumn>
+        </InputColumn>
+      </InputColumns>
+      <OutputColumns>
+        <OutputColumn>LONGITUDINAL_ACCEL_G</OutputColumn>
+      </OutputColumns>
+    </MathCalculator>
+    <MathCalculator mathOperation="Divide" parameter="9.80665" useConstantParameter="True">
+      <InputColumns>
+        <InputColumn>lateral_accel</InputColumn>
+        <InputColumn>
+        </InputColumn>
+      </InputColumns>
+      <OutputColumns>
+        <OutputColumn>LATERAL_ACCEL_G</OutputColumn>
+      </OutputColumns>
+    </MathCalculator>
+    <MathCalculator mathOperation="Divide" parameter="9.80665" useConstantParameter="True">
+      <InputColumns>
+        <InputColumn>vertical_accel</InputColumn>
+        <InputColumn>
+        </InputColumn>
+      </InputColumns>
+      <OutputColumns>
+        <OutputColumn>VERTICAL_ACCEL_G</OutputColumn>
+      </OutputColumns>
+    </MathCalculator>
+    <MathCalculator mathOperation="Divide" parameter="1000" useConstantParameter="True">
+      <InputColumns>
+        <InputColumn>running_time</InputColumn>
+        <InputColumn>
+        </InputColumn>
+      </InputColumns>
+      <OutputColumns>
+        <OutputColumn>RUNNING_TIME_S</OutputColumn>
+      </OutputColumns>
+    </MathCalculator>
+    <SpeedConverter inputUnit="m/s" outputUnit="MPH">
+      <InputColumns>
+        <InputColumn>speed</InputColumn>
+      </InputColumns>
+      <OutputColumns>
+        <OutputColumn>SPEED_MPH</OutputColumn>
+      </OutputColumns>
+    </SpeedConverter>
+    <SpeedConverter inputUnit="m/s" outputUnit="KPH">
+      <InputColumns>
+        <InputColumn>speed</InputColumn>
+      </InputColumns>
+      <OutputColumns>
+        <OutputColumn>SPEED_KPH</OutputColumn>
+      </OutputColumns>
+    </SpeedConverter>
+    <DistanceConverter inputUnit="Meters" outputUnit="Feet">
+      <InputColumns>
+        <InputColumn>altitude</InputColumn>
+      </InputColumns>
+      <OutputColumns>
+        <OutputColumn>ALTITUDE_FEET</OutputColumn>
+      </OutputColumns>
+    </DistanceConverter>
+    <PressureConverter inputUnit="kPa" outputUnit="psi" makeRelativeToAtmosphere="True">
+      <InputColumns>
+        <InputColumn>map</InputColumn>
+      </InputColumns>
+      <OutputColumns>
+        <OutputColumn>VAC_PSI</OutputColumn>
+      </OutputColumns>
+    </PressureConverter>
+    <TemperatureConverter inputUnit="Celsius" outputUnit="Fahrenheit">
+      <InputColumns>
+        <InputColumn>mat</InputColumn>
+      </InputColumns>
+      <OutputColumns>
+        <OutputColumn>MAT_F</OutputColumn>
+      </OutputColumns>
+    </TemperatureConverter>
+    <TemperatureConverter inputUnit="Celsius" outputUnit="Fahrenheit">
+      <InputColumns>
+        <InputColumn>clt</InputColumn>
+      </InputColumns>
+      <OutputColumns>
+        <OutputColumn>CLT_F</OutputColumn>
+      </OutputColumns>
+    </TemperatureConverter>
+  </Calculators>
+  <ColumnMappings>
+    <ColumnMapping inputColumnText="lap" inputColumnMatchMode="ExactMatch" inputColumnIgnoreCase="False" dataCategory="&lt;Lap Timing Inputs&gt;" dataType="Lap Indicator" />
+    <ColumnMapping inputColumnText="RUNNING_TIME_S" inputColumnMatchMode="ExactMatch" inputColumnIgnoreCase="False" dataCategory="&lt;Required&gt;" dataType="Data Running Time, Seconds" />
+    <ColumnMapping inputColumnText="longitude" inputColumnMatchMode="ExactMatch" inputColumnIgnoreCase="False" dataCategory="Positional" dataType="Longitude / X Position (Degrees)" />
+    <ColumnMapping inputColumnText="latitude" inputColumnMatchMode="ExactMatch" inputColumnIgnoreCase="False" dataCategory="Positional" dataType="Latitude / Y Position (Degrees)" />
+    <ColumnMapping inputColumnText="bearing" inputColumnMatchMode="ExactMatch" inputColumnIgnoreCase="False" dataCategory="Positional" dataType="Heading" />
+    <ColumnMapping inputColumnText="GPS_X" inputColumnMatchMode="ExactMatch" inputColumnIgnoreCase="False" dataCategory="Positional" dataType="Longitude / X Position (Feet)" />
+    <ColumnMapping inputColumnText="GPS_Y" inputColumnMatchMode="ExactMatch" inputColumnIgnoreCase="False" dataCategory="Positional" dataType="Latitude / Y Position (Feet)" />
+    <ColumnMapping inputColumnText="DISTANCE_FEET" inputColumnMatchMode="ExactMatch" inputColumnIgnoreCase="False" dataCategory="Positional" dataType="Distance (Feet)" />
+    <ColumnMapping inputColumnText="DISTANCE_METERS" inputColumnMatchMode="ExactMatch" inputColumnIgnoreCase="False" dataCategory="Positional" dataType="Distance (Meters)" />
+    <ColumnMapping inputColumnText="LONGITUDINAL_ACCEL_G" inputColumnMatchMode="ExactMatch" inputColumnIgnoreCase="False" dataCategory="G-Forces" dataType="Acceleration Gs" />
+    <ColumnMapping inputColumnText="LATERAL_ACCEL_G" inputColumnMatchMode="ExactMatch" inputColumnIgnoreCase="False" dataCategory="G-Forces" dataType="Lateral Gs" />
+    <ColumnMapping inputColumnText="VERTICAL_ACCEL_G" inputColumnMatchMode="ExactMatch" inputColumnIgnoreCase="False" dataCategory="G-Forces" dataType="Vertical Gs" />
+    <ColumnMapping inputColumnText="SPEED_MPH" inputColumnMatchMode="ExactMatch" inputColumnIgnoreCase="False" dataCategory="Velocity" dataType="Speed (MPH)" />
+    <ColumnMapping inputColumnText="SPEED_KPH" inputColumnMatchMode="ExactMatch" inputColumnIgnoreCase="False" dataCategory="Velocity" dataType="Speed (KPH)" />
+    <ColumnMapping inputColumnText="altitude" inputColumnMatchMode="ExactMatch" inputColumnIgnoreCase="False" dataCategory="Positional" dataType="Altitude / Z Position (Meters)" />
+    <ColumnMapping inputColumnText="ALTITUDE_FEET" inputColumnMatchMode="ExactMatch" inputColumnIgnoreCase="False" dataCategory="Positional" dataType="Altitude / Z Position (Feet)" />
+    <ColumnMapping inputColumnText="rpm" inputColumnMatchMode="ExactMatch" inputColumnIgnoreCase="False" dataCategory="Engine, Transmission" dataType="Engine RPM" />
+    <ColumnMapping inputColumnText="map" inputColumnMatchMode="ExactMatch" inputColumnIgnoreCase="False" dataCategory="Engine, Transmission" dataType="Manifold Pressure (kPa)" />
+    <ColumnMapping inputColumnText="VAC_PSI" inputColumnMatchMode="ExactMatch" inputColumnIgnoreCase="False" dataCategory="Engine, Transmission" dataType="Manifold Pressure (psi)" />
+    <ColumnMapping inputColumnText="throttle_position" inputColumnMatchMode="ExactMatch" inputColumnIgnoreCase="False" dataCategory="Engine, Transmission" dataType="Engine Load" />
+    <ColumnMapping inputColumnText="mat" inputColumnMatchMode="ExactMatch" inputColumnIgnoreCase="False" dataCategory="Engine, Transmission" dataType="Manifold Temperature (C)" />
+    <ColumnMapping inputColumnText="MAT_F" inputColumnMatchMode="ExactMatch" inputColumnIgnoreCase="False" dataCategory="Engine, Transmission" dataType="Manifold Temperature (F)" />
+    <ColumnMapping inputColumnText="clt" inputColumnMatchMode="ExactMatch" inputColumnIgnoreCase="False" dataCategory="Engine, Transmission" dataType="Water Temperature (C)" />
+    <ColumnMapping inputColumnText="CLT_F" inputColumnMatchMode="ExactMatch" inputColumnIgnoreCase="False" dataCategory="Engine, Transmission" dataType="Water Temperature (F)" />
+    <ColumnMapping inputColumnText="ignition_advance" inputColumnMatchMode="ExactMatch" inputColumnIgnoreCase="False" dataCategory="Engine, Transmission" dataType="Ignition Advance" />
+    <ColumnMapping inputColumnText="battery_voltage" inputColumnMatchMode="ExactMatch" inputColumnIgnoreCase="False" dataCategory="Engine, Transmission" dataType="Battery Voltage" />
+  </ColumnMappings>
+</DataProfile>

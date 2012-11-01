@@ -94,6 +94,8 @@ public class TrackLoggerDataProvider extends ContentProvider {
         SESSION_PROJECTION_MAP.put(
                 TrackLoggerData.Session.COLUMN_NAME_LAST_MODIFIED_DATE,
                 TrackLoggerData.Session.COLUMN_NAME_LAST_MODIFIED_DATE);
+        SESSION_PROJECTION_MAP.put(TrackLoggerData.Session.COLUMN_NAME_SPLIT_MARKER_SET_ID,
+                TrackLoggerData.Session.COLUMN_NAME_SPLIT_MARKER_SET_ID);
 
         LOG_ENTRY_PROJECTION_MAP = new HashMap<String, String>();
         LOG_ENTRY_PROJECTION_MAP.put(TrackLoggerData.LogEntry._ID,
@@ -147,8 +149,8 @@ public class TrackLoggerDataProvider extends ContentProvider {
                 TrackLoggerData.LogEntry.COLUMN_NAME_MAP,
                 TrackLoggerData.LogEntry.COLUMN_NAME_MAP);
         LOG_ENTRY_PROJECTION_MAP.put(
-                TrackLoggerData.LogEntry.COLUMN_NAME_TP,
-                TrackLoggerData.LogEntry.COLUMN_NAME_TP);
+                TrackLoggerData.LogEntry.COLUMN_NAME_THROTTLE_POSITION,
+                TrackLoggerData.LogEntry.COLUMN_NAME_THROTTLE_POSITION);
         LOG_ENTRY_PROJECTION_MAP.put(
                 TrackLoggerData.LogEntry.COLUMN_NAME_AFR,
                 TrackLoggerData.LogEntry.COLUMN_NAME_AFR);

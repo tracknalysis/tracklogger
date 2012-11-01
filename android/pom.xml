@@ -42,6 +42,13 @@ Authors: David Valeri
       <artifactId>maps</artifactId>
     </dependency>
     <dependency>
+      <groupId>commons-codec</groupId>
+      <artifactId>commons-codec</artifactId>
+      <!-- Pull down to older version for compatibility with Android. -->
+      <version>1.3</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
       <groupId>de.mindpipe.android</groupId>
       <artifactId>android-logging-log4j</artifactId>
     </dependency>

@@ -57,7 +57,7 @@ public final class TrackLoggerDatabaseHelper extends SQLiteOpenHelper {
                 + TrackLoggerData.LogEntry.COLUMN_NAME_ECU_CAPTURE_TIMESTAMP + " BIGINT,"
                 + TrackLoggerData.LogEntry.COLUMN_NAME_RPM + " BIGINT,"
                 + TrackLoggerData.LogEntry.COLUMN_NAME_MAP + " DOUBLE,"
-                + TrackLoggerData.LogEntry.COLUMN_NAME_TP + " DOUBLE,"
+                + TrackLoggerData.LogEntry.COLUMN_NAME_THROTTLE_POSITION + " DOUBLE,"
                 + TrackLoggerData.LogEntry.COLUMN_NAME_AFR + " DOUBLE,"
                 + TrackLoggerData.LogEntry.COLUMN_NAME_MAT + " DOUBLE,"
                 + TrackLoggerData.LogEntry.COLUMN_NAME_CLT + " DOUBLE,"

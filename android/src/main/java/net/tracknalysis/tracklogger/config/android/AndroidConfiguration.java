@@ -108,6 +108,13 @@ public class AndroidConfiguration implements Configuration, OnSharedPreferenceCh
     }
     
     @Override
+    public void setEcuEnabled(boolean enabled) {
+        Editor editor = sharedPrefs.edit();
+        editor.putBoolean(ECU_ENABLED_KEY, enabled);
+        editor.commit();
+    }
+    
+    @Override
     public String getEcuBtAddress() {
         return sharedPrefs.getString(ECU_BT_ADDRESS_KEY, "");
     }

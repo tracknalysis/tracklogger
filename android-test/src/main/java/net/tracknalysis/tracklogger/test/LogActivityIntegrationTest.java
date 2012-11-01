@@ -15,17 +15,24 @@
  */
 package net.tracknalysis.tracklogger.test;
 
+import java.io.IOException;
+
+import net.tracknalysis.common.io.SocketManager;
 import net.tracknalysis.common.notification.NoOpNotificationStrategy;
+import net.tracknalysis.ecu.ms.io.DebugLogReaderMegasquirtIoManager;
+import net.tracknalysis.ecu.ms.io.MegasquirtIoManager;
 import net.tracknalysis.location.LocationManagerNotificationType;
 import net.tracknalysis.location.nmea.NmeaLocationManager;
 import net.tracknalysis.location.nmea.NmeaTestSocketManager;
 import net.tracknalysis.tracklogger.activity.LogActivity;
 import net.tracknalysis.tracklogger.config.Configuration;
+import net.tracknalysis.tracklogger.config.ConfigurationFactory;
 import net.tracknalysis.tracklogger.dataprovider.DataProviderCoordinator;
 import net.tracknalysis.tracklogger.dataprovider.android.DataProviderCoordinatorManagerService;
 import net.tracknalysis.tracklogger.dataprovider.android.DataProviderCoordinatorManagerService.LocalBinder;
 import net.tracknalysis.tracklogger.dataprovider.android.ServiceBasedTrackLoggerDataProviderCoordinator;
 import net.tracknalysis.tracklogger.dataprovider.android.DataProviderCoordinatorFactory;
+import net.tracknalysis.tracklogger.dataprovider.ecu.MegasquirtEcuDataProvider;
 import net.tracknalysis.tracklogger.provider.TrackLoggerData;
 import android.bluetooth.BluetoothAdapter;
 import android.content.ComponentName;
@@ -43,19 +50,28 @@ import android.net.Uri;
 public class LogActivityIntegrationTest extends AbstractLogActivityTest {
     
     private NmeaTestSocketManager ntsm;
+    private MegasquirtIoManager msiom;
     private ServiceConnection serviceConnection;
     private DataProviderCoordinatorManagerService dpcms;
     private ServiceBasedTrackLoggerDataProviderCoordinator dpcsDelegate;
     
     @Override
     protected void init() throws Exception {
+        configuration = ConfigurationFactory.getInstance().getConfiguration();
+        configuration.setEcuEnabled(true);
+        
         ntsm = new NmeaTestSocketManager(
                 getClass().getResourceAsStream(
                         "/NMEA-Test-Data.txt"), null);
         
+        msiom = new DebugLogReaderMegasquirtIoManager(getClass()
+                .getResourceAsStream("/MS-Test-Data.txt"));
+        
         // Send teaser to get into the ready state
         ntsm.sendSentences(2, 0);
         
+        // Rewire a factory that returns a subclass of the standard coordinator with our custom
+        // source for location and ECU data.
         DataProviderCoordinatorFactory.setInstance(
                 new DataProviderCoordinatorFactory() {
                     @Override
@@ -73,6 +89,19 @@ public class LogActivityIntegrationTest extends AbstractLogActivityTest {
                                 locationManager = new NmeaLocationManager(locationSocketManager,
                                         new NoOpNotificationStrategy<LocationManagerNotificationType>());
                             }
+                            
+                            protected void initEcuDataProvider(Configuration config, BluetoothAdapter btAdapter) {
+                                if (config.isEcuEnabled()) {
+                                    
+                                    ecuDataProvider = new MegasquirtEcuDataProvider(ecuSocketManager, null) {
+                                        @Override
+                                        protected MegasquirtIoManager createIoManager(
+                                                SocketManager socketManager) throws IOException {
+                                            return msiom;
+                                        }
+                                    };
+                                }
+                            };
                         };
                         
                         return dpcsDelegate;
@@ -98,12 +127,15 @@ public class LogActivityIntegrationTest extends AbstractLogActivityTest {
         LogActivity logActivity = initActivity();
         triggerStart(logActivity);
         
+        // TODO have to sleep because of long startup time and hung UI
+        Thread.sleep(2000);
+        
         ContentResolver cr = logActivity.getApplication().getContentResolver();
         
         // Send at a pace of about 10Hz.  Pausing only to check on the state of the UI at key points.
         
         int delay = 43;
-        ntsm.sendSentences(100, delay); // Starts trigger fires during
+        ntsm.sendSentences(100, delay); // Start trigger fires during
         
         runTestOnUiThread(new Runnable() {
             

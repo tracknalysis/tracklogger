@@ -36,7 +36,7 @@ public class TimingData extends AbstractData {
     private long lastSplitStartDataReceivedTime;
     
     /**
-     * Returns the UTC time in the day when the lap time was captured.  Used for synchronization
+     * Returns the UTC time in the day when the data was captured.  Used for synchronization
      * with other data.
      */
     public long getTime() {
@@ -96,7 +96,7 @@ public class TimingData extends AbstractData {
     }
     
     /**
-     * Returns the duration, in milliseconds of the fasted completed lap in the
+     * Returns the duration, in milliseconds of the fastest completed lap in the
      * session or {@code null} if no laps have been completed.
      */
     public Long getBestLapTime() {
@@ -108,7 +108,7 @@ public class TimingData extends AbstractData {
     }
 
     /**
-     * Returns the duration, in milliseconds of the fasted completion time for
+     * Returns the duration, in milliseconds of the fastest completion time for
      * each segment in the session. Each element may contain {@code null} if
      * that segment has not yet been completed in the current session.
      */
@@ -145,7 +145,7 @@ public class TimingData extends AbstractData {
     }
     
     /**
-     * Gets the time at which the last lap split start was received from the source in milliseconds
+     * Gets the time at which the last split start was received from the source in milliseconds
      * since midnight January 1, 1970 UTC.
      */
     public long getLastSplitStartDataReceivedTime() {

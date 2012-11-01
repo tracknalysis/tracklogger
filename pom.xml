@@ -125,6 +125,7 @@ Authors: David Valeri
     <module>android-filechooser</module>
     <module>android-test</module>
     <module>dataprovider</module>
+    <module>distribution</module>
     <module>export</module>
     <module>import</module>
     <module>model</module>

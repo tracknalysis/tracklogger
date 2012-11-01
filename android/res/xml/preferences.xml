@@ -40,7 +40,7 @@ Authors: David Valeri
     
     <PreferenceCategory android:title="@string/preference_ecu_preference_group_title">
         <CheckBoxPreference
-            android:key="ecu.enable"
+            android:key="ecu.enabled"
             android:defaultValue="false"
             android:title="@string/preference_ecu_enable" />
         <net.tracknalysis.tracklogger.preference.BtDeviceListPreference

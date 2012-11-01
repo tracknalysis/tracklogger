@@ -26,6 +26,7 @@ import net.tracknalysis.common.notification.NotificationStrategy;
 import net.tracknalysis.common.notification.NotificationType;
 import net.tracknalysis.tracklogger.R;
 import net.tracknalysis.tracklogger.TrackLogger;
+import net.tracknalysis.tracklogger.service.ObservableIntentService.RequestLifecycleStatus;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -339,6 +340,7 @@ public abstract class AbstractObservableIntentService<T, U> extends Service impl
             LOG.info("Finished for request with request state [{}].", requestState);
         } catch (Exception e) {
             LOG.error("Error for request with request state [{}].", requestState);
+            requestState.setStatus(RequestLifecycleStatus.FAILED);
             handleDoWorkFailure(requestState, e);
         } finally {
             // Clean up any reference we have to the current request being serviced.
@@ -500,7 +502,9 @@ public abstract class AbstractObservableIntentService<T, U> extends Service impl
         /**
          * Returns the {@link Intent} triggered when the user activates the running notification.
          */
-        protected abstract Intent getRunningNotificationIntent(RequestState<T> requestState, Context context);
+        protected Intent getRunningNotificationIntent(RequestState<T> requestState, Context context) {
+            return new Intent();
+        }
         
         /**
          * Update {@code notification} to reflect the provide {@code progress}.  The updated notification will
@@ -531,7 +535,9 @@ public abstract class AbstractObservableIntentService<T, U> extends Service impl
         /**
          * Returns the {@link Intent} triggered when the user activates the finished notification.
          */
-        protected abstract Intent getFinishedNotificationIntent(RequestState<T> requestState, Context context);
+        protected Intent getFinishedNotificationIntent(RequestState<T> requestState, Context context) {
+            return new Intent();
+        }
         
         /**
          * Returns the ticker text displayed when the notification for a failed request is presented.
@@ -546,7 +552,9 @@ public abstract class AbstractObservableIntentService<T, U> extends Service impl
         /**
          * Returns the {@link Intent} triggered when the user activates the failed notification.
          */
-        protected abstract Intent getFailedNotificationIntent(RequestState<T> requestState, Context context);
+        protected Intent getFailedNotificationIntent(RequestState<T> requestState, Context context) {
+            return new Intent();
+        }
 
         /**
          * Updates the state of the handler and triggers downstream updates.  Also displays

@@ -48,6 +48,11 @@ public interface Configuration {
     boolean isEcuEnabled();
     
     /**
+     * @see #isEcuEnabled()
+     */
+    void setEcuEnabled(boolean enabled);
+    
+    /**
      * Returns the address of the BT device representing the ECU.
      */
     String getEcuBtAddress();

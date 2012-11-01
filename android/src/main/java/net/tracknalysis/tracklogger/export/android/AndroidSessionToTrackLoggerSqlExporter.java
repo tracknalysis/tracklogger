@@ -15,8 +15,6 @@
  */
 package net.tracknalysis.tracklogger.export.android;
 
-import static net.tracknalysis.tracklogger.export.android.AndroidSessionExporterHelper.*;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -52,6 +50,7 @@ public class AndroidSessionToTrackLoggerSqlExporter extends
     private static final Logger LOG = LoggerFactory.getLogger(AndroidSessionToTrackLoggerSqlExporter.class);
     
     private final Context context;
+    private Date sessionStartDate;
     
     public AndroidSessionToTrackLoggerSqlExporter(
             Context context,
@@ -65,6 +64,34 @@ public class AndroidSessionToTrackLoggerSqlExporter extends
     @Override
     public String getMimeType() {
         return "text/sql";
+    }
+    
+    @Override
+    protected void init(int sessionId) {
+        
+        Cursor sessionCursor = null;
+        
+        try {
+            sessionCursor = context.getContentResolver().query(TrackLoggerData.Session.CONTENT_URI,
+                    null, 
+                    TrackLoggerData.Session._ID + "= ?",
+                    new String[] {Integer.toString(sessionId)},
+                    null);
+        
+            if (!sessionCursor.moveToFirst()) {
+                LOG.error("No session found for session ID {}.", sessionId);
+                throw new IllegalStateException("No session found for ID " + sessionId);
+            }
+            
+            String startDateString = sessionCursor.getString(sessionCursor
+                    .getColumnIndex(TrackLoggerData.Session.COLUMN_NAME_START_DATE)); 
+            
+            sessionStartDate = TrackLoggerDataUtil.parseSqlDate(startDateString);
+        } finally {
+            if (sessionCursor != null) {
+                sessionCursor.close();
+            }
+        }
     }
 
     @Override
@@ -194,7 +221,7 @@ public class AndroidSessionToTrackLoggerSqlExporter extends
                 final int mapColumnIndex = logEntryCursor
                         .getColumnIndex(TrackLoggerData.LogEntry.COLUMN_NAME_MAP);
                 final int tpColumnIndex = logEntryCursor
-                        .getColumnIndex(TrackLoggerData.LogEntry.COLUMN_NAME_TP);
+                        .getColumnIndex(TrackLoggerData.LogEntry.COLUMN_NAME_THROTTLE_POSITION);
                 final int afrColumnIndex = logEntryCursor
                         .getColumnIndex(TrackLoggerData.LogEntry.COLUMN_NAME_AFR);
                 final int matColumnIndex = logEntryCursor
@@ -208,7 +235,7 @@ public class AndroidSessionToTrackLoggerSqlExporter extends
                 
                 while (!logEntryCursor.isAfterLast()) {
                 
-                    writer.write("INSERT INTO log_entry(session_id, synch_timestamp, accel_capture_timestamp, longitudinal_accel, lateral_accel, vertical_accel, location_capture_timestamp, location_time_in_day, latitude, longitude, altitude, speed, bearing, ecu_capture_timestamp, rpm, map, tp, afr, mat, clt, ignition_advance, battery_voltage)\r\n");
+                    writer.write("INSERT INTO log_entry(session_id, synch_timestamp, accel_capture_timestamp, longitudinal_accel, lateral_accel, vertical_accel, location_capture_timestamp, location_time_in_day, latitude, longitude, altitude, speed, bearing, ecu_capture_timestamp, rpm, map, throttle_position, afr, mat, clt, ignition_advance, battery_voltage)\r\n");
                     writer.write("VALUES(");
                     writer.write(sessionId + ", ");
                     writer.write(logEntryCursor.getString(logEntrySynchColumnIndex) + ", ");
@@ -287,9 +314,8 @@ public class AndroidSessionToTrackLoggerSqlExporter extends
     }
 
     @Override
-    protected Date getSessionStartTime(int sessionId) {
-        ContentResolver cr = context.getContentResolver();
-        return AndroidSessionExporterHelper.getSessionStartTime(sessionId, cr, LOG);
+    protected Date getSessionStartTime() {
+        return sessionStartDate;
     }
 
     @Override
