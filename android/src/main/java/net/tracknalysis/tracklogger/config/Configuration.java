@@ -78,6 +78,17 @@ public interface Configuration {
     String getDataDirectory();
     
     /**
+     * Returns true if operating in test mode.  This mode is used to disable checks for
+     * resources that are unavailable in an emulator.
+     */
+    boolean isTestMode();
+    
+    /**
+     * @see #isTestMode()
+     */
+    void setTestMode(boolean testMode);
+    
+    /**
      * Adds a listener for configuration change events if the listener is not already registered.
      *
      * @param listener the listener to add

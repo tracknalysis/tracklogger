@@ -17,24 +17,25 @@
 <!-- 
 Authors: David Valeri
  -->
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="wrap_content"
-    android:layout_height="wrap_content" >
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="fill_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="10dp">
 
     <ProgressBar
         android:id="@+id/waitingForDataProgressBar"
         style="?android:attr/progressBarStyleLarge"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_centerHorizontal="true"
         android:layout_marginTop="14dp"
-        android:indeterminate="true" />
+        android:indeterminate="true"
+        android:layout_gravity="center_horizontal" />
 
     <LinearLayout
         android:layout_width="fill_parent"
         android:layout_height="match_parent"
-        android:orientation="vertical"
-        android:layout_below="@+id/waitingForDataProgressBar">
+        android:orientation="vertical">
 
         <LinearLayout
             android:layout_width="wrap_content"
@@ -43,15 +44,13 @@ Authors: David Valeri
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="@string/log_wait_for_ready_location_title"
-                android:textAppearance="?android:attr/textAppearanceLarge" />
+                android:text="@string/log_wait_for_ready_location_title" />
 
             <TextView
                 android:id="@+id/log_wait_for_ready_location_status"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="@string/log_wait_for_ready_text_waiting"
-                android:textAppearance="?android:attr/textAppearanceLarge" />
+                android:text="@string/log_wait_for_ready_text_waiting" />
         </LinearLayout>
 
         <LinearLayout
@@ -61,15 +60,13 @@ Authors: David Valeri
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="@string/log_wait_for_ready_ecu_title"
-                android:textAppearance="?android:attr/textAppearanceLarge" />
+                android:text="@string/log_wait_for_ready_ecu_title" />
 
             <TextView
                 android:id="@+id/log_wait_for_ready_ecu_status"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="@string/log_wait_for_ready_text_waiting"
-                android:textAppearance="?android:attr/textAppearanceLarge" />
+                android:text="@string/log_wait_for_ready_text_waiting" />
         </LinearLayout>
 
         <LinearLayout
@@ -79,15 +76,13 @@ Authors: David Valeri
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="@string/log_wait_for_ready_accel_title"
-                android:textAppearance="?android:attr/textAppearanceLarge" />
+                android:text="@string/log_wait_for_ready_accel_title" />
 
             <TextView
                 android:id="@+id/log_wait_for_ready_accel_status"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="@string/log_wait_for_ready_text_waiting"
-                android:textAppearance="?android:attr/textAppearanceLarge" />
+                android:text="@string/log_wait_for_ready_text_waiting" />
         </LinearLayout>
     </LinearLayout>
-</RelativeLayout>
+</LinearLayout>

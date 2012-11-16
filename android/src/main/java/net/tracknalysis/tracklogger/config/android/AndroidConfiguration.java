@@ -49,7 +49,8 @@ public class AndroidConfiguration implements Configuration, OnSharedPreferenceCh
     private static final String ECU_BT_ADDRESS_KEY = "ecu.bt.address";
     private static final String LOCATION_BT_ADDRESS_KEY = "location.bt.address";
     private static final String LOG_LAYOUT_ID_KEY = "log.layout.id";
-    private static final String DATA_DIR_KEY = "data.dir.path";
+    private static final String DATA_DIR_KEY = "app.data.dir.path";
+    private static final String TEST_MODE_KEY = "app.testmode";
     
     private final SharedPreferences sharedPrefs;
     
@@ -143,6 +144,18 @@ public class AndroidConfiguration implements Configuration, OnSharedPreferenceCh
     public String getDataDirectory() {
         File defaultFile = new File(Environment.getExternalStorageDirectory(), context.getString(R.string.app_name));
         return sharedPrefs.getString(DATA_DIR_KEY, defaultFile.getAbsolutePath());
+    }
+    
+    @Override
+    public boolean isTestMode() {
+        return sharedPrefs.getBoolean(TEST_MODE_KEY, false);
+    }
+    
+    @Override
+    public void setTestMode(boolean testMode) {
+        Editor editor = sharedPrefs.edit();
+        editor.putBoolean(TEST_MODE_KEY, testMode);
+        editor.commit();   
     }
 
     @Override

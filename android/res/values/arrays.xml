@@ -37,11 +37,13 @@ Authors: David Valeri
     
     <string-array name="preference_log_view_names">
         <item>Default</item>
+        <item>Default ECU</item>
         <item>Raw Data</item>
     </string-array>
         
     <string-array name="preference_log_view_values">
         <item>net.tracknalysis.tracklogger:layout/log_default</item>
+        <item>net.tracknalysis.tracklogger:layout/log_default_with_ecu</item>
         <item>net.tracknalysis.tracklogger:layout/log_raw</item>
     </string-array>
     
@@ -50,6 +52,6 @@ Authors: David Valeri
     </string-array>
     
     <string-array name="split_marker_set_import_format_descriptions">
-        <item>CSV 1.0 - Each split marker is represented on a single line with three columns.  The columns are separated by a comma.  Column one contains the split marker name.  Column two contains the marker latitude in decimal dregrees.  Column three contains teh marker longitude in decimal degrees.</item>
+        <item>CSV 1.0 - Each split marker is represented on a single line with three columns.  The columns are separated by a comma.  Column one contains the optional split marker name.  Column two contains the marker latitude in decimal dregrees.  Column three contains teh marker longitude in decimal degrees.</item>
     </string-array>
 </resources>

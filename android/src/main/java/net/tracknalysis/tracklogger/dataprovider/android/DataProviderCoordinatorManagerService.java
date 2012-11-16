@@ -57,7 +57,7 @@ public class DataProviderCoordinatorManagerService extends Service {
      */
     public synchronized void initialize(Context context, BluetoothAdapter btAdapter,
             Uri splitMarkerSetUri) {
-        getDelegate(true);
+        getInstance(true);
         
         instance = DataProviderCoordinatorFactory.getInstance()
                 .createDataProviderCoordinator(this, context,
@@ -79,7 +79,7 @@ public class DataProviderCoordinatorManagerService extends Service {
      */
     public synchronized void uninitialize() {
         try {
-            getDelegate(false).stop();
+            getInstance(false).stop();
         } finally {
             stopForeground(true);
         }
@@ -93,7 +93,7 @@ public class DataProviderCoordinatorManagerService extends Service {
      *             if the service is not already initialized
      */
     public synchronized DataProviderCoordinator getInstance() {
-        return getDelegate(false);
+        return getInstance(false);
     }
     
     @Override
@@ -119,7 +119,7 @@ public class DataProviderCoordinatorManagerService extends Service {
         super.onDestroy();
     }
     
-    private synchronized DataProviderCoordinator getDelegate(boolean expectNull) {
+    private synchronized DataProviderCoordinator getInstance(boolean expectNull) {
         if (instance == null && !expectNull) {
             throw new IllegalStateException("Service not initialized.");
         } else if (instance != null && expectNull) {

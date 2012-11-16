@@ -15,7 +15,6 @@
  */
 package net.tracknalysis.tracklogger.dataprovider.android;
 
-import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.LinkedList;
@@ -50,6 +49,7 @@ import net.tracknalysis.tracklogger.model.LogEntry;
 import net.tracknalysis.tracklogger.model.TimingEntry;
 import net.tracknalysis.tracklogger.provider.TrackLoggerData;
 import net.tracknalysis.tracklogger.provider.TrackLoggerDataUtil;
+import android.annotation.SuppressLint;
 import android.app.Notification;
 import android.app.PendingIntent;
 import android.bluetooth.BluetoothAdapter;
@@ -59,9 +59,7 @@ import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
-import android.hardware.SensorManager;
 import android.net.Uri;
-import android.view.WindowManager;
 
 /**
  * Implements the lowest level details of the coordinator specific to persisting data and managing
@@ -75,6 +73,8 @@ public class ServiceBasedTrackLoggerDataProviderCoordinator extends
     private static final Logger LOG = LoggerFactory.getLogger(ServiceBasedTrackLoggerDataProviderCoordinator.class);
     
     private final Context context;
+    private final BluetoothAdapter btAdapter;
+    @SuppressLint("SimpleDateFormat")
     private final SimpleDateFormat sqlDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
     private final DataProviderCoordinatorManagerService dataProviderCoordinatorService;
     private Uri splitMarkerSetUri;
@@ -100,7 +100,7 @@ public class ServiceBasedTrackLoggerDataProviderCoordinator extends
         this.context = context;
         this.dataProviderCoordinatorService = dataProviderCoordinatorService;
         this.splitMarkerSetUri = splitMarkerSetUri;
-        initProviders(context, btAdapter);
+        this.btAdapter = btAdapter;
     }
     
     /**
@@ -112,7 +112,7 @@ public class ServiceBasedTrackLoggerDataProviderCoordinator extends
         try {
             initLocationManager(config, btAdapter);
             initLocationDataProvider(config, btAdapter);
-            initAccelDataProvider(config, btAdapter);
+            initAccelDataProvider(context, config, btAdapter);
             initEcuDataProvider(config, btAdapter);
             initTimingDataProvider(config, btAdapter);
         } catch (RuntimeException e) {
@@ -123,7 +123,7 @@ public class ServiceBasedTrackLoggerDataProviderCoordinator extends
     
     /**
      * Initializes the location manager.  By default, initializes an NMEA based location manager
-     * reading from the a BT serial port.
+     * reading from a BT serial port.
      *
      * @param config the application configuration
      * @param btAdapter the adapter to use
@@ -151,13 +151,12 @@ public class ServiceBasedTrackLoggerDataProviderCoordinator extends
      * Initializes the accel data provider.  By default, initializes one based on the OS provided
      * acceleration data.
      * 
+     * @param context the context for the app
      * @param config the application configuration
      * @param btAdapter the adapter to use
      */
-    protected void initAccelDataProvider(Configuration config, BluetoothAdapter btAdapter) {
-        SensorManager sensorManager = (SensorManager) context.getSystemService(Context.SENSOR_SERVICE);
-        WindowManager windowManager = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
-        accelDataProvider = new AndroidAccelDataProvider(sensorManager, windowManager);
+    protected void initAccelDataProvider(Context context, Configuration config, BluetoothAdapter btAdapter) {
+        accelDataProvider = new AndroidAccelDataProvider(context);
     }
     
     /**
@@ -172,9 +171,9 @@ public class ServiceBasedTrackLoggerDataProviderCoordinator extends
             ecuSocketManager = new BtSocketManager(config.getEcuBtAddress(),
                     btAdapter, BtProfile.SPP);
             
-            String dataDir = ConfigurationFactory.getInstance().getConfiguration().getDataDirectory();
-            
-            ecuDataProvider = new MegasquirtEcuDataProvider(ecuSocketManager, new File(dataDir, "megasquirt.log"));
+            String dataDir = config.getDataDirectory();
+            // TODO configurability for IO logging.
+            ecuDataProvider = new MegasquirtEcuDataProvider(ecuSocketManager, null); //new File(dataDir, "megasquirt.log"));
         }
     }
     
@@ -248,6 +247,8 @@ public class ServiceBasedTrackLoggerDataProviderCoordinator extends
     @Override
     @SuppressWarnings("deprecation") // Fix not available until API 11
     protected void preStart() {
+        initProviders(context, btAdapter);
+        
         Notification notification = new Notification(R.drawable.icon, this.dataProviderCoordinatorService.getText(R.string.log_notification_message),
                 System.currentTimeMillis());
         Intent notificationIntent = new Intent(getContext(), LogActivity.class);

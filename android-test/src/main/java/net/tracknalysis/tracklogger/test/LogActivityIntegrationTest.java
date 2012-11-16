@@ -24,9 +24,9 @@ import net.tracknalysis.ecu.ms.io.MegasquirtIoManager;
 import net.tracknalysis.location.LocationManagerNotificationType;
 import net.tracknalysis.location.nmea.NmeaLocationManager;
 import net.tracknalysis.location.nmea.NmeaTestSocketManager;
+import net.tracknalysis.tracklogger.R;
 import net.tracknalysis.tracklogger.activity.LogActivity;
 import net.tracknalysis.tracklogger.config.Configuration;
-import net.tracknalysis.tracklogger.config.ConfigurationFactory;
 import net.tracknalysis.tracklogger.dataprovider.DataProviderCoordinator;
 import net.tracknalysis.tracklogger.dataprovider.android.DataProviderCoordinatorManagerService;
 import net.tracknalysis.tracklogger.dataprovider.android.DataProviderCoordinatorManagerService.LocalBinder;
@@ -57,7 +57,6 @@ public class LogActivityIntegrationTest extends AbstractLogActivityTest {
     
     @Override
     protected void init() throws Exception {
-        configuration = ConfigurationFactory.getInstance().getConfiguration();
         configuration.setEcuEnabled(true);
         
         ntsm = new NmeaTestSocketManager(
@@ -65,10 +64,7 @@ public class LogActivityIntegrationTest extends AbstractLogActivityTest {
                         "/NMEA-Test-Data.txt"), null);
         
         msiom = new DebugLogReaderMegasquirtIoManager(getClass()
-                .getResourceAsStream("/MS-Test-Data.txt"));
-        
-        // Send teaser to get into the ready state
-        ntsm.sendSentences(2, 0);
+                .getResourceAsStream("/MS-Test-Data-2.txt"));
         
         // Rewire a factory that returns a subclass of the standard coordinator with our custom
         // source for location and ECU data.
@@ -122,19 +118,28 @@ public class LogActivityIntegrationTest extends AbstractLogActivityTest {
         };
     }
     
+    public void testDefaultWithEcuView() throws Throwable {
+        configuration.setLogLayoutId(R.layout.log_default_with_ecu);
+        genericDefaultViewTest();
+    }
+    
     public void testDefaultView() throws Throwable {
-        
+        configuration.setLogLayoutId(R.layout.log_default);
+        genericDefaultViewTest();
+    }
+    
+    protected void genericDefaultViewTest() throws Throwable {
         LogActivity logActivity = initActivity();
-        triggerStart(logActivity);
-        
-        // TODO have to sleep because of long startup time and hung UI
-        Thread.sleep(2000);
-        
         ContentResolver cr = logActivity.getApplication().getContentResolver();
+        
+        triggerStart(logActivity);
         
         // Send at a pace of about 10Hz.  Pausing only to check on the state of the UI at key points.
         
         int delay = 43;
+        
+        Thread.sleep(1000);
+        ntsm.sendSentences(2, 0); // Send teaser to get into the ready state
         ntsm.sendSentences(100, delay); // Start trigger fires during
         
         runTestOnUiThread(new Runnable() {

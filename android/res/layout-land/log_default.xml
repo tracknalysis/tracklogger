@@ -33,7 +33,7 @@ Authors: David Valeri
         <RelativeLayout
             android:layout_width="0dp"
             android:layout_height="match_parent"
-            android:layout_marginRight="10dp"
+            android:layout_marginRight="5dp"
             android:layout_weight="55"
             android:background="#000000"
             android:padding="5dp" >
@@ -62,7 +62,7 @@ Authors: David Valeri
         <RelativeLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginRight="10dp"
+            android:layout_marginRight="5dp"
             android:layout_weight="20"
             android:background="#000000"
             android:padding="5dp" >

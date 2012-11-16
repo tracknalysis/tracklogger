@@ -23,6 +23,7 @@ import net.tracknalysis.tracklogger.model.AccelData.AccelDataBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import android.content.Context;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
@@ -67,10 +68,9 @@ public class AndroidAccelDataProvider extends AbstractDataProvider<AccelData>
     
     private volatile AccelData currentAccelData;
     
-    public AndroidAccelDataProvider(SensorManager sensorManager, WindowManager windowManager) {
-        this.sensorManager = sensorManager;
-        this.windowManager = windowManager;
-        
+    public AndroidAccelDataProvider(Context context) {
+        this.sensorManager  = (SensorManager) context.getSystemService(Context.SENSOR_SERVICE);
+        this.windowManager = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
     }
     
     @Override
