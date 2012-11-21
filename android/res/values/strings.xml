@@ -79,6 +79,7 @@ Authors: David Valeri
     <string name="log_ecu_update_frequency_title">ECU Update Freq.</string>
     <string name="log_rpm_title">RPM</string>
     <string name="log_map_title">MAP</string>
+    <string name="log_boostvac_title">Boost/Vac</string>
     <string name="log_tp_title">Throttle Position</string>
     <string name="log_afr_title">AFR</string>
     <string name="log_mat_title">IAT</string>

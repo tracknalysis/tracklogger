@@ -306,6 +306,12 @@ public final class TrackLoggerData {
         public static final String COLUMN_NAME_MAP = "map";
         
         /**
+         * Column name for manifold gauge pressure in kPa.
+         * <p>Type: DOUBLE</p>
+         */
+        public static final String COLUMN_NAME_MGP = "mgp";
+        
+        /**
          * Column name for throttle position % (0-100).
          * <p>Type: DOUBLE</p>
          */

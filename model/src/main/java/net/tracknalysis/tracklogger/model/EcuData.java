@@ -22,6 +22,7 @@ public class EcuData extends AbstractData {
     
     private int rpm;
     private double manifoldAbsolutePressure;
+    private double manifoldGaugePressure;
     private double throttlePosition;
     private double airFuelRatio;
     private double manifoldAirTemperature;
@@ -52,6 +53,17 @@ public class EcuData extends AbstractData {
 
     protected void setManifoldAbsolutePressure(double manifoldAbsolutePressure) {
         this.manifoldAbsolutePressure = manifoldAbsolutePressure;
+    }
+    
+    /**
+     * Returns the intake manifold boost/vacuum reading in KPa.
+     */
+    public double getManifoldGaugePressure() {
+        return manifoldGaugePressure;
+    }
+
+    protected void setManifoldPressure(double manifoldPressure) {
+        this.manifoldGaugePressure = manifoldPressure;
     }
 
     /**
@@ -127,6 +139,8 @@ public class EcuData extends AbstractData {
         builder.append(rpm);
         builder.append(", manifoldAbsolutePressure=");
         builder.append(manifoldAbsolutePressure);
+        builder.append(", manifoldGaugePressure=");
+        builder.append(manifoldGaugePressure);
         builder.append(", throttlePosition=");
         builder.append(throttlePosition);
         builder.append(", airFuelRatio=");
@@ -149,6 +163,7 @@ public class EcuData extends AbstractData {
         
         private int rpm;
         private double manifoldAbsolutePressure;
+        private double manifoldGaugePressure;
         private double throttlePosition;
         private double airFuelRatio;
         private double manifoldAirTemperature;
@@ -182,6 +197,20 @@ public class EcuData extends AbstractData {
          */
         public void setManifoldAbsolutePressure(double manifoldAbsolutePressure) {
             this.manifoldAbsolutePressure = manifoldAbsolutePressure;
+        }
+        
+        /**
+         * @see EcuData#getManifoldPressure()
+         */
+        public double getManifoldGaugePressure() {
+            return manifoldGaugePressure;
+        }
+
+        /**
+         * @see EcuData#getManifoldPressure()
+         */
+        public void setManifoldGaugePressure(double manifoldGaugePressure) {
+            this.manifoldGaugePressure = manifoldGaugePressure;
         }
 
         /**
@@ -274,6 +303,7 @@ public class EcuData extends AbstractData {
             
             newData.setRpm(getRpm());
             newData.setManifoldAbsolutePressure(getManifoldAbsolutePressure());
+            newData.setManifoldPressure(getManifoldGaugePressure());
             newData.setThrottlePosition(getThrottlePosition());
             newData.setAirFuelRatio(getAirFuelRatio());
             newData.setManifoldAirTemperature(getManifoldAirTemperature());

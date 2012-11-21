@@ -197,6 +197,8 @@ public class AndroidSessionToTrackLoggerCsvExporter extends AbstractSessionToTra
                     .getColumnIndex(TrackLoggerData.LogEntry.COLUMN_NAME_RPM);
             final int mapColumnIndex = logEntryCursor
                     .getColumnIndex(TrackLoggerData.LogEntry.COLUMN_NAME_MAP);
+            final int mgpColumnIndex = logEntryCursor
+                    .getColumnIndex(TrackLoggerData.LogEntry.COLUMN_NAME_MGP);
             final int tpColumnIndex = logEntryCursor
                     .getColumnIndex(TrackLoggerData.LogEntry.COLUMN_NAME_THROTTLE_POSITION);
             final int afrColumnIndex = logEntryCursor
@@ -298,6 +300,7 @@ public class AndroidSessionToTrackLoggerCsvExporter extends AbstractSessionToTra
                             getLongOrNull(ecuCaptureTimestampColumnIndex, logEntryCursor),
                             getIntegerOrNull(rpmColumnIndex, logEntryCursor),
                             getDoubleOrNull(mapColumnIndex, logEntryCursor),
+                            getDoubleOrNull(mgpColumnIndex, logEntryCursor),
                             getDoubleOrNull(tpColumnIndex, logEntryCursor),
                             getDoubleOrNull(afrColumnIndex, logEntryCursor),
                             getDoubleOrNull(matColumnIndex, logEntryCursor),

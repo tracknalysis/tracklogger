@@ -27,6 +27,10 @@ public class GaugeConfiguration {
     
     private float majorScaleMarkDelta;
     private int minorScaleMarkSegmentsPerMajorScaleMark;
+    // The scale mark label value is divided by this value before rendering and
+    // an indicator is placed in the gauge indicating that the value is X (times)
+    // this value.
+    private Float scaleMarkLabelScaleFactor;
     
     private Float maxWarningValue;
     private Float maxCriticalValue;
@@ -71,6 +75,14 @@ public class GaugeConfiguration {
     protected void setMinorScaleMarkSegmentsPerMajorScaleMark(
             int minorScaleMarkSegmentsPerMajorScaleMark) {
         this.minorScaleMarkSegmentsPerMajorScaleMark = minorScaleMarkSegmentsPerMajorScaleMark;
+    }
+    
+    public Float getScaleMarkLabelScaleFactor() {
+        return scaleMarkLabelScaleFactor;
+    }
+
+    protected void setScaleMarkLabelScaleFactor(Float scaleMarkLabelScaleFactor) {
+        this.scaleMarkLabelScaleFactor = scaleMarkLabelScaleFactor;
     }
 
     public Float getMaxWarningValue() {
@@ -127,6 +139,7 @@ public class GaugeConfiguration {
         
         private float majorScaleMarkDelta;
         private int minorScaleMarkSegmentsPerMajorScaleMark;
+        private Float scaleMarkLabelScaleFactor;
         
         private Float maxWarningValue;
         private Float maxCriticalValue;
@@ -174,6 +187,15 @@ public class GaugeConfiguration {
             return this;
         }
         
+        public Float getScaleMarkLabelScaleFactor() {
+            return scaleMarkLabelScaleFactor;
+        }
+
+        public GaugeConfigurationBuilder setScaleMarkLabelScaleFactor(Float scaleMarkLabelScaleFactor) {
+            this.scaleMarkLabelScaleFactor = scaleMarkLabelScaleFactor;
+            return this;
+        }
+
         public Float getMaxWarningValue() {
             return maxWarningValue;
         }
@@ -192,7 +214,7 @@ public class GaugeConfiguration {
             return this;
         }
         
-        public boolean isUseColorGradient() {
+        public boolean isUseAlertColorGradient() {
             return useAlertColorGradient;
         }
 

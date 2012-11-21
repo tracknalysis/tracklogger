@@ -227,6 +227,11 @@ public class LogActivity extends BaseActivity implements OnCancelListener {
     private TextView map;
     
     /**
+     * Boost/vacuum.
+     */
+    private TextView boostVac;
+    
+    /**
      * Throttle position in % 0-100+.
      */
     private TextView tp;
@@ -265,6 +270,11 @@ public class LogActivity extends BaseActivity implements OnCancelListener {
      * Gauge showing MAP.
      */
     private Gauge mapGauge;
+    
+    /**
+     * Gauge showing boost/vacuum.
+     */
+    private Gauge boostVacGauge;
     
     /**
      * Gauge showing throttle position.
@@ -402,9 +412,6 @@ public class LogActivity extends BaseActivity implements OnCancelListener {
         
         periodicUiUpdateRunnable = new Runnable() {
             
-            private int rpmValue = 0;
-            private int delta = 50;
-            
             @Override
             public void run() {
                 
@@ -467,6 +474,7 @@ public class LogActivity extends BaseActivity implements OnCancelListener {
                         setTextIfShown(ecuUpdateFreq, "N/A");
                         setTextIfShown(rpm, "N/A");
                         setTextIfShown(map, "N/A");
+                        setTextIfShown(boostVac, "N/A");
                         setTextIfShown(tp, "N/A");
                         setTextIfShown(afr, "N/A");
                         setTextIfShown(mat, "N/A");
@@ -479,6 +487,7 @@ public class LogActivity extends BaseActivity implements OnCancelListener {
                         setTextIfShown(ecuUpdateFreq, "%.3f", dpcService.getEcuDataUpdateFrequency());
                         setTextIfShown(rpm, "%d", ecuData.getRpm());
                         setTextIfShown(map, "%.0f", ecuData.getManifoldAbsolutePressure());
+                        setTextIfShown(map, "%.0f", ecuData.getManifoldGaugePressure());
                         setTextIfShown(tp, "%.0f", ecuData.getThrottlePosition() * 100);
                         setTextIfShown(afr, "%.1f", ecuData.getAirFuelRatio());
                         setTextIfShown(mat, "%.1f", ecuData.getManifoldAirTemperature());
@@ -486,17 +495,10 @@ public class LogActivity extends BaseActivity implements OnCancelListener {
                         setTextIfShown(ignAdv, "%.1f", ecuData.getIgnitionAdvance());
                         setTextIfShown(batV, "%.1f", ecuData.getBatteryVoltage());
                         
-                        rpmValue += delta;
-                        if (rpmValue <= 0) {
-                            delta = -1 * delta;
-                            rpmValue = 0;
-                        } else if (rpmValue >= 7000) {
-                            delta = -1 * delta;
-                            rpmValue = 7000;
-                        }
                         //setValueIfShow(rpmGauge, rpmValue);
                         setValueIfShow(rpmGauge, ecuData.getRpm());
                         setValueIfShow(mapGauge, (float) ecuData.getManifoldAbsolutePressure());
+                        setValueIfShow(boostVacGauge, (float) ecuData.getManifoldGaugePressure());
                         setValueIfShow(tpGauge, (float) ecuData.getThrottlePosition());
                         setValueIfShow(afrGauge, (float) ecuData.getAirFuelRatio());
                         setValueIfShow(matGauge, (float) ecuData.getManifoldAirTemperature());
@@ -709,6 +711,7 @@ public class LogActivity extends BaseActivity implements OnCancelListener {
         ecuUpdateFreq = (TextView) findViewById(R.id.log_ecu_update_frequency_value);
         rpm = (TextView) findViewById(R.id.log_rpm_value);
         map = (TextView) findViewById(R.id.log_map_value);
+        boostVac = (TextView) findViewById(R.id.log_boostvac_value);
         tp = (TextView) findViewById(R.id.log_tp_value);
         afr = (TextView) findViewById(R.id.log_afr_value);
         mat = (TextView) findViewById(R.id.log_mat_value);
@@ -718,6 +721,7 @@ public class LogActivity extends BaseActivity implements OnCancelListener {
         
         rpmGauge = (Gauge) findViewById(R.id.log_rpm_gauge);
         mapGauge = (Gauge) findViewById(R.id.log_map_gauge);
+        boostVacGauge = (Gauge) findViewById(R.id.log_boostvac_gauge);
         tpGauge = (Gauge) findViewById(R.id.log_tp_gauge);
         afrGauge = (Gauge) findViewById(R.id.log_afr_gauge);
         matGauge = (Gauge) findViewById(R.id.log_mat_gauge);
@@ -733,6 +737,7 @@ public class LogActivity extends BaseActivity implements OnCancelListener {
                     .setMinValue(0f)
                     .setMajorScaleMarkDelta(1000f)
                     .setMinorScaleMarkSegmentsPerMajorScaleMark(5)
+                    .setScaleMarkLabelScaleFactor(1000f)
                     .setMaxCriticalValue(7200f)
                     .setUseAlertColorGradient(false)
                     .setTitle("RPM");
@@ -749,6 +754,18 @@ public class LogActivity extends BaseActivity implements OnCancelListener {
                     .setMinorScaleMarkSegmentsPerMajorScaleMark(5)
                     .setTitle("MAP");
             mapGauge.init(gaugeConfigurationBuilder.build());
+        }
+        
+        if (boostVacGauge != null) {
+            GaugeConfigurationBuilder gaugeConfigurationBuilder = new GaugeConfigurationBuilder();
+            // TODO un-hard code these
+            gaugeConfigurationBuilder
+                    .setMaxValue(10f)
+                    .setMinValue(-200f)
+                    .setMajorScaleMarkDelta(20f)
+                    .setMinorScaleMarkSegmentsPerMajorScaleMark(5)
+                    .setTitle("Boost/Vac");
+            boostVacGauge.init(gaugeConfigurationBuilder.build());
         }
         
         if (tpGauge != null) {
@@ -791,7 +808,7 @@ public class LogActivity extends BaseActivity implements OnCancelListener {
             GaugeConfigurationBuilder gaugeConfigurationBuilder = new GaugeConfigurationBuilder();
             // TODO un-hard code these
             gaugeConfigurationBuilder
-                    .setMaxValue(250f)
+                    .setMaxValue(110f)
                     .setMinValue(0f)
                     .setMajorScaleMarkDelta(20f)
                     .setMinorScaleMarkSegmentsPerMajorScaleMark(4)
@@ -807,9 +824,10 @@ public class LogActivity extends BaseActivity implements OnCancelListener {
             // TODO un-hard code these
             gaugeConfigurationBuilder
                     .setMaxValue(40f)
+                    .setMinValue(0f)
                     .setMajorScaleMarkDelta(10f)
                     .setMinorScaleMarkSegmentsPerMajorScaleMark(5)
-                    .setMinValue(0f)
+                    
                     .setTitle("Ign. Adv.");
             ignAdvGauge.init(gaugeConfigurationBuilder.build());
         }
@@ -819,9 +837,10 @@ public class LogActivity extends BaseActivity implements OnCancelListener {
             // TODO un-hard code these
             gaugeConfigurationBuilder
                     .setMaxValue(20f)
+                    .setMinValue(0f)
                     .setMajorScaleMarkDelta(2f)
                     .setMinorScaleMarkSegmentsPerMajorScaleMark(0)
-                    .setMinValue(0f)
+                    .setMaxCriticalValue(16f)
                     .setTitle("Voltage");
             batVGauge.init(gaugeConfigurationBuilder.build());
         }

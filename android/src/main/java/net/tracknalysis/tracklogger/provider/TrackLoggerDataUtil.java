@@ -29,6 +29,7 @@ import net.tracknalysis.tracklogger.model.LocationData;
 import net.tracknalysis.tracklogger.model.LogEntry;
 import net.tracknalysis.tracklogger.model.TimingData;
 import net.tracknalysis.tracklogger.model.TimingEntry;
+import android.annotation.SuppressLint;
 import android.content.ContentResolver;
 import android.content.ContentValues;
 import android.database.Cursor;
@@ -43,6 +44,7 @@ import android.database.Cursor;
 public final class TrackLoggerDataUtil {
     
     private static final Logger LOG = LoggerFactory.getLogger(TrackLoggerDataUtil.class);
+    @SuppressLint("SimpleDateFormat")
     private static final DateFormat SQL_DATE_FORMATTER = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss"); 
     
     static {
@@ -160,6 +162,8 @@ public final class TrackLoggerDataUtil {
                     ecuData.getRpm());
             cv.put(TrackLoggerData.LogEntry.COLUMN_NAME_MAP,
                     ecuData.getManifoldAbsolutePressure());
+            cv.put(TrackLoggerData.LogEntry.COLUMN_NAME_MGP,
+                    ecuData.getManifoldGaugePressure());
             cv.put(TrackLoggerData.LogEntry.COLUMN_NAME_THROTTLE_POSITION,
                     ecuData.getThrottlePosition());
             cv.put(TrackLoggerData.LogEntry.COLUMN_NAME_AFR,

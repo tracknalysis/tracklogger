@@ -26,6 +26,7 @@ import android.graphics.Paint;
 import android.graphics.Paint.Align;
 import android.graphics.Paint.Style;
 import android.graphics.Path;
+import android.graphics.PixelFormat;
 import android.graphics.RectF;
 import android.graphics.SweepGradient;
 import android.util.AttributeSet;
@@ -119,10 +120,6 @@ public class CircularGauge extends AbstractGauge {
     private float minorScaleMarkSegmentsPerMajorScaleMark;
     
     private float majorScaleMarkLabelRadius;
-    // The scale mark label value is divided by this value before rendering and
-    // an indicator is placed in the gauge indicating that the value is X (times)
-    // this value.
-    private Float scaleMarkLabelScaleFactor; 
     
     private float alertRadius;
     private float alertWidth;
@@ -146,6 +143,12 @@ public class CircularGauge extends AbstractGauge {
     public CircularGauge(Context context, AttributeSet attrs) {
         super(context, attrs);
         
+        if (!isInEditMode()) {
+            // Set us up for transparent backgrounds.
+            setZOrderOnTop(true);
+            getHolder().setFormat(PixelFormat.TRANSLUCENT);
+        }
+                
         faceRect = new RectF();
         
         facePaint = new Paint();
@@ -231,8 +234,6 @@ public class CircularGauge extends AbstractGauge {
         minorScaleMarkPaint.setColor(Color.LTGRAY);
         minorScaleMarkSegmentsPerMajorScaleMark = configuration.getMinorScaleMarkSegmentsPerMajorScaleMark();
         
-        scaleMarkLabelScaleFactor = 1000f;
-        
         alertRadius = 0.2f;
         alertWidth = 0.05f;
         alertOkColor = Color.GREEN;
@@ -286,6 +287,7 @@ public class CircularGauge extends AbstractGauge {
         Canvas backgroundCanvas = new Canvas(backgroundBitMap);
         
         backgroundCanvas.scale(radius * 2, radius * 2);
+        backgroundCanvas.drawColor(0, android.graphics.PorterDuff.Mode.CLEAR);
         
         drawFace(backgroundCanvas);
         drawScale(backgroundCanvas);
@@ -350,13 +352,14 @@ public class CircularGauge extends AbstractGauge {
                 
                 float scaledScaleTextValue;
                 
-                if (scaleMarkLabelScaleFactor != null) {
-                    scaledScaleTextValue = scaleTextValue / scaleMarkLabelScaleFactor;
+                if (configuration.getScaleMarkLabelScaleFactor() != null) {
+                    scaledScaleTextValue = scaleTextValue / configuration.getScaleMarkLabelScaleFactor();
                 } else {
                     scaledScaleTextValue = scaleTextValue;
                 }
                 
-                backgroundCanvas.drawText(String.valueOf(scaledScaleTextValue), 0.5f, scaleMarkLabelY, majorScaleMarkLabelPaint);
+                backgroundCanvas.drawText(String.valueOf(scaledScaleTextValue), 0.5f, 
+                        scaleMarkLabelY, majorScaleMarkLabelPaint);
                 scaleTextValue += configuration.getMajorScaleMarkDelta();
             } else {
                 backgroundCanvas.drawLine(0.5f, majorScaleMarkStartY, 0.5f,
@@ -518,8 +521,8 @@ public class CircularGauge extends AbstractGauge {
      * @param backgroundCanvas the background canvas
      */
     private void drawScaleMarkLabelScaleFactor(Canvas backgroundCanvas) {
-        if (scaleMarkLabelScaleFactor != null) {
-            backgroundCanvas.drawText("x " + String.valueOf(scaleMarkLabelScaleFactor),
+        if (configuration.getScaleMarkLabelScaleFactor() != null) {
+            backgroundCanvas.drawText("x " + String.valueOf(configuration.getScaleMarkLabelScaleFactor()),
                     0.5f, 0.72f, titlePaint);
         }
     }

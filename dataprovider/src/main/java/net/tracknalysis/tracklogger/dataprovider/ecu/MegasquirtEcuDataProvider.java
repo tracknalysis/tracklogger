@@ -184,6 +184,7 @@ public class MegasquirtEcuDataProvider extends AbstractDataProvider<EcuData>
             builder.setCoolantTemperature(ms.getValue("coolant"));
             builder.setIgnitionAdvance(ms.getValue("advance"));
             builder.setManifoldAbsolutePressure(ms.getValue("map"));
+            builder.setManifoldGaugePressure(ms.getValue("boostvac") * 6.89475729d); // PSI to KPa
             builder.setManifoldAirTemperature(ms.getValue("mat"));
             builder.setRpm((int) ms.getValue("rpm"));
             

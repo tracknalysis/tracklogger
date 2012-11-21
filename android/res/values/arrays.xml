@@ -43,7 +43,7 @@ Authors: David Valeri
         
     <string-array name="preference_log_view_values">
         <item>net.tracknalysis.tracklogger:layout/log_default</item>
-        <item>net.tracknalysis.tracklogger:layout/log_default_with_ecu</item>
+        <!-- <item>net.tracknalysis.tracklogger:layout/log_default_with_ecu</item>  -->
         <item>net.tracknalysis.tracklogger:layout/log_raw</item>
     </string-array>
     

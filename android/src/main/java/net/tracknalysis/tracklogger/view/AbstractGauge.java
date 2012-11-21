@@ -97,6 +97,7 @@ public abstract class AbstractGauge extends SurfaceView implements SurfaceHolder
             canvasHeight = height;
             haveSurfaceDetails = true;
             rescale();
+            update();
         }
     }
 

@@ -333,6 +333,18 @@ Authors: David Valeri
             android:layout_width="wrap_content"
             android:gravity="right" />
     </TableRow>
+    
+    <TableRow>
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/log_boostvac_title" />
+
+        <TextView
+            android:id="@+id/log_boostvac_value"
+            android:layout_width="wrap_content"
+            android:gravity="right" />
+    </TableRow>
 
     <TableRow>
         <TextView

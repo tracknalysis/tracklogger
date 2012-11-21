@@ -74,7 +74,7 @@ public abstract class AbstractSessionToTrackLoggerCsvExporter extends
             long logSynchTimestamp,
             Long accelCaptureTimestamp, Float longitudalAccel, Float lateralAccel, Float verticalAccel,
             Long locationCaptureTimestamp, Double latitude, Double longitude, Double altitude, Float speed, Float bearing,
-            Long ecuCaptureTimestamp, Integer rpm, Double map, Double tp, Double afr, Double mat, Double clt, Double ignAdv, Double batV,
+            Long ecuCaptureTimestamp, Integer rpm, Double map, Double mgp, Double tp, Double afr, Double mat, Double clt, Double ignAdv, Double batV,
             Long timingCaptureTimestamp, int lap, int splitIndex) throws IOException {
         
         if (lastSyncTimestamp == -1) {
@@ -122,6 +122,8 @@ public abstract class AbstractSessionToTrackLoggerCsvExporter extends
         writer.write(",");
         writer.write(map == null ? "" : formatDouble(map));
         writer.write(",");
+        writer.write(mgp == null ? "" : formatDouble(mgp));
+        writer.write(",");
         writer.write(tp == null ? "" : formatDouble(tp));
         writer.write(",");
         writer.write(afr == null ? "" : formatDouble(afr));
@@ -160,7 +162,7 @@ public abstract class AbstractSessionToTrackLoggerCsvExporter extends
         writer.write("running_time,"
                 + "synch_timestamp,accel_capture_timestamp,longitudinal_accel,lateral_accel,vertical_accel," 
                 + "location_capture_timestamp,latitude,longitude,altitude,speed,bearing,"
-                + "ecu_capture_timestamp,rpm,map,throttle_position,afr,mat,clt,ignition_advance,battery_voltage,"
+                + "ecu_capture_timestamp,rpm,map,mgp,throttle_position,afr,mat,clt,ignition_advance,battery_voltage,"
                 + "lap_capture_timestamp,lap,split\r\n");
     }
 

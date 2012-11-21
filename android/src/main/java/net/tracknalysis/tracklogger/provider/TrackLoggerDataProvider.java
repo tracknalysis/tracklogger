@@ -149,6 +149,9 @@ public class TrackLoggerDataProvider extends ContentProvider {
                 TrackLoggerData.LogEntry.COLUMN_NAME_MAP,
                 TrackLoggerData.LogEntry.COLUMN_NAME_MAP);
         LOG_ENTRY_PROJECTION_MAP.put(
+                TrackLoggerData.LogEntry.COLUMN_NAME_MGP,
+                TrackLoggerData.LogEntry.COLUMN_NAME_MGP);
+        LOG_ENTRY_PROJECTION_MAP.put(
                 TrackLoggerData.LogEntry.COLUMN_NAME_THROTTLE_POSITION,
                 TrackLoggerData.LogEntry.COLUMN_NAME_THROTTLE_POSITION);
         LOG_ENTRY_PROJECTION_MAP.put(
