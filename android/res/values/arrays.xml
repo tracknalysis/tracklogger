@@ -43,8 +43,40 @@ Authors: David Valeri
         
     <string-array name="preference_log_view_values">
         <item>net.tracknalysis.tracklogger:layout/log_default</item>
-        <!-- <item>net.tracknalysis.tracklogger:layout/log_default_with_ecu</item>  -->
+        <item>net.tracknalysis.tracklogger:layout/log_default_with_ecu</item>
         <item>net.tracknalysis.tracklogger:layout/log_raw</item>
+    </string-array>
+    
+    <string-array name="preference_display_units_speed_names">
+        <item>MPH</item>
+        <item>KPH</item>
+    </string-array>
+    
+    <string-array name="preference_display_units_speed_values">
+        <item>MPH</item>
+        <item>KPH</item>
+    </string-array>
+    
+    <string-array name="preference_display_units_pressure_names">
+        <item>psi</item>
+        <item>kPa</item>
+        <item>bar</item>
+    </string-array>
+    
+    <string-array name="preference_display_units_pressure_values">
+        <item>PSI</item>
+        <item>KPA</item>
+        <item>BAR</item>
+    </string-array>
+    
+    <string-array name="preference_display_units_temperature_names">
+        <item>Fahrenheit</item>
+        <item>Celsius</item>
+    </string-array>
+    
+    <string-array name="preference_display_units_temperature_values">
+        <item>F</item>
+        <item>C</item>
     </string-array>
     
     <string-array name="split_marker_set_import_format_names">
@@ -52,6 +84,6 @@ Authors: David Valeri
     </string-array>
     
     <string-array name="split_marker_set_import_format_descriptions">
-        <item>CSV 1.0 - Each split marker is represented on a single line with three columns.  The columns are separated by a comma.  Column one contains the optional split marker name.  Column two contains the marker latitude in decimal dregrees.  Column three contains teh marker longitude in decimal degrees.</item>
+        <item>CSV 1.0 - Each split marker is represented on a single line with three columns.  The columns are separated by a comma.  Column one contains the optional split marker name.  Column two contains the marker latitude in decimal dregrees.  Column three contains the marker longitude in decimal degrees.</item>
     </string-array>
 </resources>

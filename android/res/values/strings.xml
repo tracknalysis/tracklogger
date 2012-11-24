@@ -79,7 +79,7 @@ Authors: David Valeri
     <string name="log_ecu_update_frequency_title">ECU Update Freq.</string>
     <string name="log_rpm_title">RPM</string>
     <string name="log_map_title">MAP</string>
-    <string name="log_boostvac_title">Boost/Vac</string>
+    <string name="log_mgp_title">Boost/Vac</string>
     <string name="log_tp_title">Throttle Position</string>
     <string name="log_afr_title">AFR</string>
     <string name="log_mat_title">IAT</string>
@@ -158,9 +158,15 @@ Authors: David Valeri
     <string name="preference_location_bt">Location Bluetooth Device</string>
     
     <string name="preference_log_preference_group_title">Logging</string>
-    <string name="preference_log_layout_name">View</string>
+    <string name="preference_log_layout_name">Dashboard</string>
     
     <string name="preference_ecu_preference_group_title">ECU Logging</string>
     <string name="preference_ecu_enable">Enable</string>
     <string name="preference_ecu_bt">ECU Bluetooth Device</string>
+    
+    <string name="preference_display_group_title">Display</string>
+    <string name="preference_dispay_units_screen_title">Units</string>
+    <string name="preference_dispay_units_speed_title">Speed</string>
+    <string name="preference_dispay_units_temperature_title">Temperature</string>
+    <string name="preference_dispay_units_pressure_title">Pressure</string>    
 </resources>

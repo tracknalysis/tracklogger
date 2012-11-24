@@ -15,9 +15,15 @@
  */
 package net.tracknalysis.tracklogger.config;
 
+import net.tracknalysis.tracklogger.model.PressureUnit;
+import net.tracknalysis.tracklogger.model.SpeedUnit;
+import net.tracknalysis.tracklogger.model.TemperatureUnit;
+
 import org.apache.log4j.Level;
 
 /**
+ * Interface for getting and setting core application configuration options.
+ *
  * @author David Valeri
  */
 public interface Configuration {
@@ -71,6 +77,36 @@ public interface Configuration {
      * @see #getLogLayoutId()
      */
     void setLogLayoutId(int id);
+    
+    /**
+     * Returns the unit in which speed should be displayed to the user in the application.
+     */
+    SpeedUnit getDisplaySpeedUnit();
+    
+    /**
+     * @see #setDisplaySpeedUnit(SpeedUnit)
+     */
+    void setDisplaySpeedUnit(SpeedUnit unit);
+    
+    /**
+     * Returns the unit in which temperature should be displayed to the user in the application.
+     */
+    TemperatureUnit getDisplayTemperatureUnit();
+    
+    /**
+     * @see #getDisplayTemperatureUnit()
+     */
+    void setDisplayTemperatureUnit(TemperatureUnit unit);
+    
+    /**
+     * Returns the unit in which pressure should be displayed to the user in the application.
+     */
+    PressureUnit getDisplayPressureUnit();
+    
+    /**
+     * @see #getDisplayPressureUnit()
+     */
+    void setDisplayPressureUnit(PressureUnit unit);
     
     /**
      * Returns the path to the folder, relative to external storage root, where user accessible data is written.

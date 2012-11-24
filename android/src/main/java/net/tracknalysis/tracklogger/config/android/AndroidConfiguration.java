@@ -24,6 +24,9 @@ import net.tracknalysis.tracklogger.config.Configuration;
 import net.tracknalysis.tracklogger.config.ConfigurationChangeEvent;
 import net.tracknalysis.tracklogger.config.ConfigurationChangeEvent.ConfigurationChangeEventBuilder;
 import net.tracknalysis.tracklogger.config.ConfigurationChangeListener;
+import net.tracknalysis.tracklogger.model.PressureUnit;
+import net.tracknalysis.tracklogger.model.SpeedUnit;
+import net.tracknalysis.tracklogger.model.TemperatureUnit;
 
 import org.apache.log4j.Level;
 import org.slf4j.Logger;
@@ -49,6 +52,9 @@ public class AndroidConfiguration implements Configuration, OnSharedPreferenceCh
     private static final String ECU_BT_ADDRESS_KEY = "ecu.bt.address";
     private static final String LOCATION_BT_ADDRESS_KEY = "location.bt.address";
     private static final String LOG_LAYOUT_ID_KEY = "log.layout.id";
+    private static final String DISPLAY_UNITS_SPEED_ID_KEY = "display.units.speed";
+    private static final String DISPLAY_UNITS_TEMPERATURE_ID_KEY = "display.units.temperature";
+    private static final String DISPLAY_UNITS_PRESSURE_ID_KEY = "display.units.pressure";
     private static final String DATA_DIR_KEY = "app.data.dir.path";
     private static final String TEST_MODE_KEY = "app.testmode";
     
@@ -140,6 +146,75 @@ public class AndroidConfiguration implements Configuration, OnSharedPreferenceCh
         editor.commit();   
     }
     
+    @Override
+    public SpeedUnit getDisplaySpeedUnit() {
+        String value = sharedPrefs.getString(DISPLAY_UNITS_SPEED_ID_KEY, SpeedUnit.MPH.toString());
+        
+        SpeedUnit unit;
+        try {
+            unit = SpeedUnit.valueOf(value);
+        } catch (IllegalArgumentException e) {
+            LOG.error("Unknown unit name [" + value + "].  Defaulting to MPH.");
+            unit = SpeedUnit.MPH;
+            setDisplaySpeedUnit(unit);
+        }
+        
+        return unit;
+    }
+
+    @Override
+    public void setDisplaySpeedUnit(SpeedUnit unit) {
+        Editor editor = sharedPrefs.edit();
+        editor.putString(DISPLAY_UNITS_SPEED_ID_KEY, unit.name());
+        editor.commit();
+    }
+
+    @Override
+    public TemperatureUnit getDisplayTemperatureUnit() {
+        String value = sharedPrefs.getString(DISPLAY_UNITS_TEMPERATURE_ID_KEY, TemperatureUnit.F.toString());
+        
+        TemperatureUnit unit;
+        try {
+            unit = TemperatureUnit.valueOf(value);
+        } catch (IllegalArgumentException e) {
+            LOG.error("Unknown unit name [" + value + "].  Defaulting to F.");
+            unit = TemperatureUnit.F;
+            setDisplayTemperatureUnit(unit);
+        }
+        
+        return unit;
+    }
+
+    @Override
+    public void setDisplayTemperatureUnit(TemperatureUnit unit) {
+        Editor editor = sharedPrefs.edit();
+        editor.putString(DISPLAY_UNITS_TEMPERATURE_ID_KEY, unit.name());
+        editor.commit();
+    }
+
+    @Override
+    public PressureUnit getDisplayPressureUnit() {
+        String value = sharedPrefs.getString(DISPLAY_UNITS_PRESSURE_ID_KEY, PressureUnit.PSI.toString());
+        
+        PressureUnit unit;
+        try {
+            unit = PressureUnit.valueOf(value);
+        } catch (IllegalArgumentException e) {
+            LOG.error("Unknown unit name [" + value + "].  Defaulting to PSI.");
+            unit = PressureUnit.PSI;
+            setDisplayPressureUnit(unit);
+        }
+        
+        return unit;
+    }
+
+    @Override
+    public void setDisplayPressureUnit(PressureUnit unit) {
+        Editor editor = sharedPrefs.edit();
+        editor.putString(DISPLAY_UNITS_PRESSURE_ID_KEY, unit.name());
+        editor.commit();
+    }
+
     @Override
     public String getDataDirectory() {
         File defaultFile = new File(Environment.getExternalStorageDirectory(), context.getString(R.string.app_name));

@@ -15,23 +15,29 @@
  */
 package net.tracknalysis.tracklogger.view;
 
+import android.content.Context;
+import android.util.AttributeSet;
+
 /**
- * Intergace providing core gauge functionality.
- *
+ * A bar gauge that is oriented such that the bar moves from bottom to top with
+ * the option to display the bar value in the middle of the bar. No adornments
+ * such as scale marks are provided.
+ * 
  * @author David Valeri
  */
-public interface Gauge {
-
-    /**
-     * Initialize the gauge with its configuration settings and force an initial
-     * draw or redraw of the gauge.
-     */
-    void init(GaugeConfiguration configuration);
+public class PlainVerticalBarGauge extends AbstractBarGauge {
     
-    /**
-     * Set the gauges current value and force a redraw to display the value.
-     *
-     * @param value the value to set
-     */
-    void setCurrentValue(float value);
+    public PlainVerticalBarGauge(Context context, AttributeSet attrs) {
+        super(context, attrs);
+    }
+
+    @Override
+    protected SweepDirection getSweepDirection() {
+        return SweepDirection.BOTTOM_TO_TOP;
+    }
+    
+    @Override
+    protected boolean isDrawScale() {
+        return false;
+    }
 }

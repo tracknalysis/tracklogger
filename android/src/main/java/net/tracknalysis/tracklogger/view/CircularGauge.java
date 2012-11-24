@@ -41,7 +41,7 @@ public class CircularGauge extends AbstractGauge {
     /**
      * Configuration option enumeration for where to location the origin (0 degrees) within the gauge.
      */
-    public static enum OriginOrientation {
+    protected static enum OriginOrientation {
         NORTH(0, 270),
         SOUTH(180, 90),
         EAST(90, 0),
@@ -64,7 +64,7 @@ public class CircularGauge extends AbstractGauge {
         }
         
         /**
-         * Returns the number of degrees of roation needed to orient the origin to the east (3:00).
+         * Returns the number of degrees of rotation needed to orient the origin to the east (3:00).
          * Always positive.
          */
         public int getDegreesToEast() {
@@ -75,7 +75,7 @@ public class CircularGauge extends AbstractGauge {
     /**
      * Configuration option for the direction of sweep (direction of increasing values) of the gauge.
      */
-    public static enum SweepDirection {
+    protected static enum SweepDirection {
         CLOCKWISE,
         COUNTER_CLOCKWISE;
     }
@@ -99,10 +99,6 @@ public class CircularGauge extends AbstractGauge {
     
     private GaugeConfiguration configuration;
     
-    private int radius;
-    private int width;
-    private int height;
-    
     // Configurable properties
     
     private OriginOrientation originOrientation;
@@ -123,11 +119,15 @@ public class CircularGauge extends AbstractGauge {
     
     private float alertRadius;
     private float alertWidth;
+    private int alertMinCriticalColor;
+    private int alertMinWarningColor;
     private int alertOkColor;
-    private int alertMaxWarnColor;
+    private int alertMaxWarningColor;
     private int alertMaxCriticalColor;
     
     // Calculated properties
+    
+    private int radius;
     
     private float majorScaleMarkStartY;
     private float majorScaleMarkStopY;
@@ -182,10 +182,11 @@ public class CircularGauge extends AbstractGauge {
         needlePaint.setStyle(Style.FILL);
         
         needlePath = new Path();
-        needlePath.moveTo(0.48f, 0.65f);
-        needlePath.lineTo(0.5f, 0.10f);
-        needlePath.lineTo(0.52f, 0.65f);
-        needlePath.lineTo(0.48f, 0.65f);
+        needlePath.moveTo(0.48f, 0.65f); // Lower left
+        needlePath.lineTo(0.495f, 0.10f); // Point Left
+        needlePath.lineTo(0.505f, 0.10f); // Point Right
+        needlePath.lineTo(0.52f, 0.65f); // Lower right
+        needlePath.lineTo(0.48f, 0.65f); // Lower left
         
         
         backgroundPaint = new Paint();
@@ -197,10 +198,6 @@ public class CircularGauge extends AbstractGauge {
             GaugeConfiguration configuration) {
         
         this.configuration = configuration;  
-        
-        // Environment properties
-        width = canvasWidth;
-        height = canvasHeight;
         
         // Configured/configurable properties
         
@@ -236,11 +233,13 @@ public class CircularGauge extends AbstractGauge {
         
         alertRadius = 0.2f;
         alertWidth = 0.05f;
+        alertMinCriticalColor = Color.RED;
+        alertMinWarningColor = Color.YELLOW;
         alertOkColor = Color.GREEN;
-        alertMaxWarnColor = Color.YELLOW;
+        alertMaxWarningColor = Color.YELLOW;
         alertMaxCriticalColor = Color.RED;
         
-        // Calculated properties.
+        // Calculated properties
         
         radius = Math.min(canvasHeight, canvasWidth) / 2;
                 
@@ -278,12 +277,15 @@ public class CircularGauge extends AbstractGauge {
                     / minorScaleMarkSegmentsPerMajorScaleMark;
         }
         
-        renderBackground(configuration);
+        renderBackground();
     }
     
-    protected void renderBackground(GaugeConfiguration configuration) {
+    /**
+     * Draw and cache the gauge background.
+     */
+    protected void renderBackground() {
         
-        backgroundBitMap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+        backgroundBitMap = Bitmap.createBitmap(getCanvasWidth(), getCanvasHeight(), Bitmap.Config.ARGB_8888);
         Canvas backgroundCanvas = new Canvas(backgroundBitMap);
         
         backgroundCanvas.scale(radius * 2, radius * 2);
@@ -299,10 +301,11 @@ public class CircularGauge extends AbstractGauge {
     @Override
     protected void draw(Canvas canvas, float valueToDraw) {
         
-        canvas.drawBitmap(backgroundBitMap, width / 2 - radius, height / 2 - radius, backgroundPaint);
+        canvas.drawBitmap(backgroundBitMap, getCanvasWidth() / 2 - radius,
+                getCanvasHeight() / 2 - radius, backgroundPaint);
         
         canvas.save(Canvas.MATRIX_SAVE_FLAG);
-        canvas.translate(width / 2 - radius, height / 2 - radius);
+        canvas.translate(getCanvasWidth() / 2 - radius, getCanvasHeight() / 2 - radius);
         canvas.scale(radius * 2, radius * 2);
         
         drawValue(canvas, valueToDraw);
@@ -374,22 +377,47 @@ public class CircularGauge extends AbstractGauge {
         backgroundCanvas.restore();
     }
     
+    /**
+     * Draw the alert colors on the static background.
+     *
+     * @param backgroundCanvas the background canvas to draw on
+     */
     protected void drawAlert(Canvas backgroundCanvas) {
         
         if (configuration.isUseAlertColorGradient()
-                && (configuration.isMaxCriticalEnabled() || configuration
-                        .isMaxWarningEnabled())) {
+                && configuration.isAlertEnabled()) {
             
             final float minValue = configuration.getMinValue();
             final float maxValue = configuration.getMaxValue();
             
             int lastColor = alertOkColor;
+            float lastThreshold = minValue;
             List<Integer> colors = new LinkedList<Integer>();
             List<Float> positions = new LinkedList<Float>();
+            
+            if (configuration.isMinCriticalEnabled()) {
+                addPairsForSweepGradient(
+                        valueToSweepGradientPosition(minValue, maxValue, configuration.getMinCriticalValue()),
+                        alertMinCriticalColor, colors, positions);
+                lastColor = alertMinCriticalColor;
+                lastThreshold = getMinCriticalThreshold();
+            }
+            
+            if (configuration.isMinWarningEnabled()) {
+                addPairsForSweepGradient(
+                        valueToSweepGradientPosition(minValue, maxValue, lastThreshold),
+                        alertMinWarningColor, colors, positions);
+                addPairsForSweepGradient(
+                        valueToSweepGradientPosition(minValue, maxValue, configuration.getMinWarningValue()),
+                        alertMinWarningColor, colors, positions);
+                lastColor = alertMinWarningColor;
+                lastThreshold = getMinWarningThreshold();
+            }
 
             addPairsForSweepGradient(
-                    valueToSweepGradientPosition(minValue, maxValue, configuration.getMinValue()),
-                    lastColor, colors, positions);
+                    valueToSweepGradientPosition(minValue, maxValue, lastThreshold),
+                    alertOkColor, colors, positions);
+            lastColor = alertOkColor;
             
             if (configuration.isMaxWarningEnabled()) {
                 addPairsForSweepGradient(
@@ -397,8 +425,8 @@ public class CircularGauge extends AbstractGauge {
                         lastColor, colors, positions);
                 addPairsForSweepGradient(
                         valueToSweepGradientPosition(minValue, maxValue, configuration.getMaxWarningValue()),
-                        alertMaxWarnColor, colors, positions);
-                lastColor = alertMaxWarnColor;
+                        alertMaxWarningColor, colors, positions);
+                lastColor = alertMaxWarningColor;
             }
             
             if (configuration.isMaxCriticalEnabled()) {
@@ -449,45 +477,45 @@ public class CircularGauge extends AbstractGauge {
                     alertPaint);
             backgroundCanvas.restore();
 
-        } else if (configuration.isMaxCriticalEnabled() || configuration.isMaxWarningEnabled()){
+        } else if (configuration.isAlertEnabled()) {
+            
+            // Draw the alert without gradients
         
             Paint alertPaint = new Paint();
             alertPaint.setAntiAlias(true);
             alertPaint.setStrokeCap(Paint.Cap.BUTT);
             alertPaint.setStyle(Paint.Style.STROKE);
             alertPaint.setStrokeWidth(alertWidth);
-            alertPaint.setColor(alertOkColor);
-                    
-            float okSweep = 0;
             
-            if (configuration.isMaxCriticalEnabled()) {
-                okSweep = rangeToDegreesOfArcSweep(configuration
-                        .getMaxCriticalValue() - configuration.getMinValue());
-            }
+            float okStart = configuration.getMinValue();
+            float okEnd = configuration.getMaxValue();
             
-            if (configuration.isMaxWarningEnabled()) {
-                okSweep = rangeToDegreesOfArcSweep(configuration
-                        .getMaxWarningValue() - configuration.getMinValue());
-            }
-            
-            backgroundCanvas.drawArc(
-                    alertRect,
-                    valueToDegreesOfArcOrigin(configuration.getMinValue()),
-                    okSweep,
-                    false,
-                    alertPaint);
-            
-                   
-            if (configuration.isMaxWarningEnabled()) {
-                alertPaint.setColor(alertMaxWarnColor);
-    
+            if (configuration.isMinCriticalEnabled()) {
+                alertPaint.setColor(alertMinCriticalColor);
+                
                 backgroundCanvas.drawArc(
                         alertRect,
-                        valueToDegreesOfArcOrigin(configuration.getMaxWarningValue()),
-                        rangeToDegreesOfArcSweep(configuration.getMaxValue()
-                                - configuration.getMaxWarningValue()),
+                        valueToDegreesOfArcOrigin(configuration.getMinValue()),
+                        rangeToDegreesOfArcSweep(configuration.getMinCriticalValue()
+                                - configuration.getMinValue()),
                         false,
                         alertPaint);
+                
+                okStart = configuration.getMinCriticalValue();
+            }
+            
+            if (configuration.isMinWarningEnabled()) {
+                alertPaint.setColor(alertMinWarningColor);
+                
+                backgroundCanvas.drawArc(
+                        alertRect,
+                        valueToDegreesOfArcOrigin(okStart),
+                        rangeToDegreesOfArcSweep(configuration.getMinWarningValue()
+                                - okStart),
+                        false,
+                        alertPaint);
+                
+                okStart = configuration.getMinWarningValue();
             }
             
             if (configuration.isMaxCriticalEnabled()) {
@@ -500,7 +528,31 @@ public class CircularGauge extends AbstractGauge {
                                 - configuration.getMaxCriticalValue()),
                         false,
                         alertPaint);
+                
+                okEnd = configuration.getMaxCriticalValue();
             }
+            
+            if (configuration.isMaxWarningEnabled()) {
+                alertPaint.setColor(alertMaxWarningColor);
+    
+                backgroundCanvas.drawArc(
+                        alertRect,
+                        valueToDegreesOfArcOrigin(configuration.getMaxWarningValue()),
+                        rangeToDegreesOfArcSweep(okEnd
+                                - configuration.getMaxWarningValue()),
+                        false,
+                        alertPaint);
+                
+                okEnd = configuration.getMaxWarningValue();
+            }
+            
+            alertPaint.setColor(alertOkColor);
+            backgroundCanvas.drawArc(
+                    alertRect,
+                    valueToDegreesOfArcOrigin(okStart),
+                    rangeToDegreesOfArcSweep(okEnd - okStart),
+                    false,
+                    alertPaint);
         }
     }
     
@@ -535,7 +587,7 @@ public class CircularGauge extends AbstractGauge {
      */
     protected void drawValue(Canvas canvas, float valueToDraw) {
         if (configuration.isShowValue()) {
-            
+            // TODO implement the drawing of the current value
         }
     }
     
@@ -563,7 +615,7 @@ public class CircularGauge extends AbstractGauge {
      * @param a the first operand
      * @param b the second operand
      */
-    protected float negativeAwareModulo(float a, float b) {
+    protected final float negativeAwareModulo(float a, float b) {
         return (a % b + b) % b;
     }
     
@@ -577,7 +629,9 @@ public class CircularGauge extends AbstractGauge {
      *
      * @see #valueToSweepGradientPosition(float, float, float)
      */
-    protected void addPairsForSweepGradient(float position, int color, List<Integer> colors, List<Float> positions) {
+    protected final void addPairsForSweepGradient(float position, int color,
+            List<Integer> colors, List<Float> positions) {
+        
         if (sweepDirection == SweepDirection.CLOCKWISE) {
             colors.add(color);
             positions.add(position);
@@ -594,7 +648,7 @@ public class CircularGauge extends AbstractGauge {
      * @param maxValue the maximum value of the gauge
      * @param value the value to find the position before
      */
-    protected float valueToSweepGradientPosition(float minValue, float maxValue, float value) {
+    protected final float valueToSweepGradientPosition(float minValue, float maxValue, float value) {
         
         float range = maxValue - minValue;
         float degreeRangeScaleFactor = (endDegrees - startDegrees) / 360;
@@ -607,7 +661,7 @@ public class CircularGauge extends AbstractGauge {
      *
      * @param range the range to get the degrees for
      */
-    protected float rangeToDegreesOfArcSweep(float range) {
+    protected final float rangeToDegreesOfArcSweep(float range) {
         float degreesOfSweep = range / valueToDegreeRatio;
         
         if (sweepDirection == SweepDirection.COUNTER_CLOCKWISE) {
@@ -623,7 +677,7 @@ public class CircularGauge extends AbstractGauge {
      * 
      * @param value the value to translate
      */
-    protected float valueToDegreesOfArcOrigin(float value) {
+    protected final float valueToDegreesOfArcOrigin(float value) {
         // Get the offset from the start location for the given value
         float degreesOfRotation = startDegrees + ((value - configuration.getMinValue()) / valueToDegreeRatio);
         
@@ -641,7 +695,7 @@ public class CircularGauge extends AbstractGauge {
      * 
      * @param value the value to translate
      */
-    protected float valueToDegreesOfRotation(float value) {
+    protected final float valueToDegreesOfRotation(float value) {
         // Get the offset from the start location for the given value
         float degreesOfRotation = startDegrees + ((value - configuration.getMinValue()) / valueToDegreeRatio);
         

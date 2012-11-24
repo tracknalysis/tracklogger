@@ -13,25 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package net.tracknalysis.tracklogger.view;
+package net.tracknalysis.tracklogger.model;
 
 /**
- * Intergace providing core gauge functionality.
+ * Interface for unit conversions/scaling of a value.
  *
  * @author David Valeri
  */
-public interface Gauge {
-
-    /**
-     * Initialize the gauge with its configuration settings and force an initial
-     * draw or redraw of the gauge.
-     */
-    void init(GaugeConfiguration configuration);
+interface ScaleFunction {
     
-    /**
-     * Set the gauges current value and force a redraw to display the value.
-     *
-     * @param value the value to set
-     */
-    void setCurrentValue(float value);
+    double scale(double value);
+    
+    float scale(float value);
 }

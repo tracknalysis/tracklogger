@@ -35,6 +35,9 @@ import net.tracknalysis.tracklogger.dataprovider.android.DataProviderCoordinator
 import net.tracknalysis.tracklogger.model.AccelData;
 import net.tracknalysis.tracklogger.model.EcuData;
 import net.tracknalysis.tracklogger.model.LocationData;
+import net.tracknalysis.tracklogger.model.PressureUnit;
+import net.tracknalysis.tracklogger.model.SpeedUnit;
+import net.tracknalysis.tracklogger.model.TemperatureUnit;
 import net.tracknalysis.tracklogger.model.TimingData;
 import net.tracknalysis.tracklogger.provider.TrackLoggerData;
 import net.tracknalysis.tracklogger.view.Gauge;
@@ -107,6 +110,9 @@ public class LogActivity extends BaseActivity implements OnCancelListener {
     private TextView splitMarkerSetNameTextView;
     private Dialog initDataProviderCoordinatorDialog;
     private ProgressDialog waitingForStartTriggerDialog;
+    private SpeedUnit speedUnit;
+    private TemperatureUnit temperatureUnit;
+    private PressureUnit pressureUnit;
         
     /**
      *  Elapsed time in the current lap.
@@ -229,7 +235,7 @@ public class LogActivity extends BaseActivity implements OnCancelListener {
     /**
      * Boost/vacuum.
      */
-    private TextView boostVac;
+    private TextView mgp;
     
     /**
      * Throttle position in % 0-100+.
@@ -262,9 +268,19 @@ public class LogActivity extends BaseActivity implements OnCancelListener {
     private TextView batV;
     
     /**
+     * Gauge showing speed.
+     */
+    private Gauge speedGauge;
+    
+    /**
      * Gauge showing RPM.
      */
     private Gauge rpmGauge;
+    
+    /**
+     * Gauge used to display a shift light.
+     */
+    private Gauge shiftLightGauge;
     
     /**
      * Gauge showing MAP.
@@ -274,7 +290,7 @@ public class LogActivity extends BaseActivity implements OnCancelListener {
     /**
      * Gauge showing boost/vacuum.
      */
-    private Gauge boostVacGauge;
+    private Gauge mgpGauge;
     
     /**
      * Gauge showing throttle position.
@@ -302,7 +318,7 @@ public class LogActivity extends BaseActivity implements OnCancelListener {
     private Gauge ignAdvGauge;
     
     /**
-     * Gauge showing vattery voltage.
+     * Gauge showing battery voltage.
      */
     private Gauge batVGauge;
     
@@ -408,8 +424,6 @@ public class LogActivity extends BaseActivity implements OnCancelListener {
         
         setContentView(config.getLogLayoutId());
         
-        initDisplayViews();
-        
         periodicUiUpdateRunnable = new Runnable() {
             
             @Override
@@ -429,7 +443,7 @@ public class LogActivity extends BaseActivity implements OnCancelListener {
                     
                     if (sessionStartReceivedTime != null) {
                         long sessionElapsedTime = currentTime - sessionStartReceivedTime;
-                        setTextIfShown(elapsedSessionTime,
+                        setValueIfShown(elapsedSessionTime,
                                 TimeUtil.formatDuration(sessionElapsedTime,
                                         false, false));
                         
@@ -437,74 +451,95 @@ public class LogActivity extends BaseActivity implements OnCancelListener {
                     
                     if (lapStartReceivedTime != null) {
                         long lapElapsedTime = currentTime - lapStartReceivedTime;
-                        setTextIfShown(elapsedLapTime, TimeUtil.formatDuration(
+                        setValueIfShown(elapsedLapTime, TimeUtil.formatDuration(
                                 lapElapsedTime, false, true));
                     }
                     
                     if (accelData == null) {
-                        setTextIfShown(accelUpdateFreq, "N/A");
-                        setTextIfShown(lonAccel, "N/A");
-                        setTextIfShown(latAccel, "N/A");
-                        setTextIfShown(vertAccel, "N/A");
+                        setValueIfShown(accelUpdateFreq, "N/A");
+                        setValueIfShown(lonAccel, "N/A");
+                        setValueIfShown(latAccel, "N/A");
+                        setValueIfShown(vertAccel, "N/A");
                     } else {
-                        setTextIfShown(accelUpdateFreq, "%.3f", dpcService.getAccelDataUpdateFrequency());
-                        setTextIfShown(lonAccel, "%.3f", accelData.getLongitudinal());
-                        setTextIfShown(latAccel, "%.3f", accelData.getLateral());
-                        setTextIfShown(vertAccel, "%.3f", accelData.getVertical());
+                        setValueIfShown(accelUpdateFreq, "%.3f", dpcService.getAccelDataUpdateFrequency());
+                        setValueIfShown(lonAccel, "%.3f", accelData.getLongitudinal());
+                        setValueIfShown(latAccel, "%.3f", accelData.getLateral());
+                        setValueIfShown(vertAccel, "%.3f", accelData.getVertical());
                     }
                     
                     if (locationData == null) {
-                        setTextIfShown(locationUpdateFreq, "N/A");
-                        setTextIfShown(lat, "N/A");
-                        setTextIfShown(lon, "N/A");
-                        setTextIfShown(alt, "N/A");
-                        setTextIfShown(bearing, "N/A");
-                        setTextIfShown(speed, "N/A");
+                        setValueIfShown(locationUpdateFreq, "N/A");
+                        setValueIfShown(lat, "N/A");
+                        setValueIfShown(lon, "N/A");
+                        setValueIfShown(alt, "N/A");
+                        setValueIfShown(bearing, "N/A");
+                        setValueIfShown(speed, "N/A");
+                        
+                        setValueIfShown(speedGauge, 0f);
                     } else {
-                        setTextIfShown(locationUpdateFreq, "%.3f",
+                        float speedValue = speedUnit.fromMps(locationData.getSpeed());
+                        
+                        setValueIfShown(locationUpdateFreq, "%.3f",
                                 dpcService.getLocationDataUpdateFrequency());
-                        setTextIfShown(lat, "%.8f", locationData.getLatitude());
-                        setTextIfShown(lon, "%.8f", locationData.getLongitude());
-                        setTextIfShown(alt, "%.3f", locationData.getAltitude());
-                        setTextIfShown(bearing, "%.3f", locationData.getBearing());
-                        setTextIfShown(speed, "%.3f", locationData.getSpeed());
+                        setValueIfShown(lat, "%.8f", locationData.getLatitude());
+                        setValueIfShown(lon, "%.8f", locationData.getLongitude());
+                        setValueIfShown(alt, "%.3f", locationData.getAltitude());
+                        setValueIfShown(bearing, "%.3f", locationData.getBearing());
+                        setValueIfShown(speed, "%.1f", speedValue);
+                        
+                        setValueIfShown(speedGauge, speedValue);
                     }
                     
                     if (ecuData == null) {
-                        setTextIfShown(ecuUpdateFreq, "N/A");
-                        setTextIfShown(rpm, "N/A");
-                        setTextIfShown(map, "N/A");
-                        setTextIfShown(boostVac, "N/A");
-                        setTextIfShown(tp, "N/A");
-                        setTextIfShown(afr, "N/A");
-                        setTextIfShown(mat, "N/A");
-                        setTextIfShown(clt, "N/A");
-                        setTextIfShown(ignAdv, "N/A");
-                        setTextIfShown(batV, "N/A");
+                        setValueIfShown(ecuUpdateFreq, "N/A");
+                        setValueIfShown(rpm, "N/A");
+                        setValueIfShown(map, "N/A");
+                        setValueIfShown(mgp, "N/A");
+                        setValueIfShown(tp, "N/A");
+                        setValueIfShown(afr, "N/A");
+                        setValueIfShown(mat, "N/A");
+                        setValueIfShown(clt, "N/A");
+                        setValueIfShown(ignAdv, "N/A");
+                        setValueIfShown(batV, "N/A");
                         
-                        setValueIfShow(rpmGauge, 0f);
+                        setValueIfShown(rpmGauge, 0f);
+                        setValueIfShown(shiftLightGauge, 0f);
+                        setValueIfShown(mapGauge, 0f);
+                        setValueIfShown(mgpGauge, 0f);
+                        setValueIfShown(tpGauge, 0f);
+                        setValueIfShown(afrGauge, 0f);
+                        setValueIfShown(matGauge, 0f);
+                        setValueIfShown(cltGauge, 0f);
+                        setValueIfShown(ignAdvGauge, 0f);
+                        setValueIfShown(batVGauge, 0f);
                     } else {
-                        setTextIfShown(ecuUpdateFreq, "%.3f", dpcService.getEcuDataUpdateFrequency());
-                        setTextIfShown(rpm, "%d", ecuData.getRpm());
-                        setTextIfShown(map, "%.0f", ecuData.getManifoldAbsolutePressure());
-                        setTextIfShown(map, "%.0f", ecuData.getManifoldGaugePressure());
-                        setTextIfShown(tp, "%.0f", ecuData.getThrottlePosition() * 100);
-                        setTextIfShown(afr, "%.1f", ecuData.getAirFuelRatio());
-                        setTextIfShown(mat, "%.1f", ecuData.getManifoldAirTemperature());
-                        setTextIfShown(clt, "%.1f", ecuData.getCoolantTemperature());
-                        setTextIfShown(ignAdv, "%.1f", ecuData.getIgnitionAdvance());
-                        setTextIfShown(batV, "%.1f", ecuData.getBatteryVoltage());
                         
-                        //setValueIfShow(rpmGauge, rpmValue);
-                        setValueIfShow(rpmGauge, ecuData.getRpm());
-                        setValueIfShow(mapGauge, (float) ecuData.getManifoldAbsolutePressure());
-                        setValueIfShow(boostVacGauge, (float) ecuData.getManifoldGaugePressure());
-                        setValueIfShow(tpGauge, (float) ecuData.getThrottlePosition());
-                        setValueIfShow(afrGauge, (float) ecuData.getAirFuelRatio());
-                        setValueIfShow(matGauge, (float) ecuData.getManifoldAirTemperature());
-                        setValueIfShow(cltGauge, (float) ecuData.getCoolantTemperature());
-                        setValueIfShow(ignAdvGauge, (float) ecuData.getIgnitionAdvance());
-                        setValueIfShow(batVGauge, (float) ecuData.getBatteryVoltage());
+                        double mapValue = pressureUnit.fromKPa(ecuData.getManifoldAbsolutePressure());
+                        double mgpValue = pressureUnit.fromKPa(ecuData.getManifoldGaugePressure());
+                        double matValue = temperatureUnit.fromCelsius(ecuData.getManifoldAirTemperature());
+                        double cltValue = temperatureUnit.fromCelsius(ecuData.getCoolantTemperature());
+                        
+                        setValueIfShown(ecuUpdateFreq, "%.3f", dpcService.getEcuDataUpdateFrequency());
+                        setValueIfShown(rpm, "%d", ecuData.getRpm());
+                        setValueIfShown(map, "%.0f", mapValue);
+                        setValueIfShown(mgp, "%.0f", mgpValue);
+                        setValueIfShown(tp, "%.0f", ecuData.getThrottlePosition() * 100);
+                        setValueIfShown(afr, "%.1f", ecuData.getAirFuelRatio());
+                        setValueIfShown(mat, "%.1f", matValue);
+                        setValueIfShown(clt, "%.1f", cltValue);
+                        setValueIfShown(ignAdv, "%.1f", ecuData.getIgnitionAdvance());
+                        setValueIfShown(batV, "%.1f", ecuData.getBatteryVoltage());
+                        
+                        setValueIfShown(rpmGauge, ecuData.getRpm());
+                        setValueIfShown(shiftLightGauge, ecuData.getRpm());
+                        setValueIfShown(mapGauge, (float) mapValue);
+                        setValueIfShown(mgpGauge, (float) mgpValue);
+                        setValueIfShown(tpGauge, (float) ecuData.getThrottlePosition() * 100);
+                        setValueIfShown(afrGauge, (float) ecuData.getAirFuelRatio());
+                        setValueIfShown(matGauge, (float) matValue);
+                        setValueIfShown(cltGauge, (float) cltValue);
+                        setValueIfShown(ignAdvGauge, (float) ecuData.getIgnitionAdvance());
+                        setValueIfShown(batVGauge, (float) ecuData.getBatteryVoltage());
                     }
                 } catch (IllegalStateException e) {
                     LOG.warn(
@@ -527,6 +562,12 @@ public class LogActivity extends BaseActivity implements OnCancelListener {
     @Override
     protected void onResume() {
         super.onResume();
+        
+        speedUnit = config.getDisplaySpeedUnit();
+        temperatureUnit = config.getDisplayTemperatureUnit();
+        pressureUnit = config.getDisplayPressureUnit();
+        
+        initDisplayViews();
         
         displayTask = new DisplayTask();
         
@@ -708,10 +749,12 @@ public class LogActivity extends BaseActivity implements OnCancelListener {
         bearing = (TextView) findViewById(R.id.log_bearing_value);
         speed = (TextView) findViewById(R.id.log_speed_value);
         
+        speedGauge = (Gauge) findViewById(R.id.log_speed_gauge);
+        
         ecuUpdateFreq = (TextView) findViewById(R.id.log_ecu_update_frequency_value);
         rpm = (TextView) findViewById(R.id.log_rpm_value);
         map = (TextView) findViewById(R.id.log_map_value);
-        boostVac = (TextView) findViewById(R.id.log_boostvac_value);
+        mgp = (TextView) findViewById(R.id.log_mgp_value);
         tp = (TextView) findViewById(R.id.log_tp_value);
         afr = (TextView) findViewById(R.id.log_afr_value);
         mat = (TextView) findViewById(R.id.log_mat_value);
@@ -720,14 +763,27 @@ public class LogActivity extends BaseActivity implements OnCancelListener {
         batV = (TextView) findViewById(R.id.log_batv_value);
         
         rpmGauge = (Gauge) findViewById(R.id.log_rpm_gauge);
+        shiftLightGauge = (Gauge) findViewById(R.id.log_shift_light_gauge);
         mapGauge = (Gauge) findViewById(R.id.log_map_gauge);
-        boostVacGauge = (Gauge) findViewById(R.id.log_boostvac_gauge);
+        mgpGauge = (Gauge) findViewById(R.id.log_mgp_gauge);
         tpGauge = (Gauge) findViewById(R.id.log_tp_gauge);
         afrGauge = (Gauge) findViewById(R.id.log_afr_gauge);
         matGauge = (Gauge) findViewById(R.id.log_mat_gauge);
         cltGauge = (Gauge) findViewById(R.id.log_clt_gauge);
         ignAdvGauge = (Gauge) findViewById(R.id.log_ign_adv_gauge);
         batVGauge = (Gauge) findViewById(R.id.log_batv_gauge);
+        
+        if (speedGauge != null) {
+            GaugeConfigurationBuilder gaugeConfigurationBuilder = new GaugeConfigurationBuilder();
+            // TODO un-hard code these
+            gaugeConfigurationBuilder
+                    .setMaxValue(150f)
+                    .setMinValue(0f)
+                    .setMajorScaleMarkDelta(20f)
+                    .setMinorScaleMarkSegmentsPerMajorScaleMark(4)
+                    .setTitle("Speed");
+            speedGauge.init(gaugeConfigurationBuilder.build());
+        }
         
         if (rpmGauge != null) {
             GaugeConfigurationBuilder gaugeConfigurationBuilder = new GaugeConfigurationBuilder();
@@ -739,9 +795,19 @@ public class LogActivity extends BaseActivity implements OnCancelListener {
                     .setMinorScaleMarkSegmentsPerMajorScaleMark(5)
                     .setScaleMarkLabelScaleFactor(1000f)
                     .setMaxCriticalValue(7200f)
-                    .setUseAlertColorGradient(false)
                     .setTitle("RPM");
             rpmGauge.init(gaugeConfigurationBuilder.build());
+        }
+        
+        if (shiftLightGauge != null) {
+            GaugeConfigurationBuilder gaugeConfigurationBuilder = new GaugeConfigurationBuilder();
+            // TODO un-hard code these
+            gaugeConfigurationBuilder
+                    .setMaxValue(8000f)
+                    .setMinValue(0f)
+                    .setShowValue(false)
+                    .setMaxCriticalValue(7050f);
+            shiftLightGauge.init(gaugeConfigurationBuilder.build());
         }
         
         if (mapGauge != null) {
@@ -756,16 +822,16 @@ public class LogActivity extends BaseActivity implements OnCancelListener {
             mapGauge.init(gaugeConfigurationBuilder.build());
         }
         
-        if (boostVacGauge != null) {
+        if (mgpGauge != null) {
             GaugeConfigurationBuilder gaugeConfigurationBuilder = new GaugeConfigurationBuilder();
             // TODO un-hard code these
             gaugeConfigurationBuilder
-                    .setMaxValue(10f)
-                    .setMinValue(-200f)
-                    .setMajorScaleMarkDelta(20f)
+                    .setMaxValue(20f)
+                    .setMinValue(-25f)
+                    .setMajorScaleMarkDelta(5f)
                     .setMinorScaleMarkSegmentsPerMajorScaleMark(5)
                     .setTitle("Boost/Vac");
-            boostVacGauge.init(gaugeConfigurationBuilder.build());
+            mgpGauge.init(gaugeConfigurationBuilder.build());
         }
         
         if (tpGauge != null) {
@@ -796,7 +862,7 @@ public class LogActivity extends BaseActivity implements OnCancelListener {
             GaugeConfigurationBuilder gaugeConfigurationBuilder = new GaugeConfigurationBuilder();
             // TODO un-hard code these
             gaugeConfigurationBuilder
-                    .setMaxValue(100f)
+                    .setMaxValue(250f)
                     .setMinValue(0f)
                     .setMajorScaleMarkDelta(10f)
                     .setMinorScaleMarkSegmentsPerMajorScaleMark(5)
@@ -808,12 +874,14 @@ public class LogActivity extends BaseActivity implements OnCancelListener {
             GaugeConfigurationBuilder gaugeConfigurationBuilder = new GaugeConfigurationBuilder();
             // TODO un-hard code these
             gaugeConfigurationBuilder
-                    .setMaxValue(110f)
-                    .setMinValue(0f)
+                    .setMaxValue(240f)
+                    .setMinValue(100f)
                     .setMajorScaleMarkDelta(20f)
                     .setMinorScaleMarkSegmentsPerMajorScaleMark(4)
-                    .setMaxWarningValue(99f) // 210
-                    .setMaxCriticalValue(104.5f) // 220
+                    .setMinCriticalValue(160f)
+                    .setMinWarningValue(170f)
+                    .setMaxWarningValue(210f)
+                    .setMaxCriticalValue(220f) // 220
                     .setUseAlertColorGradient(true)
                     .setTitle("CLT");
             cltGauge.init(gaugeConfigurationBuilder.build());
@@ -836,11 +904,15 @@ public class LogActivity extends BaseActivity implements OnCancelListener {
             GaugeConfigurationBuilder gaugeConfigurationBuilder = new GaugeConfigurationBuilder();
             // TODO un-hard code these
             gaugeConfigurationBuilder
-                    .setMaxValue(20f)
-                    .setMinValue(0f)
-                    .setMajorScaleMarkDelta(2f)
-                    .setMinorScaleMarkSegmentsPerMajorScaleMark(0)
-                    .setMaxCriticalValue(16f)
+                    .setMaxValue(16f)
+                    .setMinValue(10f)
+                    .setMajorScaleMarkDelta(1f)
+                    .setMinorScaleMarkSegmentsPerMajorScaleMark(2)
+                    .setMinCriticalValue(11f)
+                    .setMinWarningValue(11.5f)
+                    .setMaxWarningValue(14.5f)
+                    .setMaxCriticalValue(15f)
+                    .setUseAlertColorGradient(true)
                     .setTitle("Voltage");
             batVGauge.init(gaugeConfigurationBuilder.build());
         }
@@ -956,7 +1028,7 @@ public class LogActivity extends BaseActivity implements OnCancelListener {
      *
      * @see String#format(String, Object...)
      */
-    protected void setTextIfShown(TextView view, String format, Object... args) {
+    protected void setValueIfShown(TextView view, String format, Object... args) {
         if (view != null) {
             view.setText(String.format(format, args));
         }
@@ -980,7 +1052,7 @@ public class LogActivity extends BaseActivity implements OnCancelListener {
      * @param gauge the gauge to set
      * @param value the value to set it to
      */
-    protected void setValueIfShow(Gauge gauge, float value) {
+    protected void setValueIfShown(Gauge gauge, float value) {
         if (gauge != null) {
             gauge.setCurrentValue(value);
         }
@@ -1000,11 +1072,11 @@ public class LogActivity extends BaseActivity implements OnCancelListener {
         if (timingData.getLapTime() != null) {
             // After the first lap, all subsequent timing events for a lap completion will
             // have a non-null lap time.
-            setTextIfShown(lastLapTime, TimeUtil.formatDuration(timingData.getLapTime(),
+            setValueIfShown(lastLapTime, TimeUtil.formatDuration(timingData.getLapTime(),
                     false, true));
             
             long lapDelta = (previousBestLapTime == null ? 0 : timingData.getLapTime() - previousBestLapTime);
-            setTextIfShown(lastLapTimeDelta, 
+            setValueIfShown(lastLapTimeDelta, 
                     TimeUtil.formatDuration(lapDelta, false, true));
             
             int lapDeltaColor;
@@ -1017,7 +1089,7 @@ public class LogActivity extends BaseActivity implements OnCancelListener {
             }
             setColorIfShown(lastLapTimeDelta, lapDeltaColor);
             
-            setTextIfShown(bestLapTime, TimeUtil.formatDuration(timingData.getBestLapTime(), false, true));
+            setValueIfShown(bestLapTime, TimeUtil.formatDuration(timingData.getBestLapTime(), false, true));
             
             previousBestLapTime = timingData.getBestLapTime();
             
@@ -1026,7 +1098,7 @@ public class LogActivity extends BaseActivity implements OnCancelListener {
         
         if (timingData.getSplitTime() != null) {
             
-            setTextIfShown(lastSplitTime, TimeUtil.formatDuration(timingData.getSplitTime(),
+            setValueIfShown(lastSplitTime, TimeUtil.formatDuration(timingData.getSplitTime(),
                     false, true));
             
             long splitDelta;
@@ -1036,7 +1108,7 @@ public class LogActivity extends BaseActivity implements OnCancelListener {
                 splitDelta = previousBestSplitTimes.get(timingData.getSplitIndex()) == null 
                         ? 0 : timingData.getSplitTime() - previousBestSplitTimes.get(timingData.getSplitIndex());  
             }
-            setTextIfShown(lastSplitTimeDelta, 
+            setValueIfShown(lastSplitTimeDelta, 
                     TimeUtil.formatDuration(splitDelta, false, true));
             
             int splitDeltaColor;
@@ -1049,7 +1121,7 @@ public class LogActivity extends BaseActivity implements OnCancelListener {
             }
             setColorIfShown(lastSplitTimeDelta, splitDeltaColor);
             
-            setTextIfShown(bestSplitTime, 
+            setValueIfShown(bestSplitTime, 
                     TimeUtil.formatDuration(
                             timingData.getBestSplitTimes().get(timingData.getSplitIndex()), false, true));
             
@@ -1057,9 +1129,9 @@ public class LogActivity extends BaseActivity implements OnCancelListener {
             previousBestSplitTimes = timingData.getBestSplitTimes();
         }
         
-        setTextIfShown(splitIndex, "%d", timingData.getSplitIndex() + 1);
+        setValueIfShown(splitIndex, "%d", timingData.getSplitIndex() + 1);
         
-        setTextIfShown(lapNumber, "%d", lapNumberCounter);
+        setValueIfShown(lapNumber, "%d", lapNumberCounter);
     }
     
     /**

@@ -50,8 +50,7 @@ class DialogManager {
      *            the resource ID of the error message text
      */
     public void onNonTerminalError(Activity activity, int errorMessage) {
-        onNonTerminalError(activity, R.string.app_name, errorMessage,
-                new Object[0]);
+        onNonTerminalError(activity, errorMessage, (Object[]) null);
     }
 
     /**
@@ -95,7 +94,7 @@ class DialogManager {
      *            the resource ID of the error message text
      */
     public void onTerminalError(Activity activity, int errorMessage) {
-        onTerminalError(activity, errorMessage, new Object[0]);
+        onTerminalError(activity, errorMessage, (Object[]) null);
     }
 
     /**

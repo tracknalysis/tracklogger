@@ -20,13 +20,13 @@ Authors: David Valeri
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
 
     <PreferenceCategory android:title="@string/preference_app_log_preference_group_title">
-          <ListPreference
+        <ListPreference
             android:entries="@array/loggingLevelNames"
             android:entryValues="@array/loggingLevelValues"
             android:defaultValue="INFO"
             android:key="app.log.level"
-            android:title="@string/preference_app_log_level_title" />
-          <CheckBoxPreference
+             android:title="@string/preference_app_log_level_title" />
+        <CheckBoxPreference
             android:key="app.log.file.enable"
             android:defaultValue="false"
             android:title="@string/preference_app_log_log_to_file_title" />
@@ -49,12 +49,36 @@ Authors: David Valeri
     </PreferenceCategory>
     
     <PreferenceCategory android:title="@string/preference_log_preference_group_title">
-          <ListPreference
+        <ListPreference
             android:entries="@array/preference_log_view_names"
             android:entryValues="@array/preference_log_view_values"
             android:defaultValue="@layout/log_default"
             android:key="log.layout.id"
             android:title="@string/preference_log_layout_name" />
+    </PreferenceCategory>
+    
+    <PreferenceCategory android:title="@string/preference_display_group_title">
+      <PreferenceScreen android:key="preferences_display_units"
+              android:title="@string/preference_dispay_units_screen_title">
+          <ListPreference
+              android:entries="@array/preference_display_units_speed_names"
+              android:entryValues="@array/preference_display_units_speed_values"
+              android:defaultValue="MPH"
+              android:key="display.units.speed"
+              android:title="@string/preference_dispay_units_speed_title" />
+          <ListPreference
+              android:entries="@array/preference_display_units_temperature_names"
+              android:entryValues="@array/preference_display_units_temperature_values"
+              android:defaultValue="F"
+              android:key="display.units.temperature"
+              android:title="@string/preference_dispay_units_temperature_title" />
+          <ListPreference
+              android:entries="@array/preference_display_units_pressure_names"
+              android:entryValues="@array/preference_display_units_pressure_values"
+              android:defaultValue="PSI"
+              android:key="display.units.pressure"
+              android:title="@string/preference_dispay_units_pressure_title" />
+      </PreferenceScreen>
     </PreferenceCategory>
 
 </PreferenceScreen>

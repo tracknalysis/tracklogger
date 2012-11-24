@@ -272,8 +272,8 @@ Authors: David Valeri
                     android:layout_margin="2.55dp" />
                 
                 <net.tracknalysis.tracklogger.view.CircularGauge
-                    android:id="@+id/log_boostvac_gauge"
-                    android:layout_width="0dp"
+                    android:id="@+id/log_mgp_gauge"
+                    android:layout_width="0dp"  
                     android:layout_height="match_parent"
                     android:layout_weight="50"
                     android:baselineAligned="false"
@@ -286,13 +286,15 @@ Authors: David Valeri
         android:layout_height="0dp"
         android:layout_width="fill_parent"
         android:padding="2.5dp"
-        android:layout_weight="20">
+        android:layout_weight="20"
+        android:orientation="horizontal">
         
-        <net.tracknalysis.tracklogger.view.HorizontalBarGauge
+        <net.tracknalysis.tracklogger.view.PlainHorizontalBarGauge
                 android:id="@+id/log_rpm_gauge"
-                android:layout_width="fill_parent"
+                android:layout_width="0dp"
                 android:layout_height="match_parent"
                 android:layout_margin="2.5dp"
+                android:layout_weight="90"
                 android:baselineAligned="false" />
     </LinearLayout>
 </LinearLayout>

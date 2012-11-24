@@ -32,7 +32,7 @@ import android.util.AttributeSet;
  *
  * @author David Valeri
  */
-public class BoxGauge extends AbstractBarGauge {
+public class BoxGauge extends AbstractGauge {
 
     private final RectF workingRect;
     private final Paint barPaint;
@@ -55,6 +55,7 @@ public class BoxGauge extends AbstractBarGauge {
         titlePaint = new Paint();
         titlePaint.setColor(Color.WHITE);
         titlePaint.setTextAlign(Align.CENTER);
+        titlePaint.setAntiAlias(true);
     }
 
     @Override

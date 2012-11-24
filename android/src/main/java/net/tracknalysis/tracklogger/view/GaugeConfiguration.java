@@ -26,11 +26,11 @@ public class GaugeConfiguration {
     private float minValue;
     
     private float majorScaleMarkDelta;
-    private int minorScaleMarkSegmentsPerMajorScaleMark;
-    // The scale mark label value is divided by this value before rendering and
-    // an indicator is placed in the gauge indicating that the value is X (times)
-    // this value.
+    private int minorScaleMarkSegmentsPerMajorScaleMark = 1;
     private Float scaleMarkLabelScaleFactor;
+    
+    private Float minCriticalValue;
+    private Float minWarningValue;
     
     private Float maxWarningValue;
     private Float maxCriticalValue;
@@ -68,6 +68,15 @@ public class GaugeConfiguration {
         this.majorScaleMarkDelta = majorScaleMarkDelta;
     }
 
+    /**
+     * Returns the number of segments, sub divisions, between major scale marks.
+     * Defaults to 1, that is no minor scale marks. For example, if the minimum
+     * value is 0, the major mark delta is 10 and you desire a minor scale mark
+     * on 5, 15, 25, you would specify 2 here. 10 / 2 = 5. So each
+     * segment/sub-division would represent 5 units and there would be 2
+     * segments per major scale mark with one minor scale mark separating the
+     * two segments.
+     */
     public int getMinorScaleMarkSegmentsPerMajorScaleMark() {
         return minorScaleMarkSegmentsPerMajorScaleMark;
     }
@@ -77,12 +86,42 @@ public class GaugeConfiguration {
         this.minorScaleMarkSegmentsPerMajorScaleMark = minorScaleMarkSegmentsPerMajorScaleMark;
     }
     
+    /**
+     * Returns the optional value by which scale mark label value is divided by
+     * before rendering.  An indicator is placed in the gauge indicating that
+     * the value is X (times) this value. Useful if the scale is large, such as
+     * RPMs x 1000.
+     */
     public Float getScaleMarkLabelScaleFactor() {
         return scaleMarkLabelScaleFactor;
     }
 
     protected void setScaleMarkLabelScaleFactor(Float scaleMarkLabelScaleFactor) {
         this.scaleMarkLabelScaleFactor = scaleMarkLabelScaleFactor;
+    }
+    
+    public Float getMinCriticalValue() {
+        return minCriticalValue;
+    }
+
+    protected void setMinCriticalValue(Float minCriticalValue) {
+        this.minCriticalValue = minCriticalValue;
+    }
+    
+    public boolean isMinCriticalEnabled() {
+        return minCriticalValue != null;
+    }
+
+    public Float getMinWarningValue() {
+        return minWarningValue;
+    }
+
+    protected void setMinWarningValue(Float minWarningValue) {
+        this.minWarningValue = minWarningValue;
+    }
+    
+    public boolean isMinWarningEnabled() {
+        return minWarningValue != null;
     }
 
     public Float getMaxWarningValue() {
@@ -107,6 +146,11 @@ public class GaugeConfiguration {
     
     public boolean isMaxCriticalEnabled() {
         return maxCriticalValue != null;
+    }
+    
+    public boolean isAlertEnabled() {
+        return isMinCriticalEnabled() || isMinWarningEnabled()
+                || isMaxWarningEnabled() || isMaxCriticalEnabled();
     }
     
     public boolean isUseAlertColorGradient() {
@@ -138,8 +182,11 @@ public class GaugeConfiguration {
         private float minValue;
         
         private float majorScaleMarkDelta;
-        private int minorScaleMarkSegmentsPerMajorScaleMark;
+        private int minorScaleMarkSegmentsPerMajorScaleMark = 1;
         private Float scaleMarkLabelScaleFactor;
+        
+        private Float minCriticalValue;
+        private Float minWarningValue;
         
         private Float maxWarningValue;
         private Float maxCriticalValue;
@@ -154,6 +201,9 @@ public class GaugeConfiguration {
             return maxValue;
         }
         
+        /**
+         * See {@link GaugeConfiguration#getMaxValue()}.
+         */
         public GaugeConfigurationBuilder setMaxValue(float maxValue) {
             this.maxValue = maxValue;
             return this;
@@ -163,6 +213,9 @@ public class GaugeConfiguration {
             return minValue;
         }
         
+        /**
+         * See {@link GaugeConfiguration#getMinValue()}.
+         */
         public GaugeConfigurationBuilder setMinValue(float minValue) {
             this.minValue = minValue;
             return this;
@@ -172,6 +225,9 @@ public class GaugeConfiguration {
             return majorScaleMarkDelta;
         }
 
+        /**
+         * See {@link GaugeConfiguration#getMajorScaleMarkDelta()}.
+         */
         public GaugeConfigurationBuilder setMajorScaleMarkDelta(float majorScaleMarkDelta) {
             this.majorScaleMarkDelta = majorScaleMarkDelta;
             return this;
@@ -181,6 +237,9 @@ public class GaugeConfiguration {
             return minorScaleMarkSegmentsPerMajorScaleMark;
         }
 
+        /**
+         * See {@link GaugeConfiguration#getMinorScaleMarkSegmentsPerMajorScaleMark()}.
+         */
         public GaugeConfigurationBuilder setMinorScaleMarkSegmentsPerMajorScaleMark(
                 int minorScaleMarkSegmentsPerMajorScaleMark) {
             this.minorScaleMarkSegmentsPerMajorScaleMark = minorScaleMarkSegmentsPerMajorScaleMark;
@@ -191,8 +250,29 @@ public class GaugeConfiguration {
             return scaleMarkLabelScaleFactor;
         }
 
+        /**
+         * See {@link GaugeConfiguration#getScaleMarkLabelScaleFactor()}.
+         */
         public GaugeConfigurationBuilder setScaleMarkLabelScaleFactor(Float scaleMarkLabelScaleFactor) {
             this.scaleMarkLabelScaleFactor = scaleMarkLabelScaleFactor;
+            return this;
+        }
+        
+        public Float getMinCriticalValue() {
+            return minCriticalValue;
+        }
+
+        public GaugeConfigurationBuilder setMinCriticalValue(Float minCriticalValue) {
+            this.minCriticalValue = minCriticalValue;
+            return this;
+        }
+
+        public Float getMinWarningValue() {
+            return minWarningValue;
+        }
+
+        public GaugeConfigurationBuilder setMinWarningValue(Float minWarningValue) {
+            this.minWarningValue = minWarningValue;
             return this;
         }
 
@@ -244,6 +324,8 @@ public class GaugeConfiguration {
         public GaugeConfiguration build() {
             GaugeConfiguration result = new GaugeConfiguration();
             
+            // Min and Max
+            
             if (minValue >= maxValue) {
                 throw new IllegalArgumentException("minValue must be less than maxValue.");
             }
@@ -253,9 +335,40 @@ public class GaugeConfiguration {
                         "minorScaleMarksPerMajorScaleMark must be > 0.");
             }
             
-            if (maxWarningValue != null && (maxWarningValue < minValue || maxWarningValue > maxValue)) {
+            // Warning/Critical Alert Values
+            
+            if (minCriticalValue != null && (minCriticalValue < minValue || minCriticalValue > maxValue)) {
                 throw new IllegalArgumentException(
-                        "maxWarningValue must be <= maxValue and >= minValue.");
+                        "minCriticalValue must be <= maxValue and >= minValue.");
+            }
+            
+            if (minWarningValue != null) {
+                if (minWarningValue < minValue || minWarningValue > maxValue) {
+                    throw new IllegalArgumentException(
+                            "minWarningValue must be <= maxValue and >= minValue.");
+                }
+                
+                if (minCriticalValue != null && minWarningValue < minCriticalValue) {
+                    throw new IllegalArgumentException(
+                            "minCriticalValue must be > minWarningValue.");
+                }
+            }
+            
+            if (maxWarningValue != null) {
+                if (maxWarningValue < minValue || maxWarningValue > maxValue) {
+                    throw new IllegalArgumentException(
+                            "maxWarningValue must be <= maxValue and >= minValue.");
+                }
+                
+                if (minWarningValue != null && maxWarningValue <= minWarningValue) {
+                    throw new IllegalArgumentException(
+                            "maxWarningValue must be > minWarningValue."); 
+                }
+                
+                if (minCriticalValue != null && maxWarningValue <= minCriticalValue) {
+                    throw new IllegalArgumentException(
+                            "maxWarningValue must be > minCriticalValue."); 
+                }
             }
             
             if (maxCriticalValue != null) {
@@ -268,12 +381,26 @@ public class GaugeConfiguration {
                     throw new IllegalArgumentException(
                             "maxCriticalValue must be > maxWarningValue.");
                 }
+                
+                if (minWarningValue != null && maxCriticalValue <= minWarningValue) {
+                    throw new IllegalArgumentException(
+                            "maxCriticalValue must be > minWarningValue."); 
+                }
+                
+                if (minCriticalValue != null && maxCriticalValue <= minCriticalValue) {
+                    throw new IllegalArgumentException(
+                            "maxCriticalValue must be > minCriticalValue."); 
+                }
             }
+            
+            ///////
             
             result.setMaxValue(maxValue);
             result.setMinValue(minValue);
             result.setMajorScaleMarkDelta(majorScaleMarkDelta);
             result.setMinorScaleMarkSegmentsPerMajorScaleMark(minorScaleMarkSegmentsPerMajorScaleMark);
+            result.setMinCriticalValue(minCriticalValue);
+            result.setMinWarningValue(minWarningValue);
             result.setMaxWarningValue(maxWarningValue);
             result.setMaxCriticalValue(maxCriticalValue);
             result.setUseAlertColorGradient(useAlertColorGradient);

@@ -46,6 +46,14 @@ public abstract class AbstractGauge extends SurfaceView implements SurfaceHolder
     private final Paint alertPaint;
     private final Paint clearPaint;
     
+    private float alertThresholdRangePercentage = 0.15f;
+    
+    private float minCriticalThreshold;
+    private float minCriticalColorRatio;
+    
+    private float minWarningThreshold;
+    private float minWarningColorRatio;
+    
     private float maxWarningThreshold;
     private float maxWarningColorRatio;
     
@@ -74,6 +82,7 @@ public abstract class AbstractGauge extends SurfaceView implements SurfaceHolder
         synchronized (getHolder()) {
             config = configuration;
             rescale();
+            update();
         }
     }
 
@@ -109,31 +118,65 @@ public abstract class AbstractGauge extends SurfaceView implements SurfaceHolder
         }
     }
     
-    protected int getCanvasWidth() {
+    /**
+     * Returns the width of the current canvas such that sub-classes don't have to track this on their own.
+     */
+    protected final int getCanvasWidth() {
         return canvasWidth;
     }
 
-    protected int getCanvasHeight() {
+    /**
+     * Returns the height of the current canvas such that sub-classes don't have to track this on their own.
+     */
+    protected final int getCanvasHeight() {
         return canvasHeight;
     }
+    
+    /**
+     * Returns the percentage of the next alert value at which alert color blending should occur when using
+     * gradients.
+     */
+    protected final float getAlertThresholdFactor() {
+        return alertThresholdRangePercentage;
+    }
+    
+    /**
+     * Gets the threshold for blending gradients on the min critical alert value.
+     *
+     * @see #getAlertThresholdFactor()
+     */
+    public float getMinCriticalThreshold() {
+        return minCriticalThreshold;
+    }
+    
+    /**
+     * Gets the threshold for blending gradients on the min warning alert value.
+     *
+     * @see #getAlertThresholdFactor()
+     */
+    public float getMinWarningThreshold() {
+        return minWarningThreshold;
+    }
 
-    protected float getMaxWarningThreshold() {
+    /**
+     * Gets the threshold for blending gradients on the max warning alert value.
+     *
+     * @see #getAlertThresholdFactor()
+     */
+    protected final float getMaxWarningThreshold() {
         return maxWarningThreshold;
     }
 
-    protected float getMaxWarningColorRatio() {
-        return maxWarningColorRatio;
+    /**
+     * Gets the threshold for blending gradients on the max critical alert value.
+     *
+     * @see #getAlertThresholdFactor()
+     */
+    protected final float getMaxCriticalThreshold() {
+        return  maxCriticalThreshold;
     }
 
-    protected float getMaxCriticalThreshold() {
-        return maxCriticalThreshold;
-    }
-
-    protected float getMaxCriticalColorRatio() {
-        return maxCriticalColorRatio;
-    }
-    
-    protected GaugeConfiguration getConfiguration() {
+    protected final GaugeConfiguration getConfiguration() {
         return config;
     }
 
@@ -147,40 +190,80 @@ public abstract class AbstractGauge extends SurfaceView implements SurfaceHolder
     protected int valueToAlertColor(float value) {
         int red = 0;
         int green = 255;
+        boolean matched = false;
         
-        if (config.isMaxWarningEnabled()) {
-            if (value < config.getMaxWarningValue()) {
-                green = 255;
-                red = 0;
-                
-                if (config.isUseAlertColorGradient() && value > maxWarningThreshold) {
-                    red = (int) (maxWarningColorRatio * (value - maxWarningThreshold));
-                }
-            } else {
-                green = 255;
+        if (config.isMinCriticalEnabled()) {
+            if (value <= config.getMinCriticalValue()) {
                 red = 255;
-            }
-        }
-        
-        if (config.isMaxCriticalEnabled()) {
-            if (config.isMaxWarningEnabled()
-                    && value > config.getMaxWarningValue()
-                    && value < config.getMaxCriticalValue()) {
-                green = 255;
-                red = 255;
-                
-                if (config.isUseAlertColorGradient() && value > maxCriticalThreshold) {
-                    green = 255 - (int) (maxCriticalColorRatio * (value - maxCriticalThreshold));
-                }
-            } else if (value >= config.getMaxCriticalValue()) {
                 green = 0;
+                matched = true;
+            }
+            
+            if (config.isUseAlertColorGradient() && value <= minCriticalThreshold) {
                 red = 255;
+                green = 255 - (int) (minCriticalColorRatio * (maxCriticalThreshold - value));
+                matched = true;
             }
         }
         
-        return Color.rgb(red, green, 9);
+        if (config.isMinWarningEnabled() && !matched) {
+            if (value <= config.getMinWarningValue()) {
+                red = 255;
+                green = 255;
+                matched = true;
+            }
+            
+            if (config.isUseAlertColorGradient() && value <= minWarningThreshold) {
+                red = (int) (minWarningColorRatio * (maxWarningThreshold - value));
+                green = 255;
+                matched = true;
+            }
+        }
+        
+        if (config.isMaxCriticalEnabled() && !matched) {
+            if (value >= config.getMaxCriticalValue()) {
+                red = 255;
+                green = 0;
+                matched = true;
+            }
+            
+            if (config.isUseAlertColorGradient() && value >= maxCriticalThreshold) {
+                red = 255;
+                green = 255 - (int) (maxCriticalColorRatio * (value - maxCriticalThreshold));
+                matched = true;
+            }
+        }
+        
+        if (config.isMaxWarningEnabled() && !matched) {
+            if (value >= config.getMaxWarningValue()) {
+                red = 255;
+                green = 255;
+                matched = true;
+            }
+            
+            if (config.isUseAlertColorGradient() && value >= maxWarningThreshold) {
+                green = 255;
+                red = (int) (maxWarningColorRatio * (value - maxWarningThreshold));
+            }
+        }
+        
+        return Color.rgb(red, green, 0);
     }
     
+    /**
+     * Sanitize {@code value} to be between the minimum and maximum values for
+     * the gauge.
+     * 
+     * @param value
+     *            the value to sanitize
+     *
+     * @return the minimum value if {@code value} is less than the minimum
+     *         value, the maximum value if {@code value} is greater than the
+     *         maximum value, otherwise {@code value}
+     *         
+     * @see GaugeConfiguration#getMinValue()
+     * @see GaugeConfiguration#getMaxValue()
+     */
     protected final float restrictValueRange(float value) {
         float restrictedvalue = value;
         if (currentValue < config.getMinValue()) {
@@ -192,11 +275,31 @@ public abstract class AbstractGauge extends SurfaceView implements SurfaceHolder
         return restrictedvalue;
     }
     
+    /**
+     * Called when the gauge is provided with a new configuration or when the underlying surface changes.
+     * Subclasses should perform any rescaling and construction of cached resources in the implementation of
+     * this method.  Note that the getters on this class reflect the new state of the gauge when this method
+     * is called.
+     *
+     * @param canvasWidth the new canvas width
+     * @param canvasHeight the new canvas height
+     * @param configuration the new configuration
+     */
     protected abstract void reconfigure(int canvasWidth,
             int canvasHeight, GaugeConfiguration configuration);
     
+    /**
+     * Called when a new value should be drawn on the gauge.
+     *
+     * @param canvas the canvas to draw on
+     * @param valueToDraw the sanitized, per {@link #restrictValueRange(float)}, value to draw
+     */
     protected abstract void draw(Canvas canvas, float valueToDraw);
     
+    /**
+     * Clear the canvas and attempt to draw the gauge if and only if the gauge is in a state where it can
+     * be drawn. 
+     */
     private void update() {
         SurfaceHolder holder = getHolder();
         
@@ -204,13 +307,10 @@ public abstract class AbstractGauge extends SurfaceView implements SurfaceHolder
         try {
             canvas = holder.lockCanvas(null);
             synchronized (holder) {
-                if (!haveSurface && config != null && haveSurfaceDetails) {
-                    return;
+                if (haveSurface && config != null && haveSurfaceDetails) {
+                    canvas.drawPaint(clearPaint);
+                    draw(canvas, restrictValueRange(currentValue));
                 }
-                
-                canvas.drawPaint(clearPaint);
-                
-                draw(canvas, restrictValueRange(currentValue));
             }
         } catch (RuntimeException e) {
             if (!haveSurface) {
@@ -225,26 +325,77 @@ public abstract class AbstractGauge extends SurfaceView implements SurfaceHolder
         }
     }
     
+    /**
+     * Handle updates to the size and configuration of the gauge by recalculating derived values and then
+     * calling {@link #reconfigure(int, int, GaugeConfiguration)} to allow sub-classes to do the same. 
+     */
     private void rescale() {
         synchronized (getHolder()) {
-            if (config != null && haveSurfaceDetails) {
+            if (config != null && haveSurfaceDetails && haveSurface) {
+                if (config.isMinCriticalEnabled()) {
+                    minCriticalThreshold = config.getMinCriticalValue()
+                            + ((getNextAlertValue(config
+                                    .getMinCriticalValue()) - config
+                                    .getMinCriticalValue()) * (alertThresholdRangePercentage));
+                    
+                    minCriticalColorRatio = 255 / (minCriticalThreshold - config.getMinCriticalValue());
+                }
+                
+                if (config.isMinWarningEnabled()) {
+                    minWarningThreshold = config.getMinWarningValue()
+                            + ((getNextAlertValue(config
+                                    .getMinWarningValue()) - config
+                                    .getMinWarningValue()) * (alertThresholdRangePercentage));
+                    
+                    minWarningColorRatio = 255 / (minWarningThreshold - config.getMinWarningValue());
+                }
+                
                 if (config.isMaxWarningEnabled()) {
-                    maxWarningThreshold = config.getMaxWarningValue() * 0.75f;
+                    maxWarningThreshold = config.getMaxWarningValue()
+                            - ((config.getMaxWarningValue() - getPreviousAlertValue(config
+                                    .getMaxWarningValue())) * (alertThresholdRangePercentage));
+                    
                     maxWarningColorRatio = 255 / (config.getMaxWarningValue() - maxWarningThreshold);
                 }
                 
                 if (config.isMaxCriticalEnabled()) {
-                    if (config.isMaxWarningEnabled()) {
-                        maxCriticalThreshold = config.getMaxWarningValue() + 
-                                ((config.getMaxCriticalValue() - config.getMaxWarningValue()) * 0.75f);
-                    } else {
-                        maxCriticalThreshold = config.getMaxCriticalValue() * 0.75f;
-                    }
+                    maxCriticalThreshold = config.getMaxCriticalValue()
+                            - ((config.getMaxCriticalValue() - getPreviousAlertValue(config
+                                    .getMaxCriticalValue())) * (alertThresholdRangePercentage));
+                    
                     maxCriticalColorRatio = 255 / (config.getMaxCriticalValue() - maxCriticalThreshold);
                 }
                 
                 reconfigure(canvasWidth, canvasHeight, config);
             }
         }
+    }
+    
+    private float getPreviousAlertValue(Float value) {
+        if (config.isMaxCriticalEnabled() && value > config.getMaxCriticalValue()) {
+            return config.getMaxCriticalValue();
+        } else if (config.isMaxWarningEnabled() && value > config.getMaxWarningValue()) {
+            return config.getMaxWarningValue();
+        } else if (config.isMinWarningEnabled() && value > config.getMinWarningValue()) {
+            return config.getMinWarningValue();
+        } else if (config.isMinCriticalEnabled() && value > config.getMinCriticalValue()) {
+            return config.getMinCriticalValue();
+        }
+        
+        return config.getMinValue();
+    }
+    
+    private float getNextAlertValue(Float value) {
+        if (config.isMinCriticalEnabled() && value < config.getMinCriticalValue()) {
+            return config.getMinCriticalValue();
+        } else if (config.isMinWarningEnabled() && value < config.getMinWarningValue()) {
+            return config.getMinWarningValue();
+        } else if (config.isMaxWarningEnabled() && value < config.getMaxWarningValue()) {
+            return config.getMaxWarningValue();
+        } else if (config.isMaxCriticalEnabled() && value < config.getMaxCriticalValue()) {
+            return config.getMaxCriticalValue();
+        }
+        
+        return config.getMaxValue();
     }
 }

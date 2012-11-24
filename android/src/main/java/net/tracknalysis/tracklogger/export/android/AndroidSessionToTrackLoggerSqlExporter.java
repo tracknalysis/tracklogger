@@ -21,6 +21,7 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.util.Date;
+import java.util.Locale;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -220,6 +221,8 @@ public class AndroidSessionToTrackLoggerSqlExporter extends
                         .getColumnIndex(TrackLoggerData.LogEntry.COLUMN_NAME_RPM);
                 final int mapColumnIndex = logEntryCursor
                         .getColumnIndex(TrackLoggerData.LogEntry.COLUMN_NAME_MAP);
+                final int mgpColumnIndex = logEntryCursor
+                        .getColumnIndex(TrackLoggerData.LogEntry.COLUMN_NAME_MGP);
                 final int tpColumnIndex = logEntryCursor
                         .getColumnIndex(TrackLoggerData.LogEntry.COLUMN_NAME_THROTTLE_POSITION);
                 final int afrColumnIndex = logEntryCursor
@@ -235,7 +238,7 @@ public class AndroidSessionToTrackLoggerSqlExporter extends
                 
                 while (!logEntryCursor.isAfterLast()) {
                 
-                    writer.write("INSERT INTO log_entry(session_id, synch_timestamp, accel_capture_timestamp, longitudinal_accel, lateral_accel, vertical_accel, location_capture_timestamp, location_time_in_day, latitude, longitude, altitude, speed, bearing, ecu_capture_timestamp, rpm, map, throttle_position, afr, mat, clt, ignition_advance, battery_voltage)\r\n");
+                    writer.write("INSERT INTO log_entry(session_id, synch_timestamp, accel_capture_timestamp, longitudinal_accel, lateral_accel, vertical_accel, location_capture_timestamp, location_time_in_day, latitude, longitude, altitude, speed, bearing, ecu_capture_timestamp, rpm, map, mgp, throttle_position, afr, mat, clt, ignition_advance, battery_voltage)\r\n");
                     writer.write("VALUES(");
                     writer.write(sessionId + ", ");
                     writer.write(logEntryCursor.getString(logEntrySynchColumnIndex) + ", ");
@@ -254,6 +257,7 @@ public class AndroidSessionToTrackLoggerSqlExporter extends
                     writer.write(toSqlFromString(logEntryCursor, ecuCaptureTimestampColumnIndex) + ", ");
                     writer.write(toSqlFromString(logEntryCursor, rpmColumnIndex) + ", ");
                     writer.write(toSqlFromDouble(logEntryCursor, mapColumnIndex) + ", ");
+                    writer.write(toSqlFromDouble(logEntryCursor, mgpColumnIndex) + ", ");
                     writer.write(toSqlFromDouble(logEntryCursor, tpColumnIndex) + ", ");
                     writer.write(toSqlFromDouble(logEntryCursor, afrColumnIndex) + ", ");
                     writer.write(toSqlFromDouble(logEntryCursor, matColumnIndex) + ", ");
@@ -292,7 +296,7 @@ public class AndroidSessionToTrackLoggerSqlExporter extends
         if (cursor.isNull(columnIndex)) {
             return "NULL";
         } else {
-            return String.format("%.20f", cursor.getFloat(columnIndex));
+            return String.format(Locale.US, "%.20f", cursor.getFloat(columnIndex));
         }
     }
     
@@ -301,7 +305,7 @@ public class AndroidSessionToTrackLoggerSqlExporter extends
         if (cursor.isNull(columnIndex)) {
             return "NULL";
         } else {
-            return String.format("%.20f", cursor.getDouble(columnIndex));
+            return String.format(Locale.US, "%.20f", cursor.getDouble(columnIndex));
         }
     }
     

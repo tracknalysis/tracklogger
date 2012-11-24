@@ -17,6 +17,9 @@ package net.tracknalysis.tracklogger.preference;
 
 import java.util.Set;
 
+import net.tracknalysis.tracklogger.config.Configuration;
+import net.tracknalysis.tracklogger.config.ConfigurationFactory;
+
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.content.Context;
@@ -35,21 +38,31 @@ public class BtDeviceListPreference extends ListPreference {
     public BtDeviceListPreference(Context context, AttributeSet attrs) {
         super(context, attrs);
 
-        BluetoothAdapter btAdapter = BluetoothAdapter.getDefaultAdapter();
-
-        Set<BluetoothDevice> pairedDevices = btAdapter.getBondedDevices();
-
-        String[] entries = new String[pairedDevices.size()];
-        String[] entryValues = new String[pairedDevices.size()];
+        Configuration config = ConfigurationFactory.getInstance().getConfiguration();
         
-        int i = 0;
-        for (BluetoothDevice dev : pairedDevices) {
-            entries[i] = dev.getName();
-            entryValues[i] = dev.getAddress();
-            i++;
+        if (!config.isTestMode()) {
+            BluetoothAdapter btAdapter = BluetoothAdapter.getDefaultAdapter();
+    
+            Set<BluetoothDevice> pairedDevices = btAdapter.getBondedDevices();
+    
+            String[] entries = new String[pairedDevices.size()];
+            String[] entryValues = new String[pairedDevices.size()];
+            
+            int i = 0;
+            for (BluetoothDevice dev : pairedDevices) {
+                entries[i] = dev.getName();
+                entryValues[i] = dev.getAddress();
+                i++;
+            }
+            
+            setEntries(entries);
+            setEntryValues(entryValues);
+        } else {
+            String[] entries = new String[] {"Fake Device 1", "Fake Device 2"};
+            String[] entryValues = new String[] {"00:11:22:33:44:55:66", "00:11:22:33:44:55:AA"};
+            
+            setEntries(entries);
+            setEntryValues(entryValues);
         }
-        
-        setEntries(entries);
-        setEntryValues(entryValues);
     }
 }
