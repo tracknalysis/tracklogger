@@ -863,9 +863,9 @@ public class LogActivity extends BaseActivity implements OnCancelListener {
             // TODO un-hard code these
             gaugeConfigurationBuilder
                     .setMaxValue(250f)
-                    .setMinValue(0f)
-                    .setMajorScaleMarkDelta(10f)
-                    .setMinorScaleMarkSegmentsPerMajorScaleMark(5)
+                    .setMinValue(60f)
+                    .setMajorScaleMarkDelta(20f)
+                    .setMinorScaleMarkSegmentsPerMajorScaleMark(4)
                     .setTitle("IAT");
             matGauge.init(gaugeConfigurationBuilder.build());
         }

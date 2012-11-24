@@ -15,6 +15,10 @@
   limitations under the License.
   -->
 <!-- 
+Just exists such that all of the IDs are defined in code as no single view really has all of the gauges on it
+at once.  This view is not intended for consumption by users and should not be added to the configuration menu
+list of known views.
+
 Authors: David Valeri
  -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"

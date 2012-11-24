@@ -21,19 +21,19 @@ Authors: David Valeri
     android:layout_width="fill_parent"
     android:layout_height="fill_parent"
     android:background="#555555"
+    android:padding="2.5dp"
     android:orientation="vertical">
 
     <LinearLayout
         android:layout_width="fill_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:layout_margin="5dp"
         android:baselineAligned="false">
 
         <RelativeLayout
             android:layout_width="0dp"
             android:layout_height="match_parent"
-            android:layout_marginRight="5dp"
+            android:layout_margin="2.5dp"
             android:layout_weight="55"
             android:background="#000000"
             android:padding="5dp" >
@@ -62,7 +62,7 @@ Authors: David Valeri
         <RelativeLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginRight="5dp"
+            android:layout_margin="2.5dp"
             android:layout_weight="20"
             android:background="#000000"
             android:padding="5dp" >
@@ -91,6 +91,7 @@ Authors: David Valeri
         <RelativeLayout
             android:layout_width="0dp"
             android:layout_height="fill_parent"
+            android:layout_margin="2.5dp"
             android:background="#000000"
             android:padding="5dp"
             android:layout_weight="25" >
@@ -121,11 +122,8 @@ Authors: David Valeri
     <RelativeLayout
         android:layout_width="fill_parent"
         android:layout_height="wrap_content"
-        android:layout_marginLeft="5dp"
-        android:layout_marginRight="5dp"
-        android:layout_marginBottom="5dp"
+        android:layout_margin="2.5dp"
         android:background="#000000"
-        android:paddingLeft="5dp"
         android:paddingRight="5dp" >
 
         <TextView
@@ -158,9 +156,7 @@ Authors: David Valeri
     <RelativeLayout
         android:layout_width="fill_parent"
         android:layout_height="wrap_content"
-        android:layout_marginLeft="5dp"
-        android:layout_marginRight="5dp"
-        android:layout_marginBottom="5dp"
+        android:layout_margin="2.5dp"
         android:background="#000000"
         android:padding="5dp">
 

@@ -399,6 +399,7 @@ public class GaugeConfiguration {
             result.setMinValue(minValue);
             result.setMajorScaleMarkDelta(majorScaleMarkDelta);
             result.setMinorScaleMarkSegmentsPerMajorScaleMark(minorScaleMarkSegmentsPerMajorScaleMark);
+            result.setScaleMarkLabelScaleFactor(scaleMarkLabelScaleFactor);
             result.setMinCriticalValue(minCriticalValue);
             result.setMinWarningValue(minWarningValue);
             result.setMaxWarningValue(maxWarningValue);

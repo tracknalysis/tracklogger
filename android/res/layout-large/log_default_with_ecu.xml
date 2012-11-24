@@ -34,7 +34,7 @@ Authors: David Valeri
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:layout_weight="50">
+            android:layout_weight="68">
     
             <LinearLayout
                 android:layout_width="fill_parent"
@@ -162,7 +162,7 @@ Authors: David Valeri
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_alignParentRight="true"
-                    android:textColor="#000000"
+                    android:textColor="#00FF00"
                     android:textSize="40.0dp" />
             </RelativeLayout>
             
@@ -225,73 +225,70 @@ Authors: David Valeri
                     android:textColor="#00FF00"
                     android:textSize="35.0dp" />
             </RelativeLayout>
+            
         </LinearLayout>
         
         <LinearLayout 
             android:layout_width="0dp"
             android:layout_height="match_parent"
-            android:layout_weight="50"
+            android:layout_weight="32"
             android:orientation="vertical">
-            
-            <LinearLayout 
-                android:layout_width="fill_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:layout_weight="50">
-                
-                <net.tracknalysis.tracklogger.view.CircularGauge
-                    android:id="@+id/log_clt_gauge"
-                    android:layout_width="0dp"
-                    android:layout_height="match_parent"
+            <net.tracknalysis.tracklogger.view.CircularGauge
+                    android:id="@+id/log_mat_gauge"
+                    android:layout_width="match_parent"
+                    android:layout_height="0dp"
                     android:layout_weight="50"
                     android:baselineAligned="false"
                     android:layout_margin="2.5dp" />
-                
-                <net.tracknalysis.tracklogger.view.CircularGauge
-                    android:id="@+id/log_afr_gauge"
-                    android:layout_width="0dp"
-                    android:layout_height="match_parent"
-                    android:layout_weight="50"
-                    android:baselineAligned="false"
-                    android:layout_margin="2.5dp" />
-            </LinearLayout>
             
-            <LinearLayout 
-                android:layout_width="fill_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:layout_weight="50">
-                
-                <net.tracknalysis.tracklogger.view.CircularGauge
-                    android:id="@+id/log_batv_gauge"
-                    android:layout_width="0dp"
-                    android:layout_height="match_parent"
-                    android:layout_weight="50"
-                    android:baselineAligned="false"
-                    android:layout_margin="2.55dp" />
-                
-                <net.tracknalysis.tracklogger.view.CircularGauge
+            <net.tracknalysis.tracklogger.view.CircularGauge
                     android:id="@+id/log_mgp_gauge"
-                    android:layout_width="0dp"  
-                    android:layout_height="match_parent"
+                    android:layout_width="match_parent"  
+                    android:layout_height="0dp"
                     android:layout_weight="50"
                     android:baselineAligned="false"
                     android:layout_margin="2.5dp" />
-            </LinearLayout>
+            
         </LinearLayout>
     </LinearLayout>
     
-    <LinearLayout
+    <RelativeLayout
         android:layout_height="0dp"
         android:layout_width="fill_parent"
         android:layout_weight="20"
-        android:orientation="horizontal">
+        android:orientation="vertical">
         
-        <net.tracknalysis.tracklogger.view.PlainHorizontalBarGauge
+        <net.tracknalysis.tracklogger.view.CircularGauge
                 android:id="@+id/log_rpm_gauge"
-                android:layout_width="fill_parent"
-                android:layout_height="match_parent"
+                android:layout_width="300dp"
+                android:layout_height="300dp"
                 android:layout_margin="2.5dp"
                 android:baselineAligned="false" />
-    </LinearLayout>
+        
+        <net.tracknalysis.tracklogger.view.CircularGauge
+                android:id="@+id/log_afr_gauge"
+                android:layout_width="fill_parent"
+                android:layout_height="300dp"
+                android:layout_margin="2.5dp"
+                android:layout_toRightOf="@+id/log_rpm_gauge" />
+        
+        <LinearLayout 
+            android:layout_width="wrap_content"
+            android:layout_height="fill_parent"
+            android:layout_below="@+id/log_rpm_gauge"
+            android:layout_centerHorizontal="true">
+            <net.tracknalysis.tracklogger.view.CircularGauge
+                android:id="@+id/log_clt_gauge"
+                android:layout_width="200dp"
+                android:layout_height="fill_parent"
+                android:layout_margin="2.5dp" />
+        
+            <net.tracknalysis.tracklogger.view.CircularGauge
+                android:id="@+id/log_batv_gauge"
+                android:layout_width="200dp"
+                android:layout_height="fill_parent"
+                android:layout_margin="2.5dp" />
+        </LinearLayout>
+        
+    </RelativeLayout>
 </LinearLayout>
