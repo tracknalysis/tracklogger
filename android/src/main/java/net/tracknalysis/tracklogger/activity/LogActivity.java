@@ -44,6 +44,7 @@ import net.tracknalysis.tracklogger.view.Gauge;
 import net.tracknalysis.tracklogger.view.GaugeConfiguration.GaugeConfigurationBuilder;
 import net.tracknalysis.tracklogger.R;
 
+import android.annotation.TargetApi;
 import android.app.Activity;
 import android.app.Dialog;
 import android.app.ProgressDialog;
@@ -57,6 +58,7 @@ import android.content.SharedPreferences.Editor;
 import android.database.Cursor;
 import android.graphics.Color;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
@@ -70,7 +72,7 @@ import android.widget.TextView;
 /**
  * @author David Valeri
  */
-public class LogActivity extends BaseActivity implements OnCancelListener {
+public class LogActivity extends BaseActivity implements OnCancelListener, View.OnSystemUiVisibilityChangeListener {
     
     private static final Logger LOG = LoggerFactory.getLogger(LogActivity.class);
     
@@ -113,6 +115,12 @@ public class LogActivity extends BaseActivity implements OnCancelListener {
     private SpeedUnit speedUnit;
     private TemperatureUnit temperatureUnit;
     private PressureUnit pressureUnit;
+    
+    private View mainLayout;
+    private int previousSystemUiVisibility;
+    private final int baseSystemUiVisibility;
+    private HideSystemUiRunnable hideSystemUiRunnable = new HideSystemUiRunnable(this);
+    private boolean needToHideSystemUiOnReLaunch = true;
         
     /**
      *  Elapsed time in the current lap.
@@ -328,6 +336,17 @@ public class LogActivity extends BaseActivity implements OnCancelListener {
      */
     Runnable periodicUiUpdateRunnable;
     
+    @TargetApi(16)
+    public LogActivity() {
+        if (Build.VERSION.SDK_INT >= 16) {
+            baseSystemUiVisibility = View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                    | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                    | View.SYSTEM_UI_FLAG_LAYOUT_STABLE;
+        } else {
+            baseSystemUiVisibility = 0;
+        }
+    }
+    
     /**
      * Sets if {@code stopLogging} is ignored on {@link #cleanup(boolean)}.  Added to support
      * lifecycle testing.
@@ -399,7 +418,37 @@ public class LogActivity extends BaseActivity implements OnCancelListener {
             finish();
         }
     }
+    
+    /**
+     * Used to handle the showing and hiding of the UI components while logging.
+     */
+    @Override
+    public void onSystemUiVisibilityChange(int visibility) {
+        
+        // XOR old value with new value.  If they are different, the flag will be set in diff.
+        int diff = previousSystemUiVisibility ^ visibility;
+        previousSystemUiVisibility = visibility;
+        
+        if (Build.VERSION.SDK_INT >= 16) {
+            if ((diff & View.SYSTEM_UI_FLAG_HIDE_NAVIGATION) != 0
+                    && (visibility & View.SYSTEM_UI_FLAG_HIDE_NAVIGATION) == 0) {
+                // The flag is different from its previous value AND the flag is not set, means
+                // that we are transitioning into a state where we are showing the system UI
+                
+                setSystemUiVisibility(true, true);
+            }
+        } else if (Build.VERSION.SDK_INT >= 14) {
+            if ((diff & View.SYSTEM_UI_FLAG_LOW_PROFILE) != 0
+                    && (visibility & View.SYSTEM_UI_FLAG_LOW_PROFILE) == 0) {
+                // The flag is different from its previous value AND the flag is not set, means
+                // that we are transitioning into a state where we are showing the system UI
+                
+                setSystemUiVisibility(true, true);
+            }
+        }
+    }
 
+    @TargetApi(16)
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -421,6 +470,14 @@ public class LogActivity extends BaseActivity implements OnCancelListener {
         waitingForStartTriggerDialog.setCancelable(true);
         waitingForStartTriggerDialog.setMessage("Waiting for logging trigger...");
         waitingForStartTriggerDialog.setOnCancelListener(this);
+        
+        mainLayout = findViewById(android.R.id.content).getRootView();
+        
+        if (Build.VERSION.SDK_INT >= 14) {
+            mainLayout.setOnSystemUiVisibilityChangeListener(this);
+            previousSystemUiVisibility = mainLayout.getSystemUiVisibility();
+            setSystemUiVisibility(true, false);
+        }
         
         setContentView(config.getLogLayoutId());
         
@@ -863,7 +920,7 @@ public class LogActivity extends BaseActivity implements OnCancelListener {
             // TODO un-hard code these
             gaugeConfigurationBuilder
                     .setMaxValue(250f)
-                    .setMinValue(60f)
+                    .setMinValue(40f)
                     .setMajorScaleMarkDelta(20f)
                     .setMinorScaleMarkSegmentsPerMajorScaleMark(4)
                     .setTitle("IAT");
@@ -1028,7 +1085,7 @@ public class LogActivity extends BaseActivity implements OnCancelListener {
      *
      * @see String#format(String, Object...)
      */
-    protected void setValueIfShown(TextView view, String format, Object... args) {
+    private void setValueIfShown(TextView view, String format, Object... args) {
         if (view != null) {
             view.setText(String.format(format, args));
         }
@@ -1040,7 +1097,7 @@ public class LogActivity extends BaseActivity implements OnCancelListener {
      * @param view the view to set the color of
      * @param color the color to set
      */
-    protected void setColorIfShown(TextView view, Integer color) {
+    private void setColorIfShown(TextView view, Integer color) {
         if (view != null) {
             view.setTextColor(color);
         }
@@ -1052,7 +1109,7 @@ public class LogActivity extends BaseActivity implements OnCancelListener {
      * @param gauge the gauge to set
      * @param value the value to set it to
      */
-    protected void setValueIfShown(Gauge gauge, float value) {
+    private void setValueIfShown(Gauge gauge, float value) {
         if (gauge != null) {
             gauge.setCurrentValue(value);
         }
@@ -1135,6 +1192,46 @@ public class LogActivity extends BaseActivity implements OnCancelListener {
     }
     
     /**
+     * Shows or hides the ssytem UI components.
+     * 
+     * @param visible
+     *            if the components should be made visible or not
+     * @param autoHide
+     *            if the components are to be made visible, should they be
+     *            auto-hidden after a short period of time
+     */
+    @TargetApi(14)
+    private void setSystemUiVisibility(boolean visible, boolean autoHide) {
+        
+        if (Build.VERSION.SDK_INT >= 14) {
+        
+            int newSystemUiVisibility = baseSystemUiVisibility;
+            
+            if (!visible) {
+                if (Build.VERSION.SDK_INT >= 16) {
+                    newSystemUiVisibility |= View.SYSTEM_UI_FLAG_FULLSCREEN
+                            | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                            | View.SYSTEM_UI_FLAG_LOW_PROFILE;
+                } else if (Build.VERSION.SDK_INT >= 14) {
+                    newSystemUiVisibility |= View.SYSTEM_UI_FLAG_LOW_PROFILE;
+                } else {
+                    newSystemUiVisibility = mainLayout.getSystemUiVisibility();
+                }
+            }
+            
+            mainLayout.setSystemUiVisibility(newSystemUiVisibility);
+            
+            if (visible && autoHide) {
+                Handler handler = mainLayout.getHandler();
+                if (handler != null) {
+                    handler.removeCallbacks(hideSystemUiRunnable);
+                    handler.postDelayed(hideSystemUiRunnable, 2000);
+                }
+            }
+        }
+    }
+    
+    /**
      * A simple task to handle updating the regular data on the screen that is not event critical
      * (that is not timing data).  We don't use the activity thread from Android here because we
      * want to take advantage of the graceful shutdown logic in {@link GracefulShutdownThread}.
@@ -1166,6 +1263,25 @@ public class LogActivity extends BaseActivity implements OnCancelListener {
             }
         }
     }
+    
+    private static class HideSystemUiRunnable implements Runnable {
+        
+        private final WeakReference<LogActivity>  logActivityRef;
+        
+        public HideSystemUiRunnable(LogActivity logActivity) {
+            this.logActivityRef = new WeakReference<LogActivity>(logActivity);
+        }
+        
+        @Override public void run() {
+            
+            LogActivity logActivity = logActivityRef.get();
+            
+            if (logActivity != null) {
+                logActivity.setSystemUiVisibility(false, false);
+            }
+        }
+    }
+
     
     private static class DataProviderCoordinatorHandler extends Handler {
         
@@ -1234,6 +1350,8 @@ public class LogActivity extends BaseActivity implements OnCancelListener {
                             logActivity.displayTask.start();
                             break;
                         case TIMING_START_TRIGGER_FIRED:
+                            logActivity.setSystemUiVisibility(false, false);
+                            logActivity.needToHideSystemUiOnReLaunch = false;
                             logActivity.getInitDataProviderCoordinatorDialog().dismiss();
                             logActivity.waitingForStartTriggerDialog.dismiss();
                             if (!logActivity.displayTask.isAlive()) {
@@ -1244,6 +1362,12 @@ public class LogActivity extends BaseActivity implements OnCancelListener {
                             if (!logActivity.displayTask.isAlive()) {
                                 logActivity.displayTask.start();
                             }
+                            
+                            if (logActivity.needToHideSystemUiOnReLaunch) {
+                                logActivity.setSystemUiVisibility(false, false);
+                                logActivity.needToHideSystemUiOnReLaunch = false;
+                            }
+                            
                             TimingData timingData = (TimingData) msg.obj;
                             logActivity.updateEventBasedUiFields(timingData);
                             break;
