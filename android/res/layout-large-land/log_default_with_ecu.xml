@@ -13,285 +13,282 @@
   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
   See the License for the specific language governing permissions and
   limitations under the License.
-  -->
-<!-- 
-Authors: David Valeri
- -->
+-->
+<!-- Authors: David Valeri -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+  android:layout_width="fill_parent"
+  android:layout_height="fill_parent"
+  android:background="#555555"
+  android:orientation="vertical"
+  android:padding="2.5dp" >
+
+  <LinearLayout
     android:layout_width="fill_parent"
-    android:layout_height="fill_parent"
-    android:background="#555555"
-    android:padding="2.5dp"
-    android:orientation="vertical">
-    
+    android:layout_height="wrap_content"
+    android:baselineAligned="false"
+    android:orientation="horizontal" >
+
     <LinearLayout
+      android:layout_width="0dp"
+      android:layout_height="wrap_content"
+      android:layout_weight="50"
+      android:orientation="vertical" >
+
+      <LinearLayout
+        android:layout_width="fill_parent"
         android:layout_height="wrap_content"
-        android:layout_width="fill_parent"
-        android:orientation="horizontal"
-        android:baselineAligned="false">
-        
-        <LinearLayout
-            android:layout_width="0dp"
+        android:baselineAligned="false"
+        android:orientation="horizontal" >
+
+        <RelativeLayout
+          android:layout_width="0dp"
+          android:layout_height="match_parent"
+          android:layout_margin="2.5dp"
+          android:layout_marginRight="5dp"
+          android:layout_weight="55"
+          android:background="#000000"
+          android:padding="5dp" >
+
+          <TextView
+            android:id="@+id/log_elapsed_lap_time_title"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:layout_weight="50">
-    
-            <LinearLayout
-                android:layout_width="fill_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:baselineAligned="false">
-        
-                <RelativeLayout
-                    android:layout_width="0dp"
-                    android:layout_height="match_parent"
-                    android:layout_marginRight="5dp"
-                    android:layout_weight="55"
-                    android:background="#000000"
-                    android:padding="5dp"
-                    android:layout_margin="2.5dp" >
-        
-                    <TextView 
-                        android:id="@+id/log_elapsed_lap_time_title"
-                        android:textColor="#FFFFFF"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_alignParentTop="true"
-                        android:layout_alignParentLeft="true"
-                        android:text="@string/log_elapsed_lap_time_title"
-                        android:textSize="10.0dp"
-                        />
-                    <TextView 
-                        android:id="@+id/log_elapsed_lap_time_value"
-                        android:textColor="#FFFFFF"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_below="@id/log_elapsed_lap_time_title"
-                        android:layout_alignParentRight="true"
-                        android:textSize="50.0dp" />
-                </RelativeLayout>
-        
-                <RelativeLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginRight="5dp"
-                    android:layout_weight="20"
-                    android:background="#000000"
-                    android:padding="5dp"
-                    android:layout_margin="2.5dp" >
-        
-                    <TextView 
-                        android:id="@+id/log_lap_number_title"
-                        android:textColor="#FFFFFF"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_alignParentTop="true"
-                        android:layout_alignParentLeft="true"
-                        android:text="@string/log_lap_number_title"
-                        android:textSize="10.0dp"
-                        />
-                    <TextView 
-                        android:id="@+id/log_lap_number_value"
-                        android:textColor="#FFFFFF"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_below="@id/log_lap_number_title"
-                        android:layout_alignParentRight="true"
-                        android:textSize="50.0dp" />
-                </RelativeLayout>
-        
-                <RelativeLayout
-                    android:layout_width="0dp"
-                    android:layout_height="fill_parent"
-                    android:background="#000000"
-                    android:padding="5dp"
-                    android:layout_margin="2.5dp"
-                    android:layout_weight="25" >
-        
-                    <TextView 
-                        android:id="@+id/log_elapsed_session_time_title"
-                        android:textColor="#FFFFFF"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_alignParentTop="true"
-                        android:layout_alignParentLeft="true"
-                        android:text="@string/log_elapsed_session_time_title"
-                        android:textSize="10.0dp"
-                        />
-        
-                    <TextView
-                        android:id="@+id/log_elapsed_session_time_value"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_alignParentRight="true"
-                        android:layout_centerVertical="true"
-                        android:textColor="#FFFFFF"
-                        android:textSize="35.0dp" />
-        
-                </RelativeLayout>
-            </LinearLayout>
-            
-            <RelativeLayout
-                android:layout_width="fill_parent"
-                android:layout_height="wrap_content"
-                android:background="#000000"
-                android:padding="5dp"
-                android:layout_margin="2.5dp" >
-        
-                <TextView
-                    android:id="@+id/log_last_lap_time_title"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_alignParentLeft="true"
-                    android:layout_alignParentTop="true"
-                    android:text="@string/log_last_lap_time_title"
-                    android:textColor="#FFFFFF"
-                    android:textSize="10.0dp" />
-        
-                <TextView
-                    android:id="@+id/log_last_lap_time_value"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_below="@id/log_last_lap_time_delta_value"
-                    android:layout_marginTop="-15dp"
-                    android:textColor="#FFFFFF"
-                    android:textSize="70.0dp" />
-        
-                <TextView
-                    android:id="@+id/log_last_lap_time_delta_value"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_alignParentRight="true"
-                    android:textColor="#000000"
-                    android:textSize="40.0dp" />
-            </RelativeLayout>
-            
-            <RelativeLayout
-                android:layout_width="fill_parent"
-                android:layout_height="wrap_content"
-                android:background="#000000"
-                android:padding="5dp"
-                android:layout_margin="2.5dp" >
-        
-                <TextView
-                    android:id="@+id/best_lap_time_title"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_alignParentLeft="true"
-                    android:layout_alignParentTop="true"
-                    android:text="@string/log_best_lap_time_title"
-                    android:textColor="#FFFFFF"
-                    android:textSize="10.0dp" />
-        
-                <TextView
-                    android:id="@+id/log_best_lap_time_value"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_below="@id/best_lap_time_title"
-                    android:textColor="#FFFFFF"
-                    android:textSize="60.0dp" />
-            </RelativeLayout>
-            
-            <RelativeLayout
-                android:layout_width="fill_parent"
-                android:layout_height="fill_parent"
-                android:layout_margin="2.5dp"
-                android:background="#000000"
-                android:padding="5dp">
-        
-                <TextView
-                    android:id="@+id/log_last_split_time_title"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_alignParentLeft="true"
-                    android:layout_alignParentTop="true"
-                    android:text="@string/log_last_split_time_title"
-                    android:textColor="#FFFFFF"
-                    android:textSize="10.0dp" />
-        
-                <TextView
-                    android:id="@+id/log_last_split_time_value"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_below="@id/log_last_split_time_title"
-                    android:textColor="#FFFFFF"
-                    android:textSize="50.0dp" />
-        
-                <TextView
-                    android:id="@+id/log_last_split_time_delta_value"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_alignParentRight="true"
-                    android:textColor="#00FF00"
-                    android:textSize="35.0dp" />
-            </RelativeLayout>
-        </LinearLayout>
-        
-        <LinearLayout 
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="50"
-            android:orientation="vertical">
-            
-            <LinearLayout 
-                android:layout_width="fill_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:layout_weight="50">
-                
-                <net.tracknalysis.tracklogger.view.CircularGauge
-                    android:id="@+id/log_clt_gauge"
-                    android:layout_width="0dp"
-                    android:layout_height="match_parent"
-                    android:layout_weight="50"
-                    android:baselineAligned="false"
-                    android:layout_margin="2.5dp" />
-                
-                <net.tracknalysis.tracklogger.view.CircularGauge
-                    android:id="@+id/log_afr_gauge"
-                    android:layout_width="0dp"
-                    android:layout_height="match_parent"
-                    android:layout_weight="50"
-                    android:baselineAligned="false"
-                    android:layout_margin="2.5dp" />
-            </LinearLayout>
-            
-            <LinearLayout 
-                android:layout_width="fill_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:layout_weight="50">
-                
-                <net.tracknalysis.tracklogger.view.CircularGauge
-                    android:id="@+id/log_batv_gauge"
-                    android:layout_width="0dp"
-                    android:layout_height="match_parent"
-                    android:layout_weight="50"
-                    android:baselineAligned="false"
-                    android:layout_margin="2.55dp" />
-                
-                <net.tracknalysis.tracklogger.view.CircularGauge
-                    android:id="@+id/log_mgp_gauge"
-                    android:layout_width="0dp"  
-                    android:layout_height="match_parent"
-                    android:layout_weight="50"
-                    android:baselineAligned="false"
-                    android:layout_margin="2.5dp" />
-            </LinearLayout>
-        </LinearLayout>
-    </LinearLayout>
-    
-    <LinearLayout
-        android:layout_height="0dp"
+            android:layout_alignParentLeft="true"
+            android:layout_alignParentTop="true"
+            android:text="@string/log_elapsed_lap_time_title"
+            android:textColor="#FFFFFF"
+            android:textSize="10.0dp" />
+
+          <TextView
+            android:id="@+id/log_elapsed_lap_time_value"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentRight="true"
+            android:layout_below="@id/log_elapsed_lap_time_title"
+            android:textColor="#FFFFFF"
+            android:textSize="50.0dp" />
+        </RelativeLayout>
+
+        <RelativeLayout
+          android:layout_width="0dp"
+          android:layout_height="wrap_content"
+          android:layout_margin="2.5dp"
+          android:layout_marginRight="5dp"
+          android:layout_weight="20"
+          android:background="#000000"
+          android:padding="5dp" >
+
+          <TextView
+            android:id="@+id/log_lap_number_title"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentLeft="true"
+            android:layout_alignParentTop="true"
+            android:text="@string/log_lap_number_title"
+            android:textColor="#FFFFFF"
+            android:textSize="10.0dp" />
+
+          <TextView
+            android:id="@+id/log_lap_number_value"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentRight="true"
+            android:layout_below="@id/log_lap_number_title"
+            android:textColor="#FFFFFF"
+            android:textSize="50.0dp" />
+        </RelativeLayout>
+
+        <RelativeLayout
+          android:layout_width="0dp"
+          android:layout_height="fill_parent"
+          android:layout_margin="2.5dp"
+          android:layout_weight="25"
+          android:background="#000000"
+          android:padding="5dp" >
+
+          <TextView
+            android:id="@+id/log_elapsed_session_time_title"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentLeft="true"
+            android:layout_alignParentTop="true"
+            android:text="@string/log_elapsed_session_time_title"
+            android:textColor="#FFFFFF"
+            android:textSize="10.0dp" />
+
+          <TextView
+            android:id="@+id/log_elapsed_session_time_value"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentRight="true"
+            android:layout_centerVertical="true"
+            android:textColor="#FFFFFF"
+            android:textSize="35.0dp" />
+        </RelativeLayout>
+      </LinearLayout>
+
+      <RelativeLayout
         android:layout_width="fill_parent"
-        android:layout_weight="20"
-        android:orientation="horizontal">
-        
-        <net.tracknalysis.tracklogger.view.PlainHorizontalBarGauge
-                android:id="@+id/log_rpm_gauge"
-                android:layout_width="fill_parent"
-                android:layout_height="match_parent"
-                android:layout_margin="2.5dp"
-                android:baselineAligned="false" />
+        android:layout_height="wrap_content"
+        android:layout_margin="2.5dp"
+        android:background="#000000"
+        android:padding="5dp" >
+
+        <TextView
+          android:id="@+id/log_last_lap_time_title"
+          android:layout_width="wrap_content"
+          android:layout_height="wrap_content"
+          android:layout_alignParentLeft="true"
+          android:layout_alignParentTop="true"
+          android:text="@string/log_last_lap_time_title"
+          android:textColor="#FFFFFF"
+          android:textSize="10.0dp" />
+
+        <TextView
+          android:id="@+id/log_last_lap_time_value"
+          android:layout_width="wrap_content"
+          android:layout_height="wrap_content"
+          android:layout_below="@id/log_last_lap_time_delta_value"
+          android:layout_marginTop="-15dp"
+          android:textColor="#FFFFFF"
+          android:textSize="70.0dp" />
+
+        <TextView
+          android:id="@+id/log_last_lap_time_delta_value"
+          android:layout_width="wrap_content"
+          android:layout_height="wrap_content"
+          android:layout_alignParentRight="true"
+          android:textColor="#000000"
+          android:textSize="40.0dp" />
+      </RelativeLayout>
+
+      <RelativeLayout
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="2.5dp"
+        android:background="#000000"
+        android:padding="5dp" >
+
+        <TextView
+          android:id="@+id/best_lap_time_title"
+          android:layout_width="wrap_content"
+          android:layout_height="wrap_content"
+          android:layout_alignParentLeft="true"
+          android:layout_alignParentTop="true"
+          android:text="@string/log_best_lap_time_title"
+          android:textColor="#FFFFFF"
+          android:textSize="10.0dp" />
+
+        <TextView
+          android:id="@+id/log_best_lap_time_value"
+          android:layout_width="wrap_content"
+          android:layout_height="wrap_content"
+          android:layout_below="@id/best_lap_time_title"
+          android:textColor="#FFFFFF"
+          android:textSize="60.0dp" />
+      </RelativeLayout>
+
+      <RelativeLayout
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent"
+        android:layout_margin="2.5dp"
+        android:background="#000000"
+        android:padding="5dp" >
+
+        <TextView
+          android:id="@+id/log_last_split_time_title"
+          android:layout_width="wrap_content"
+          android:layout_height="wrap_content"
+          android:layout_alignParentLeft="true"
+          android:layout_alignParentTop="true"
+          android:text="@string/log_last_split_time_title"
+          android:textColor="#FFFFFF"
+          android:textSize="10.0dp" />
+
+        <TextView
+          android:id="@+id/log_last_split_time_value"
+          android:layout_width="wrap_content"
+          android:layout_height="wrap_content"
+          android:layout_below="@id/log_last_split_time_title"
+          android:textColor="#FFFFFF"
+          android:textSize="50.0dp" />
+
+        <TextView
+          android:id="@+id/log_last_split_time_delta_value"
+          android:layout_width="wrap_content"
+          android:layout_height="wrap_content"
+          android:layout_alignParentRight="true"
+          android:textColor="#00FF00"
+          android:textSize="35.0dp" />
+      </RelativeLayout>
     </LinearLayout>
+
+    <LinearLayout
+      android:layout_width="0dp"
+      android:layout_height="match_parent"
+      android:layout_weight="50"
+      android:orientation="vertical" >
+
+      <LinearLayout
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_weight="50"
+        android:orientation="horizontal" >
+
+        <net.tracknalysis.tracklogger.view.CircularGauge
+          android:id="@+id/log_clt_gauge"
+          android:layout_width="0dp"
+          android:layout_height="match_parent"
+          android:layout_margin="2.5dp"
+          android:layout_weight="50"
+          android:baselineAligned="false" />
+
+        <net.tracknalysis.tracklogger.view.CircularGauge
+          android:id="@+id/log_afr_gauge"
+          android:layout_width="0dp"
+          android:layout_height="match_parent"
+          android:layout_margin="2.5dp"
+          android:layout_weight="50"
+          android:baselineAligned="false" />
+      </LinearLayout>
+
+      <LinearLayout
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_weight="50"
+        android:orientation="horizontal" >
+
+        <net.tracknalysis.tracklogger.view.CircularGauge
+          android:id="@+id/log_batv_gauge"
+          android:layout_width="0dp"
+          android:layout_height="match_parent"
+          android:layout_margin="2.55dp"
+          android:layout_weight="50"
+          android:baselineAligned="false" />
+
+        <net.tracknalysis.tracklogger.view.CircularGauge
+          android:id="@+id/log_mgp_gauge"
+          android:layout_width="0dp"
+          android:layout_height="match_parent"
+          android:layout_margin="2.5dp"
+          android:layout_weight="50"
+          android:baselineAligned="false" />
+      </LinearLayout>
+    </LinearLayout>
+  </LinearLayout>
+
+  <LinearLayout
+    android:layout_width="fill_parent"
+    android:layout_height="0dp"
+    android:layout_weight="20"
+    android:orientation="horizontal" >
+
+    <net.tracknalysis.tracklogger.view.PlainHorizontalBarGauge
+      android:id="@+id/log_rpm_gauge"
+      android:layout_width="fill_parent"
+      android:layout_height="match_parent"
+      android:layout_margin="2.5dp"
+      android:baselineAligned="false" />
+  </LinearLayout>
+
 </LinearLayout>

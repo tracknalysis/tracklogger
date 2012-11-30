@@ -18,6 +18,8 @@ package net.tracknalysis.tracklogger.view;
 import java.util.LinkedList;
 import java.util.List;
 
+import net.tracknalysis.tracklogger.model.ui.GaugeConfiguration;
+
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
@@ -91,6 +93,8 @@ public class CircularGauge extends AbstractGauge {
     
     private final Paint titlePaint;
     
+    private final Paint valuePaint;
+    
     private final Paint needlePaint;
     private final Path needlePath;
     
@@ -137,7 +141,6 @@ public class CircularGauge extends AbstractGauge {
     private float scaleMarkLabelY;
     
     private float valueToDegreeRatio;
-    private float degreeIncrementPerMajorScaleMark;
     private float degreeIncrementPerMinorScaleMark;
 
     public CircularGauge(Context context, AttributeSet attrs) {
@@ -161,7 +164,6 @@ public class CircularGauge extends AbstractGauge {
         majorScaleMarkLabelPaint.setAntiAlias(true);
         majorScaleMarkLabelPaint.setTextAlign(Align.CENTER);
         
-        
         majorScaleMarkPaint = new Paint();
         majorScaleMarkPaint.setStyle(Paint.Style.STROKE);
         majorScaleMarkPaint.setAntiAlias(true);
@@ -170,12 +172,20 @@ public class CircularGauge extends AbstractGauge {
         minorScaleMarkPaint.setStyle(Paint.Style.STROKE);
         minorScaleMarkPaint.setAntiAlias(true);
         
+        
         alertRect = new RectF();
+        
         
         titlePaint = new Paint();
         titlePaint.setStyle(Style.FILL);
         titlePaint.setAntiAlias(true);
         titlePaint.setTextAlign(Align.CENTER);
+        
+        
+        valuePaint = new Paint();
+        valuePaint.setStyle(Style.FILL);
+        valuePaint.setAntiAlias(true);
+        valuePaint.setTextAlign(Align.CENTER);
         
         
         needlePaint = new Paint();
@@ -208,6 +218,9 @@ public class CircularGauge extends AbstractGauge {
         titlePaint.setColor(Color.WHITE);
         titlePaint.setTextSize(0.05f);
         
+        valuePaint.setColor(Color.WHITE);
+        valuePaint.setTextSize(0.1f);
+        
         needlePaint.setColor(Color.RED);
         
         originOrientation = OriginOrientation.SOUTH;
@@ -217,7 +230,7 @@ public class CircularGauge extends AbstractGauge {
         endDegrees = 270;
         
         majorScaleMarkLength = 0.075f;
-        majorScaleMarkStartRadius = 0.35f;
+        majorScaleMarkStartRadius = 0.325f;
         majorScaleMarkPaint.setStrokeWidth(0.005f);
         majorScaleMarkPaint.setColor(Color.WHITE);
         
@@ -226,13 +239,13 @@ public class CircularGauge extends AbstractGauge {
         majorScaleMarkLabelRadius = 0.44f;
         
         minorScaleMarkLength = 0.025f;
-        minorScaleMarkStartRadius = 0.35f;
+        minorScaleMarkStartRadius = 0.325f;
         minorScaleMarkPaint.setStrokeWidth(0.0025f);
         minorScaleMarkPaint.setColor(Color.LTGRAY);
         minorScaleMarkSegmentsPerMajorScaleMark = configuration.getMinorScaleMarkSegmentsPerMajorScaleMark();
         
         alertRadius = 0.2f;
-        alertWidth = 0.05f;
+        alertWidth = 0.03f;
         alertMinCriticalColor = Color.RED;
         alertMinWarningColor = Color.YELLOW;
         alertOkColor = Color.GREEN;
@@ -268,7 +281,15 @@ public class CircularGauge extends AbstractGauge {
         // X units of value per degree
         valueToDegreeRatio = range / (endDegrees - startDegrees);
         
-        degreeIncrementPerMajorScaleMark = configuration.getMajorScaleMarkDelta() / valueToDegreeRatio;
+        float degreeIncrementPerMajorScaleMark;
+        
+        if (configuration.getMajorScaleMarkDelta() > 0f) {
+            degreeIncrementPerMajorScaleMark = configuration.getMajorScaleMarkDelta() / valueToDegreeRatio;
+        } else {
+            degreeIncrementPerMajorScaleMark = configuration.getMaxValue()
+                    - configuration.getMinValue() / valueToDegreeRatio;
+        }
+        
         if (minorScaleMarkSegmentsPerMajorScaleMark <= 1) {
             degreeIncrementPerMinorScaleMark = degreeIncrementPerMajorScaleMark;
             minorScaleMarkSegmentsPerMajorScaleMark = 1;
@@ -336,14 +357,19 @@ public class CircularGauge extends AbstractGauge {
         float currentDegree = startDegrees;
         float scaleTextValue = configuration.getMinValue();
         float degreesPerIncrement = degreeIncrementPerMinorScaleMark;
+        float scaleMarkLabelYToRender = scaleMarkLabelY;
+        float scaleMarkLabelXToRender = 0.5f;
         
-        if (sweepDirection == SweepDirection.COUNTER_CLOCKWISE) {
-            // Negative rotation for a counter clockwise sweep.
-            degreesPerIncrement *= -1;
-            backgroundCanvas.rotate(originOrientation.getDegreesToNorth() - startDegrees, 0.5f, 0.5f);
-        } else {
-            // Positive rotation for a clockwise sweep.
-            backgroundCanvas.rotate(originOrientation.getDegreesToNorth() + startDegrees, 0.5f, 0.5f);
+        switch (sweepDirection) {
+            case COUNTER_CLOCKWISE:
+                // Negative rotation for a counter clockwise sweep.
+                degreesPerIncrement *= -1;
+                backgroundCanvas.rotate(originOrientation.getDegreesToNorth() - startDegrees, 0.5f, 0.5f);
+                break;
+            case CLOCKWISE:
+                // Positive rotation for a clockwise sweep.
+                backgroundCanvas.rotate(originOrientation.getDegreesToNorth() + startDegrees, 0.5f, 0.5f);
+                break;
         }
 
         int minorMarkCounter = 0;
@@ -361,11 +387,20 @@ public class CircularGauge extends AbstractGauge {
                     scaledScaleTextValue = scaleTextValue;
                 }
                 
-                backgroundCanvas.drawText(String.valueOf(scaledScaleTextValue), 0.5f, 
-                        scaleMarkLabelY, majorScaleMarkLabelPaint);
+                backgroundCanvas.save(Canvas.MATRIX_SAVE_FLAG);
+                
+                String labelText = String.format(
+                        "%." + configuration.getScaleMarkLabelPrecision() + "f",
+                        scaledScaleTextValue);
+                
+                backgroundCanvas.drawText(labelText, scaleMarkLabelXToRender, scaleMarkLabelYToRender,
+                        majorScaleMarkLabelPaint);
+                
+                backgroundCanvas.restore();
+                
                 scaleTextValue += configuration.getMajorScaleMarkDelta();
             } else {
-                backgroundCanvas.drawLine(0.5f, majorScaleMarkStartY, 0.5f,
+                backgroundCanvas.drawLine(0.5f, minorScaleMarkStartY, 0.5f,
                         minorScaleMarkStopY, minorScaleMarkPaint);
             }
 
@@ -563,7 +598,7 @@ public class CircularGauge extends AbstractGauge {
      */
     private void drawTitle(Canvas backgroundCanvas) {
         if (configuration.getTitle() != null) {
-            backgroundCanvas.drawText(configuration.getTitle(), 0.5f, 0.675f, titlePaint);
+            backgroundCanvas.drawText(configuration.getTitle(), 0.5f, 0.7f, titlePaint);
         }
     }
 
@@ -575,7 +610,7 @@ public class CircularGauge extends AbstractGauge {
     private void drawScaleMarkLabelScaleFactor(Canvas backgroundCanvas) {
         if (configuration.getScaleMarkLabelScaleFactor() != null) {
             backgroundCanvas.drawText("x " + String.valueOf(configuration.getScaleMarkLabelScaleFactor()),
-                    0.5f, 0.72f, titlePaint);
+                    0.5f, 0.75f, titlePaint);
         }
     }
     
@@ -587,7 +622,9 @@ public class CircularGauge extends AbstractGauge {
      */
     protected void drawValue(Canvas canvas, float valueToDraw) {
         if (configuration.isShowValue()) {
-            // TODO implement the drawing of the current value
+            canvas.drawText(
+                    String.format("%." + configuration.getValuePrecision()
+                            + "f", valueToDraw), 0.5f, 0.65f, valuePaint);
         }
     }
     

@@ -18,7 +18,7 @@ package net.tracknalysis.tracklogger.view;
 import java.util.LinkedList;
 import java.util.List;
 
-import net.tracknalysis.tracklogger.view.CircularGauge.SweepDirection;
+import net.tracknalysis.tracklogger.model.ui.GaugeConfiguration;
 
 import android.content.Context;
 import android.graphics.Bitmap;
@@ -29,7 +29,6 @@ import android.graphics.Paint;
 import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.Shader.TileMode;
-import android.graphics.SweepGradient;
 import android.graphics.Paint.Align;
 import android.graphics.Paint.Style;
 import android.util.AttributeSet;
@@ -400,7 +399,7 @@ public abstract class AbstractBarGauge extends AbstractGauge {
             translateCanvasForSweepDirection(canvas);
             
             canvas.drawText(
-                    String.valueOf(valueToDraw), 
+                    String.format("%." + configuration.getValuePrecision() + "f", valueToDraw), 
                     valueCenterX,
                     valueCenterY,
                     valuePaint);

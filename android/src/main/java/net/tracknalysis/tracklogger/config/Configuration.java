@@ -15,9 +15,13 @@
  */
 package net.tracknalysis.tracklogger.config;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import net.tracknalysis.tracklogger.model.PressureUnit;
 import net.tracknalysis.tracklogger.model.SpeedUnit;
 import net.tracknalysis.tracklogger.model.TemperatureUnit;
+import net.tracknalysis.tracklogger.model.ui.GaugeConfiguration;
 
 import org.apache.log4j.Level;
 
@@ -27,6 +31,47 @@ import org.apache.log4j.Level;
  * @author David Valeri
  */
 public interface Configuration {
+    
+    public static enum DisplayGauge {
+        SPEED("display.gauges.speed"),
+        RPM("display.gauges.rpm"),
+        MAP("display.gauges.map"),
+        MGP("display.gauges.mgp"),
+        TP("display.gauges.tp"),
+        AFR("display.gauges.afr"),
+        MAT("display.gauges.mat"),
+        CLT("display.gauges.clt"),
+        IGN_ADV("display.gauges.ignAdv"),
+        BAT_V("display.gauges.batV");
+        
+        private static final Map<String, DisplayGauge> ROOT_KEY_MAP = 
+                new HashMap<String, Configuration.DisplayGauge>();
+        
+        static {
+            for (DisplayGauge displayGauge : DisplayGauge.values()) {
+                ROOT_KEY_MAP.put(displayGauge.getRootKey(), displayGauge);
+            }
+        }
+        
+        public static DisplayGauge fromRootKey(String rootKey) {
+            DisplayGauge displayGauge = ROOT_KEY_MAP.get(rootKey);
+            if (displayGauge == null) {
+                throw new IllegalArgumentException("No instance exists for root key [" + rootKey + "].");
+            } else {
+                return displayGauge;
+            }
+        }
+        
+        private final String rootKey;
+        
+        private DisplayGauge(String rootKey) {
+            this.rootKey = rootKey;
+        }
+        
+        public String getRootKey() {
+            return rootKey;
+        }
+    }
     
     /**
      * Returns the log level for the root logger in the application.
@@ -107,6 +152,10 @@ public interface Configuration {
      * @see #getDisplayPressureUnit()
      */
     void setDisplayPressureUnit(PressureUnit unit);
+    
+    GaugeConfiguration getGaugeConfiguration(DisplayGauge displayGauge);
+    
+    void setGaugeConfiguration(DisplayGauge displayGauge, GaugeConfiguration gaugeConfiguration);
     
     /**
      * Returns the path to the folder, relative to external storage root, where user accessible data is written.

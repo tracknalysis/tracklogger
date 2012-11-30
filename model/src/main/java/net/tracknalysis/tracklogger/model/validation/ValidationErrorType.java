@@ -13,25 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package net.tracknalysis.tracklogger.view;
+package net.tracknalysis.tracklogger.model.validation;
 
 /**
- * Intergace providing core gauge functionality.
+ * Defines the different validation error types that could be triggered by a failed validation. 
  *
  * @author David Valeri
  */
-public interface Gauge {
-
-    /**
-     * Initialize the gauge with its configuration settings and force an initial
-     * draw or redraw of the gauge.
-     */
-    void init(GaugeConfiguration configuration);
+public interface ValidationErrorType {
     
-    /**
-     * Set the gauges current value and force a redraw to display the value.
-     *
-     * @param value the value to set
-     */
-    void setCurrentValue(float value);
+    String getErrorTypeCode();
 }

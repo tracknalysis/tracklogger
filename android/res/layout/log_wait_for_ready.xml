@@ -13,76 +13,75 @@
   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
   See the License for the specific language governing permissions and
   limitations under the License.
-  -->
-<!-- 
-Authors: David Valeri
- -->
+-->
+<!-- Authors: David Valeri -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="fill_parent"
-    android:layout_height="wrap_content"
-    android:orientation="vertical"
-    android:padding="10dp">
+  android:layout_width="fill_parent"
+  android:layout_height="wrap_content"
+  android:orientation="vertical"
+  android:padding="10dp" >
 
-    <ProgressBar
-        android:id="@+id/waitingForDataProgressBar"
-        style="?android:attr/progressBarStyleLarge"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="14dp"
-        android:indeterminate="true"
-        android:layout_gravity="center_horizontal" />
+  <ProgressBar
+    android:id="@+id/waitingForDataProgressBar"
+    style="?android:attr/progressBarStyleLarge"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:layout_gravity="center_horizontal"
+    android:layout_marginTop="14dp"
+    android:indeterminate="true" />
+
+  <LinearLayout
+    android:layout_width="fill_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical" >
 
     <LinearLayout
-        android:layout_width="fill_parent"
-        android:layout_height="match_parent"
-        android:orientation="vertical">
+      android:layout_width="wrap_content"
+      android:layout_height="wrap_content" >
 
-        <LinearLayout
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content" >
+      <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/log_wait_for_ready_location_title" />
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/log_wait_for_ready_location_title" />
-
-            <TextView
-                android:id="@+id/log_wait_for_ready_location_status"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/log_wait_for_ready_text_waiting" />
-        </LinearLayout>
-
-        <LinearLayout
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content" >
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/log_wait_for_ready_ecu_title" />
-
-            <TextView
-                android:id="@+id/log_wait_for_ready_ecu_status"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/log_wait_for_ready_text_waiting" />
-        </LinearLayout>
-
-        <LinearLayout
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content" >
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/log_wait_for_ready_accel_title" />
-
-            <TextView
-                android:id="@+id/log_wait_for_ready_accel_status"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/log_wait_for_ready_text_waiting" />
-        </LinearLayout>
+      <TextView
+        android:id="@+id/log_wait_for_ready_location_status"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/log_wait_for_ready_text_waiting" />
     </LinearLayout>
+
+    <LinearLayout
+      android:layout_width="wrap_content"
+      android:layout_height="wrap_content" >
+
+      <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/log_wait_for_ready_ecu_title" />
+
+      <TextView
+        android:id="@+id/log_wait_for_ready_ecu_status"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/log_wait_for_ready_text_waiting" />
+    </LinearLayout>
+
+    <LinearLayout
+      android:layout_width="wrap_content"
+      android:layout_height="wrap_content" >
+
+      <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/log_wait_for_ready_accel_title" />
+
+      <TextView
+        android:id="@+id/log_wait_for_ready_accel_status"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/log_wait_for_ready_text_waiting" />
+    </LinearLayout>
+  </LinearLayout>
+
 </LinearLayout>

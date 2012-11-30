@@ -15,6 +15,9 @@
  */
 package net.tracknalysis.tracklogger.view;
 
+import net.tracknalysis.tracklogger.model.ui.Gauge;
+import net.tracknalysis.tracklogger.model.ui.GaugeConfiguration;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

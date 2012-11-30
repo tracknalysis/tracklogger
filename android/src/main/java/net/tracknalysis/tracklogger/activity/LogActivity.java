@@ -27,6 +27,7 @@ import net.tracknalysis.common.concurrent.GracefulShutdownThread;
 import net.tracknalysis.common.notification.NotificationStrategy;
 import net.tracknalysis.common.util.TimeUtil;
 import net.tracknalysis.tracklogger.config.Configuration;
+import net.tracknalysis.tracklogger.config.Configuration.DisplayGauge;
 import net.tracknalysis.tracklogger.config.ConfigurationFactory;
 import net.tracknalysis.tracklogger.dataprovider.DataProviderCoordinator;
 import net.tracknalysis.tracklogger.dataprovider.DataProviderCoordinator.DataProviderCoordinatorNotificationType;
@@ -39,9 +40,8 @@ import net.tracknalysis.tracklogger.model.PressureUnit;
 import net.tracknalysis.tracklogger.model.SpeedUnit;
 import net.tracknalysis.tracklogger.model.TemperatureUnit;
 import net.tracknalysis.tracklogger.model.TimingData;
+import net.tracknalysis.tracklogger.model.ui.Gauge;
 import net.tracknalysis.tracklogger.provider.TrackLoggerData;
-import net.tracknalysis.tracklogger.view.Gauge;
-import net.tracknalysis.tracklogger.view.GaugeConfiguration.GaugeConfigurationBuilder;
 import net.tracknalysis.tracklogger.R;
 
 import android.annotation.TargetApi;
@@ -831,147 +831,43 @@ public class LogActivity extends BaseActivity implements OnCancelListener, View.
         batVGauge = (Gauge) findViewById(R.id.log_batv_gauge);
         
         if (speedGauge != null) {
-            GaugeConfigurationBuilder gaugeConfigurationBuilder = new GaugeConfigurationBuilder();
-            // TODO un-hard code these
-            gaugeConfigurationBuilder
-                    .setMaxValue(150f)
-                    .setMinValue(0f)
-                    .setMajorScaleMarkDelta(20f)
-                    .setMinorScaleMarkSegmentsPerMajorScaleMark(4)
-                    .setTitle("Speed");
-            speedGauge.init(gaugeConfigurationBuilder.build());
+            speedGauge.init(config.getGaugeConfiguration(DisplayGauge.SPEED));
         }
         
         if (rpmGauge != null) {
-            GaugeConfigurationBuilder gaugeConfigurationBuilder = new GaugeConfigurationBuilder();
-            // TODO un-hard code these
-            gaugeConfigurationBuilder
-                    .setMaxValue(8000f)
-                    .setMinValue(0f)
-                    .setMajorScaleMarkDelta(1000f)
-                    .setMinorScaleMarkSegmentsPerMajorScaleMark(5)
-                    .setScaleMarkLabelScaleFactor(1000f)
-                    .setMaxCriticalValue(7200f)
-                    .setTitle("RPM");
-            rpmGauge.init(gaugeConfigurationBuilder.build());
-        }
-        
-        if (shiftLightGauge != null) {
-            GaugeConfigurationBuilder gaugeConfigurationBuilder = new GaugeConfigurationBuilder();
-            // TODO un-hard code these
-            gaugeConfigurationBuilder
-                    .setMaxValue(8000f)
-                    .setMinValue(0f)
-                    .setShowValue(false)
-                    .setMaxCriticalValue(7050f);
-            shiftLightGauge.init(gaugeConfigurationBuilder.build());
+            rpmGauge.init(config.getGaugeConfiguration(DisplayGauge.RPM));
         }
         
         if (mapGauge != null) {
-            GaugeConfigurationBuilder gaugeConfigurationBuilder = new GaugeConfigurationBuilder();
-            // TODO un-hard code these
-            gaugeConfigurationBuilder
-                    .setMaxValue(100f)
-                    .setMinValue(0f)
-                    .setMajorScaleMarkDelta(10f)
-                    .setMinorScaleMarkSegmentsPerMajorScaleMark(5)
-                    .setTitle("MAP");
-            mapGauge.init(gaugeConfigurationBuilder.build());
+            mapGauge.init(config.getGaugeConfiguration(DisplayGauge.MAP));
         }
         
         if (mgpGauge != null) {
-            GaugeConfigurationBuilder gaugeConfigurationBuilder = new GaugeConfigurationBuilder();
-            // TODO un-hard code these
-            gaugeConfigurationBuilder
-                    .setMaxValue(20f)
-                    .setMinValue(-25f)
-                    .setMajorScaleMarkDelta(5f)
-                    .setMinorScaleMarkSegmentsPerMajorScaleMark(5)
-                    .setTitle("Boost/Vac");
-            mgpGauge.init(gaugeConfigurationBuilder.build());
+            mgpGauge.init(config.getGaugeConfiguration(DisplayGauge.MGP));
         }
         
         if (tpGauge != null) {
-            GaugeConfigurationBuilder gaugeConfigurationBuilder = new GaugeConfigurationBuilder();
-            // TODO un-hard code these
-            gaugeConfigurationBuilder
-                    .setMaxValue(100f)
-                    .setMinValue(0f)
-                    .setMajorScaleMarkDelta(10f)
-                    .setMinorScaleMarkSegmentsPerMajorScaleMark(5)
-                    .setTitle("TP");
-            tpGauge.init(gaugeConfigurationBuilder.build());
+            tpGauge.init(config.getGaugeConfiguration(DisplayGauge.TP));
         }
         
         if (afrGauge != null) {
-            GaugeConfigurationBuilder gaugeConfigurationBuilder = new GaugeConfigurationBuilder();
-            // TODO un-hard code these
-            gaugeConfigurationBuilder
-                    .setMaxValue(20f)
-                    .setMinValue(10f)
-                    .setMajorScaleMarkDelta(1f)
-                    .setMinorScaleMarkSegmentsPerMajorScaleMark(0)
-                    .setTitle("AFR");
-            afrGauge.init(gaugeConfigurationBuilder.build());
+            afrGauge.init(config.getGaugeConfiguration(DisplayGauge.AFR));
         }
         
         if (matGauge != null) {
-            GaugeConfigurationBuilder gaugeConfigurationBuilder = new GaugeConfigurationBuilder();
-            // TODO un-hard code these
-            gaugeConfigurationBuilder
-                    .setMaxValue(250f)
-                    .setMinValue(40f)
-                    .setMajorScaleMarkDelta(20f)
-                    .setMinorScaleMarkSegmentsPerMajorScaleMark(4)
-                    .setTitle("IAT");
-            matGauge.init(gaugeConfigurationBuilder.build());
+            matGauge.init(config.getGaugeConfiguration(DisplayGauge.MAT));
         }
         
         if (cltGauge != null) {
-            GaugeConfigurationBuilder gaugeConfigurationBuilder = new GaugeConfigurationBuilder();
-            // TODO un-hard code these
-            gaugeConfigurationBuilder
-                    .setMaxValue(240f)
-                    .setMinValue(100f)
-                    .setMajorScaleMarkDelta(20f)
-                    .setMinorScaleMarkSegmentsPerMajorScaleMark(4)
-                    .setMinCriticalValue(160f)
-                    .setMinWarningValue(170f)
-                    .setMaxWarningValue(210f)
-                    .setMaxCriticalValue(220f) // 220
-                    .setUseAlertColorGradient(true)
-                    .setTitle("CLT");
-            cltGauge.init(gaugeConfigurationBuilder.build());
+            cltGauge.init(config.getGaugeConfiguration(DisplayGauge.CLT));
         }
         
         if (ignAdvGauge != null) {
-            GaugeConfigurationBuilder gaugeConfigurationBuilder = new GaugeConfigurationBuilder();
-            // TODO un-hard code these
-            gaugeConfigurationBuilder
-                    .setMaxValue(40f)
-                    .setMinValue(0f)
-                    .setMajorScaleMarkDelta(10f)
-                    .setMinorScaleMarkSegmentsPerMajorScaleMark(5)
-                    
-                    .setTitle("Ign. Adv.");
-            ignAdvGauge.init(gaugeConfigurationBuilder.build());
+            ignAdvGauge.init(config.getGaugeConfiguration(DisplayGauge.IGN_ADV));
         }
         
         if (batVGauge != null) {
-            GaugeConfigurationBuilder gaugeConfigurationBuilder = new GaugeConfigurationBuilder();
-            // TODO un-hard code these
-            gaugeConfigurationBuilder
-                    .setMaxValue(16f)
-                    .setMinValue(10f)
-                    .setMajorScaleMarkDelta(1f)
-                    .setMinorScaleMarkSegmentsPerMajorScaleMark(2)
-                    .setMinCriticalValue(11f)
-                    .setMinWarningValue(11.5f)
-                    .setMaxWarningValue(14.5f)
-                    .setMaxCriticalValue(15f)
-                    .setUseAlertColorGradient(true)
-                    .setTitle("Voltage");
-            batVGauge.init(gaugeConfigurationBuilder.build());
+            batVGauge.init(config.getGaugeConfiguration(DisplayGauge.BAT_V));
         }
     }
     

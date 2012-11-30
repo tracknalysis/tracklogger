@@ -13,50 +13,49 @@
   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
   See the License for the specific language governing permissions and
   limitations under the License.
-  -->
-<!-- 
-Authors: David Valeri
- -->
+-->
+<!-- Authors: David Valeri -->
 <TableLayout xmlns:android="http://schemas.android.com/apk/res/android"
+  android:layout_width="wrap_content"
+  android:layout_height="wrap_content"
+  android:stretchColumns="1" >
+
+  <TableRow android:gravity="center_vertical" >
+
+    <TextView
+      android:layout_width="fill_parent"
+      android:layout_height="wrap_content"
+      android:layout_weight="1"
+      android:text="Split Marker Set: " />
+
+    <LinearLayout
+      android:layout_margin="0dp"
+      android:gravity="center_vertical"
+      android:orientation="horizontal"
+      android:padding="0dp" >
+
+      <TextView
+        android:id="@+id/log_setup_session_split_marker_set_name_text_view"
+        android:layout_width="0dip"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:text="@string/log_setup_session_split_marker_set_name_prompt" />
+
+      <Button
+        android:id="@+id/log_setup_session_split_marker_set_name_choose_button"
+        style="?android:attr/buttonStyleSmall"
+        android:layout_width="wrap_content"
+        android:layout_height="30dp"
+        android:paddingTop="10dp"
+        android:text="Choose"
+        android:textSize="8dp" />
+    </LinearLayout>
+  </TableRow>
+
+  <Button
+    android:id="@+id/log_setup_session_start_button"
     android:layout_width="wrap_content"
     android:layout_height="wrap_content"
-    android:stretchColumns="1" >
+    android:text="Start" />
 
-    <TableRow android:gravity="center_vertical">
-
-        <TextView
-            android:layout_width="fill_parent"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="Split Marker Set: " />
-
-        <LinearLayout
-            android:layout_margin="0dp"
-            android:orientation="horizontal"
-            android:padding="0dp" android:gravity="center_vertical">
-
-            <TextView
-                android:id="@+id/log_setup_session_split_marker_set_name_text_view"
-                android:layout_width="0dip"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="@string/log_setup_session_split_marker_set_name_prompt" />
-
-            <Button
-                android:id="@+id/log_setup_session_split_marker_set_name_choose_button"
-                style="?android:attr/buttonStyleSmall"
-                android:layout_width="wrap_content"
-                android:layout_height="30dp"
-                android:paddingTop="10dp"
-                android:text="Choose"
-                android:textSize="8dp" />
-        </LinearLayout>
-    </TableRow>
-
-    <Button
-        android:id="@+id/log_setup_session_start_button"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Start" />
-    
 </TableLayout>

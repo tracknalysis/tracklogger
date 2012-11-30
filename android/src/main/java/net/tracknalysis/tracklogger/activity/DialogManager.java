@@ -217,7 +217,7 @@ class DialogManager {
         return builder.create();
     }
 
-    void onDestroy() {
+    public void onDestroy() {
         if (errorDialog != null) {
             errorDialog.dismiss();
         }

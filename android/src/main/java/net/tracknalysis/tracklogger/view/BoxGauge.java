@@ -17,6 +17,8 @@ package net.tracknalysis.tracklogger.view;
 
 import java.util.Locale;
 
+import net.tracknalysis.tracklogger.model.ui.GaugeConfiguration;
+
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;

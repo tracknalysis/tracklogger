@@ -23,14 +23,13 @@ Authors: David Valeri
         <ListPreference
             android:entries="@array/loggingLevelNames"
             android:entryValues="@array/loggingLevelValues"
-            android:defaultValue="INFO"
             android:key="app.log.level"
-             android:title="@string/preference_app_log_level_title" />
+            android:title="@string/preference_app_log_level_title" />
         <CheckBoxPreference
             android:key="app.log.file.enable"
-            android:defaultValue="false"
             android:title="@string/preference_app_log_log_to_file_title" />
     </PreferenceCategory>
+    
     
     <PreferenceCategory android:title="@string/preference_location_preference_group_title">
         <net.tracknalysis.tracklogger.preference.BtDeviceListPreference
@@ -38,24 +37,26 @@ Authors: David Valeri
             android:title="@string/preference_location_bt" />
     </PreferenceCategory>
     
+    
     <PreferenceCategory android:title="@string/preference_ecu_preference_group_title">
         <CheckBoxPreference
             android:key="ecu.enabled"
-            android:defaultValue="false"
             android:title="@string/preference_ecu_enable" />
         <net.tracknalysis.tracklogger.preference.BtDeviceListPreference
             android:key="ecu.bt.address"
-            android:title="@string/preference_ecu_bt" />
+            android:title="@string/preference_ecu_bt"
+            android:dependency="ecu.enabled" />
     </PreferenceCategory>
+    
     
     <PreferenceCategory android:title="@string/preference_log_preference_group_title">
         <ListPreference
             android:entries="@array/preference_log_view_names"
             android:entryValues="@array/preference_log_view_values"
-            android:defaultValue="@layout/log_default"
             android:key="log.layout.id"
             android:title="@string/preference_log_layout_name" />
     </PreferenceCategory>
+    
     
     <PreferenceCategory android:title="@string/preference_display_group_title">
       <PreferenceScreen android:key="preferences_display_units"
@@ -63,22 +64,63 @@ Authors: David Valeri
           <ListPreference
               android:entries="@array/preference_display_units_speed_names"
               android:entryValues="@array/preference_display_units_speed_values"
-              android:defaultValue="MPH"
               android:key="display.units.speed"
               android:title="@string/preference_dispay_units_speed_title" />
           <ListPreference
               android:entries="@array/preference_display_units_temperature_names"
               android:entryValues="@array/preference_display_units_temperature_values"
-              android:defaultValue="F"
               android:key="display.units.temperature"
               android:title="@string/preference_dispay_units_temperature_title" />
           <ListPreference
               android:entries="@array/preference_display_units_pressure_names"
               android:entryValues="@array/preference_display_units_pressure_values"
-              android:defaultValue="PSI"
               android:key="display.units.pressure"
               android:title="@string/preference_dispay_units_pressure_title" />
       </PreferenceScreen>
-    </PreferenceCategory>
+      
+      <PreferenceScreen android:key="preferences_display_gauges"
+          android:title="@string/preference_display_gauges_screen_title">
+          
+          <net.tracknalysis.tracklogger.preference.GaugePreference
+              android:key="display.gauges.afr"
+              android:title="@string/preference_display_gauges_afr_title" />
+          
+          <net.tracknalysis.tracklogger.preference.GaugePreference
+              android:key="display.gauges.batV"
+              android:title="@string/preference_display_gauges_batv_title" />
+          
+          <net.tracknalysis.tracklogger.preference.GaugePreference
+              android:key="display.gauges.clt"
+              android:title="@string/preference_display_gauges_clt_title" />
+          
+          <net.tracknalysis.tracklogger.preference.GaugePreference
+              android:key="display.gauges.mat"
+              android:title="@string/preference_display_gauges_mat_title" />
+          
+          <net.tracknalysis.tracklogger.preference.GaugePreference
+              android:key="display.gauges.ignAdv"
+              android:title="@string/preference_display_gauges_ign_adv_title" />
+          
+          <net.tracknalysis.tracklogger.preference.GaugePreference
+              android:key="display.gauges.map"
+              android:title="@string/preference_display_gauges_map_title" />
+          
+          <net.tracknalysis.tracklogger.preference.GaugePreference
+              android:key="display.gauges.mgp"
+              android:title="@string/preference_display_gauges_mgp_title" />
+          
+          <net.tracknalysis.tracklogger.preference.GaugePreference
+              android:key="display.gauges.rpm"
+              android:title="@string/preference_display_gauges_rpm_title" />
+          
+          <net.tracknalysis.tracklogger.preference.GaugePreference
+              android:key="display.gauges.speed"
+              android:title="@string/preference_display_gauges_speed_title" />
+          
+          <net.tracknalysis.tracklogger.preference.GaugePreference
+              android:key="display.gauges.tp"
+              android:title="@string/preference_display_gauges_tp_title" />
 
+      </PreferenceScreen>
+    </PreferenceCategory>
 </PreferenceScreen>

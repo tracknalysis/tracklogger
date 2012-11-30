@@ -13,26 +13,27 @@
   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
   See the License for the specific language governing permissions and
   limitations under the License.
-  -->
-<!-- 
-Authors: David Valeri
- -->
+-->
+<!-- Authors: David Valeri -->
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="fill_parent"
-    android:layout_height="fill_parent" >
-<com.google.android.maps.MapView
+  android:layout_width="fill_parent"
+  android:layout_height="fill_parent" >
+
+  <com.google.android.maps.MapView
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/split_marker_set_view_map_view"
     android:layout_width="fill_parent"
     android:layout_height="fill_parent"
-    android:clickable="true"
-    android:apiKey="0NzMGSkHQxvY9DWW5xyuoUNLOzDzO9tTw2hExRQ" />
-<ToggleButton 
+    android:apiKey="0NzMGSkHQxvY9DWW5xyuoUNLOzDzO9tTw2hExRQ"
+    android:clickable="true" />
+
+  <ToggleButton
     android:id="@+id/split_marker_set_view_satellite_toggle_button"
     android:layout_width="wrap_content"
     android:layout_height="wrap_content"
-    android:textOn="Satellite"
-    android:textOff="Satellite"
     android:layout_alignParentRight="true"
-    android:layout_alignParentTop="true"/>
+    android:layout_alignParentTop="true"
+    android:textOff="Satellite"
+    android:textOn="Satellite" />
+
 </RelativeLayout>

@@ -13,90 +13,87 @@
   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
   See the License for the specific language governing permissions and
   limitations under the License.
-  -->
-<!-- 
-Authors: David Valeri
- -->
+-->
+<!-- Authors: David Valeri -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+  android:layout_width="fill_parent"
+  android:layout_height="wrap_content"
+  android:orientation="vertical" >
+
+  <LinearLayout
     android:layout_width="fill_parent"
     android:layout_height="wrap_content"
-    android:orientation="vertical" >
+    android:orientation="horizontal" >
 
-    <LinearLayout
-        android:layout_width="fill_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal">
+    <TextView
+      android:id="@+id/sessionId"
+      android:layout_width="wrap_content"
+      android:layout_height="wrap_content"
+      android:paddingRight="20dp" />
 
-        <TextView
-            android:id="@+id/sessionId"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:paddingRight="20dp" />
+    <TextView
+      android:id="@+id/createdDate"
+      android:layout_width="wrap_content"
+      android:layout_height="wrap_content" />
+  </LinearLayout>
 
-        <TextView
-            android:id="@+id/createdDate"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content" />
-    </LinearLayout>
+  <LinearLayout
+    android:layout_width="fill_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="10dp"
+    android:orientation="horizontal" >
 
-    <LinearLayout
-        android:orientation="horizontal"
-        android:layout_width="fill_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="10dp">
+    <TextView
+      android:layout_width="wrap_content"
+      android:layout_height="wrap_content"
+      android:paddingRight="20dp"
+      android:text="@string/export_total_laps" />
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:paddingRight="20dp"
-            android:text="@string/export_total_laps"/>
+    <TextView
+      android:id="@+id/totalLaps"
+      android:layout_width="wrap_content"
+      android:layout_height="wrap_content" />
+  </LinearLayout>
 
-        <TextView
-            android:id="@+id/totalLaps"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content" />
-    </LinearLayout>
-    
-    <LinearLayout
-        android:id="@+id/export_action_bar_enqueue"
-        android:orientation="horizontal"
-        android:layout_width="fill_parent"
-        android:layout_height="wrap_content"
-        android:visibility="gone">
-        
-        <Button
-            android:id="@+id/export_button"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/export_export_button_text"/>    
-    </LinearLayout>
-    
-    <LinearLayout
-        android:id="@+id/export_action_bar_in_progress"
-        android:orientation="vertical"
-        android:layout_width="fill_parent"
-        android:layout_height="wrap_content"
-        android:visibility="visible"
-        android:gravity="center">
-        
-        <ProgressBar
-            android:id="@+id/export_progress_bar"
-            style="?android:attr/progressBarStyleHorizontal"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content" />
+  <LinearLayout
+    android:id="@+id/export_action_bar_enqueue"
+    android:layout_width="fill_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:visibility="gone" >
 
-        <TextView
-            android:id="@+id/export_progress_text"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center_horizontal"
-            android:text="@string/export_queued" />
+    <Button
+      android:id="@+id/export_button"
+      android:layout_width="wrap_content"
+      android:layout_height="wrap_content"
+      android:text="@string/export_export_button_text" />
+  </LinearLayout>
 
-    </LinearLayout>
-    
-    <ListView 
-        android:id="@+id/lapList"
-        android:layout_width="fill_parent"
-        android:layout_height="wrap_content" />
+  <LinearLayout
+    android:id="@+id/export_action_bar_in_progress"
+    android:layout_width="fill_parent"
+    android:layout_height="wrap_content"
+    android:gravity="center"
+    android:orientation="vertical"
+    android:visibility="visible" >
+
+    <ProgressBar
+      android:id="@+id/export_progress_bar"
+      style="?android:attr/progressBarStyleHorizontal"
+      android:layout_width="match_parent"
+      android:layout_height="wrap_content" />
+
+    <TextView
+      android:id="@+id/export_progress_text"
+      android:layout_width="wrap_content"
+      android:layout_height="wrap_content"
+      android:layout_gravity="center_horizontal"
+      android:text="@string/export_queued" />
+  </LinearLayout>
+
+  <ListView
+    android:id="@+id/lapList"
+    android:layout_width="fill_parent"
+    android:layout_height="wrap_content" />
 
 </LinearLayout>

@@ -48,8 +48,8 @@ Authors: David Valeri
     </string-array>
     
     <string-array name="preference_display_units_speed_names">
-        <item>MPH</item>
-        <item>KPH</item>
+        <item>@string/general_mph_short</item>
+        <item>@string/general_kph_short</item>
     </string-array>
     
     <string-array name="preference_display_units_speed_values">
@@ -58,9 +58,9 @@ Authors: David Valeri
     </string-array>
     
     <string-array name="preference_display_units_pressure_names">
-        <item>psi</item>
-        <item>kPa</item>
-        <item>bar</item>
+        <item>@string/general_psi_short</item>
+        <item>@string/general_kpa_short</item>
+        <item>@string/general_bar_short</item>
     </string-array>
     
     <string-array name="preference_display_units_pressure_values">
@@ -70,8 +70,8 @@ Authors: David Valeri
     </string-array>
     
     <string-array name="preference_display_units_temperature_names">
-        <item>Fahrenheit</item>
-        <item>Celsius</item>
+        <item>@string/general_f_long</item>
+        <item>@string/general_c_long</item>
     </string-array>
     
     <string-array name="preference_display_units_temperature_values">

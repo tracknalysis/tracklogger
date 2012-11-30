@@ -22,7 +22,52 @@ Authors: David Valeri
     
     <string name="general_ok">OK</string>
     <string name="general_cancel">Cancel</string>
-    <string name="general_error">An unexpected error has ocurred.</string>
+    <string name="general_error">An unexpected error has occurred.</string>
+    
+    <string name="general_speed_long">Speed</string>
+    <string name="general_speed_short">Speed</string>
+
+
+
+    <!-- General Unit Terms -->
+    <string name="general_kpa_long">Kilopascal</string>
+    <string name="general_kpa_short">kPa</string>
+    <string name="general_psi_long">Pounds Per Square Inch</string>
+    <string name="general_psi_short">psi</string>
+    <string name="general_bar_long">Bar</string>
+    <string name="general_bar_short">bar</string>
+    <string name="general_mph_long">Miles Per Hour</string>
+    <string name="general_mph_short">MPH</string>
+    <string name="general_kph_long">Kilometers Per Hour</string>
+    <string name="general_kph_short">KPH</string>
+    <string name="general_f_long">Fahrenheit</string>
+    <string name="general_f_short">F</string>
+    <string name="general_c_long">Celsius</string>
+    <string name="general_c_short">C</string>
+
+
+
+    <!-- General ECU Terms -->
+    <string name="general_rpm_long">Revolutions Per Minute</string>
+    <string name="general_rpm_short">RPM</string>
+    <string name="general_map_long">Manifold Absolute Pressure</string>
+    <string name="general_map_short">MAP</string>
+    <string name="general_mgp_long">Manifold Gauge Pressure</string>
+    <string name="general_mgp_short">Boost/Vac</string>
+    <string name="general_tp_long">Throttle Position</string>
+    <string name="general_tp_short">TP</string>
+    <string name="general_afr_long">Air Fuel Ratio</string>
+    <string name="general_afr_short">AFR</string>
+    <string name="general_mat_long">Intake Air Temperature</string>
+    <string name="general_mat_short">IAT</string>
+    <string name="general_clt_long">Coolant Temperature</string>
+    <string name="general_clt_short">CLT</string>
+    <string name="general_ign_adv_long">Ignition Advance</string>
+    <string name="general_ign_adv_short">Ign. Adv.</string>
+    <string name="general_batv_long">Battery Voltage</string>
+    <string name="general_batv_short">BatV</string>
+    
+    
     
     <string name="menu_item_new">New</string>
     <string name="menu_item_duplicate">Duplicate</string>
@@ -31,12 +76,15 @@ Authors: David Valeri
     <string name="menu_item_edit">Edit</string>
     <string name="menu_item_import">Import</string>
     <string name="menu_item_export">Export</string>
-    <string name="menu_item_view">View</string>
+    <string name="menu_item_view">View</string>    
+    
     
     
     <string name="error_alert_title">TrackLogger Error</string>
     <string name="error_bt_not_supported">No Bluetooth capabilities detected on this device.</string>
     <string name="error_bt_not_enabled">Bluetooth is not enabled.  Bluetooth is required for this application to function.</string>
+    
+    
     
     <string name="log_error_init">Error initializing data providers.  Check the logs for more details.</string>
     <string name="log_error_recording">Error recording log data.  Check the logs for more details.</string>
@@ -77,21 +125,23 @@ Authors: David Valeri
     <string name="log_speed_title">Speed</string>
     
     <string name="log_ecu_update_frequency_title">ECU Update Freq.</string>
-    <string name="log_rpm_title">RPM</string>
-    <string name="log_map_title">MAP</string>
-    <string name="log_mgp_title">Boost/Vac</string>
-    <string name="log_tp_title">Throttle Position</string>
-    <string name="log_afr_title">AFR</string>
-    <string name="log_mat_title">IAT</string>
-    <string name="log_clt_title">CLT</string>
-    <string name="log_ign_adv_title">Ignition Advance</string>
-    <string name="log_batv_title">Battery Voltage</string>
+    <string name="log_rpm_title">@string/general_rpm_short</string>
+    <string name="log_map_title">@string/general_map_short</string>
+    <string name="log_mgp_title">@string/general_mgp_short</string>
+    <string name="log_tp_title">@string/general_tp_short</string>
+    <string name="log_afr_title">@string/general_afr_short</string>
+    <string name="log_mat_title">@string/general_mat_short</string>
+    <string name="log_clt_title">@string/general_clt_short</string>
+    <string name="log_ign_adv_title">@string/general_ign_adv_short</string>
+    <string name="log_batv_title">@string/general_batv_short</string>
+    
     
     
     <string name="session_list_empty">No sessions exist.  Log some data to create a session.</string>
     <string name="session_list_confirm_delete_prompt">Are you sure you want to delete session %1$d from %2$s?</string>
     <string name="session_list_context_menu_title">Session %d</string>
     <string name="session_list_deleted_notification">Deleted session %1$d from %2$s.</string>
+    
     
     <string name="export_error_session_not_found">The selected session could not be found.  Please try again.</string>
     <string name="export_queued">Session export queued.</string>
@@ -105,11 +155,14 @@ Authors: David Valeri
     <string name="export_progress_notification_error_content_text">Error exporting session %d data.</string>
     
     
+    
     <string name="split_marker_set_rename_prompt">Enter a new name for the split marker set with the name \'%s\'.</string>
     <string name="split_marker_set_rename_toast">Renamed \'%1$s\' to \'%2$s\'.</string>
     <string name="split_marker_set_rename_error_not_found">The requested split marker set could not be found.</string>
     <string name="split_marker_set_rename_error_invalid_name">The name entered is not a valid split marker set name.</string>
     <string name="split_marker_set_rename_error_duplicate">The name entered already exists.</string>
+    
+    
     
     <string name="split_marker_set_view_error_not_found">The requested split marker set could not be found.</string>
     <string name="split_marker_set_view_new_marker_instruction">Tap screen to place a new split marker.</string>
@@ -148,8 +201,9 @@ Authors: David Valeri
     <string name="split_marker_edit_error_not_found">The requested split marker could not be found.</string>
     <string name="split_marker_edit_error_invalid_name">The name entered is not a valid split marker name.</string>
     <string name="split_marker_edit_error_duplicate_name">A split marker already exists with the name entered.</string>
-        
-    
+
+
+
     <string name="preference_app_log_preference_group_title">Application Logging</string>
     <string name="preference_app_log_level_title">Log Level</string>
     <string name="preference_app_log_log_to_file_title">Enable Logging to File</string>
@@ -165,8 +219,53 @@ Authors: David Valeri
     <string name="preference_ecu_bt">ECU Bluetooth Device</string>
     
     <string name="preference_display_group_title">Display</string>
-    <string name="preference_dispay_units_screen_title">Units</string>
-    <string name="preference_dispay_units_speed_title">Speed</string>
+    <string name="preference_dispay_units_screen_title">Display Units</string>
+    <string name="preference_dispay_units_speed_title">@string/general_speed_long</string>
     <string name="preference_dispay_units_temperature_title">Temperature</string>
-    <string name="preference_dispay_units_pressure_title">Pressure</string>    
+    <string name="preference_dispay_units_pressure_title">Pressure</string>
+    
+    <string name="preference_display_gauges_screen_title">Gauges</string>
+    <string name="preference_display_gauges_speed_title">@string/general_speed_long</string>
+    <string name="preference_display_gauges_rpm_title">@string/general_rpm_long</string>
+    <string name="preference_display_gauges_map_title">@string/general_map_long</string>
+    <string name="preference_display_gauges_mgp_title">@string/general_mgp_long</string>
+    <string name="preference_display_gauges_tp_title">@string/general_tp_long</string>
+    <string name="preference_display_gauges_afr_title">@string/general_afr_long</string>
+    <string name="preference_display_gauges_mat_title">@string/general_mat_long</string>
+    <string name="preference_display_gauges_clt_title">@string/general_clt_long</string>
+    <string name="preference_display_gauges_ign_adv_title">@string/general_ign_adv_long</string>
+    <string name="preference_display_gauges_batv_title">@string/general_batv_long</string>
+
+
+    <string name="preference_gauge_validation_error">An unexpected validation error occurred with your input.</string>
+    <string name="preference_gauge_title_title">Title:</string>
+    <string name="preference_gauge_min_value_title">Min. Value:</string>
+    <string name="preference_gauge_min_value_validation_error_relative_range">Minimum value must be less than maximum value.</string>
+    <string name="preference_gauge_min_value_validation_error_not_null">This field is required.</string>
+    <string name="preference_gauge_max_value_title">Max. Value:</string>
+    <string name="preference_gauge_max_value_validation_error_not_null">This field is required.</string>
+    <string name="preference_gauge_max_value_validation_error_relative_range">Minimum value must be less than maximum value.</string>
+    <string name="preference_gauge_major_scale_mark_delta_title">Scale Mark Delta:</string>
+    <string name="preference_gauge_major_scale_mark_delta_validation_error_range">Scale Mark Delta must be positive.</string>
+    <string name="preference_gauge_major_scale_mark_delta_validation_error_not_null">This field is required.</string>
+    <string name="preference_gauge_minor_scale_mark_segments_per_major_scale_mark_title">Seg. Per Scale Mark:</string>
+    <string name="preference_gauge_minor_scale_mark_segments_per_major_scale_mark_validation_error_range">The value must be an integer greater than or equal to 1.</string>
+    <string name="preference_gauge_minor_scale_mark_segments_per_major_scale_mark_validation_error_not_null">This field is required.</string>
+    <string name="preference_gauge_scale_mark_label_scale_factor_title">Scale Label Scale Factor:</string>
+    <string name="preference_gauge_scale_mark_label_scale_factor_error_range">This field must be greater than or equal to 1.</string>
+    <string name="preference_gauge_scale_mark_label_precision_title">Scale Label Precision:</string>
+    <string name="preference_gauge_scale_mark_label_precision_error_not_null">This field is required.</string>
+    <string name="preference_gauge_scale_mark_label_precision_error_range">This field must be greater than or equal to 0.</string>
+    <string name="preference_gauge_show_value_title">Show Value:</string>
+    <string name="preference_gauge_value_precision_title">Value Precision:</string>
+    <string name="preference_gauge_value_precision_title_error_not_null">This field is required.</string>
+    <string name="preference_gauge_value_precision_title_error_range">This field must be greater than or equal to 1.</string>
+    <string name="preference_gauge_min_critical_value_title">Min. Critical Value:</string>
+    <string name="preference_gauge_min_warning_value_title">Min. Warning Value:</string>
+    <string name="preference_gauge_max_warning_value_title">Max. Warning Value:</string>
+    <string name="preference_gauge_max_critical_value_title">Max. Critical Value:</string>
+    <string name="preference_gauge_alert_value_error_relative_range">If specified, the following must hold true min. value &lt; min. critical value &lt; min. warning value &lt; max. warning value &lt; max critical value &lt; max. value.</string>
+    <string name="preference_gauge_use_alert_color_gradient_title">Alert Color Gradient:</string>
+    
+    
 </resources>

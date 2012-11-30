@@ -1,0 +1,236 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Copyright 2012 the original author or authors.
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+<!-- Authors: David Valeri -->
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+  android:layout_width="fill_parent"
+  android:layout_height="wrap_content" >
+
+  <TableLayout
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:stretchColumns="1" >
+
+    <TableRow android:gravity="center_vertical" >
+
+      <TextView
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginRight="5dp"
+        android:text="@string/preference_gauge_title_title" />
+
+      <EditText
+        android:id="@+id/preference_gauge_title_value"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:inputType="text" />
+    </TableRow>
+
+    <TableRow android:gravity="center_vertical" >
+
+      <TextView
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginRight="5dp"
+        android:text="@string/preference_gauge_min_value_title" />
+
+      <EditText
+        android:id="@+id/preference_gauge_min_value"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:inputType="numberDecimal|numberSigned" />
+    </TableRow>
+
+    <TableRow android:gravity="center_vertical" >
+
+      <TextView
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginRight="5dp"
+        android:text="@string/preference_gauge_max_value_title" />
+
+      <EditText
+        android:id="@+id/preference_gauge_max_value"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:inputType="numberDecimal|numberSigned" />
+    </TableRow>
+
+    <TableRow android:gravity="center_vertical" >
+
+      <TextView
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginRight="5dp"
+        android:text="@string/preference_gauge_major_scale_mark_delta_title" />
+
+      <EditText
+        android:id="@+id/preference_gauge_major_scale_mark_delta_value"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:inputType="numberDecimal" />
+    </TableRow>
+
+    <TableRow android:gravity="center_vertical" >
+
+      <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginRight="5dp"
+        android:text="@string/preference_gauge_minor_scale_mark_segments_per_major_scale_mark_title" />
+
+      <EditText
+        android:id="@+id/preference_gauge_minor_scale_mark_segments_per_major_scale_mark_value"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:inputType="number" />
+    </TableRow>
+    
+     <TableRow android:gravity="center_vertical" >
+
+      <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginRight="5dp"
+        android:text="@string/preference_gauge_scale_mark_label_scale_factor_title" />
+
+      <EditText
+        android:id="@+id/preference_gauge_scale_mark_label_scale_factor_value"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:inputType="number" />
+    </TableRow>
+    
+    <TableRow android:gravity="center_vertical" >
+
+      <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginRight="5dp"
+        android:text="@string/preference_gauge_scale_mark_label_precision_title" />
+
+      <EditText
+        android:id="@+id/preference_gauge_scale_mark_label_precision_value"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:inputType="number" />
+    </TableRow>
+
+    <TableRow android:gravity="center_vertical" >
+
+      <TextView
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginRight="5dp"
+        android:text="@string/preference_gauge_show_value_title" />
+
+      <CheckBox
+        android:id="@+id/preference_gauge_show_value_value"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content" />
+    </TableRow>
+    
+    <TableRow android:gravity="center_vertical" >
+
+      <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginRight="5dp"
+        android:text="@string/preference_gauge_value_precision_title" />
+
+      <EditText
+        android:id="@+id/preference_gauge_value_precision_value"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:inputType="number" />
+    </TableRow>
+
+    <TableRow android:gravity="center_vertical" >
+
+      <TextView
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginRight="5dp"
+        android:text="@string/preference_gauge_min_critical_value_title" />
+
+      <EditText
+        android:id="@+id/preference_gauge_min_critical_value"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:inputType="numberDecimal" />
+    </TableRow>
+
+    <TableRow android:gravity="center_vertical" >
+
+      <TextView
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginRight="5dp"
+        android:text="@string/preference_gauge_min_warning_value_title" />
+
+      <EditText
+        android:id="@+id/preference_gauge_min_warning_value"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:inputType="numberDecimal" />
+    </TableRow>
+
+    <TableRow android:gravity="center_vertical" >
+
+      <TextView
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginRight="5dp"
+        android:text="@string/preference_gauge_max_warning_value_title" />
+
+      <EditText
+        android:id="@+id/preference_gauge_max_warning_value"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:inputType="numberDecimal" />
+    </TableRow>
+
+    <TableRow android:gravity="center_vertical" >
+
+      <TextView
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginRight="5dp"
+        android:text="@string/preference_gauge_max_critical_value_title" />
+
+      <EditText
+        android:id="@+id/preference_gauge_max_critical_value"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:inputType="numberDecimal" />
+    </TableRow>
+
+    <TableRow android:gravity="center_vertical" >
+
+      <TextView
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginRight="5dp"
+        android:text="@string/preference_gauge_use_alert_color_gradient_title" />
+
+      <CheckBox
+        android:id="@+id/preference_gauge_use_alert_color_gradient_value"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content" />
+    </TableRow>
+  </TableLayout>
+
+</ScrollView>
