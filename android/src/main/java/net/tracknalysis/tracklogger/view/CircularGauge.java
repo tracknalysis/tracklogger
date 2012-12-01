@@ -17,8 +17,8 @@ package net.tracknalysis.tracklogger.view;
 
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Locale;
 
-import net.tracknalysis.tracklogger.model.ui.GaugeConfiguration;
 
 import android.content.Context;
 import android.graphics.Bitmap;
@@ -28,7 +28,6 @@ import android.graphics.Paint;
 import android.graphics.Paint.Align;
 import android.graphics.Paint.Style;
 import android.graphics.Path;
-import android.graphics.PixelFormat;
 import android.graphics.RectF;
 import android.graphics.SweepGradient;
 import android.util.AttributeSet;
@@ -146,12 +145,6 @@ public class CircularGauge extends AbstractGauge {
     public CircularGauge(Context context, AttributeSet attrs) {
         super(context, attrs);
         
-        if (!isInEditMode()) {
-            // Set us up for transparent backgrounds.
-            setZOrderOnTop(true);
-            getHolder().setFormat(PixelFormat.TRANSLUCENT);
-        }
-                
         faceRect = new RectF();
         
         facePaint = new Paint();
@@ -390,6 +383,7 @@ public class CircularGauge extends AbstractGauge {
                 backgroundCanvas.save(Canvas.MATRIX_SAVE_FLAG);
                 
                 String labelText = String.format(
+                		Locale.US,
                         "%." + configuration.getScaleMarkLabelPrecision() + "f",
                         scaledScaleTextValue);
                 
@@ -623,8 +617,11 @@ public class CircularGauge extends AbstractGauge {
     protected void drawValue(Canvas canvas, float valueToDraw) {
         if (configuration.isShowValue()) {
             canvas.drawText(
-                    String.format("%." + configuration.getValuePrecision()
-                            + "f", valueToDraw), 0.5f, 0.65f, valuePaint);
+                    String.format(
+                    		Locale.US,
+                    		"%." + configuration.getValuePrecision() + "f",
+                    		valueToDraw),
+            		0.5f, 0.65f, valuePaint);
         }
     }
     

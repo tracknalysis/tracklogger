@@ -21,7 +21,7 @@ import net.tracknalysis.common.io.SocketManager;
 import net.tracknalysis.common.notification.NoOpNotificationStrategy;
 import net.tracknalysis.ecu.ms.io.DebugLogReaderMegasquirtIoManager;
 import net.tracknalysis.ecu.ms.io.MegasquirtIoManager;
-import net.tracknalysis.location.LocationManagerNotificationType;
+import net.tracknalysis.location.LocationManagerLifecycleNotificationType;
 import net.tracknalysis.location.nmea.NmeaLocationManager;
 import net.tracknalysis.location.nmea.NmeaTestSocketManager;
 import net.tracknalysis.tracklogger.R;
@@ -83,7 +83,7 @@ public class LogActivityIntegrationTest extends AbstractLogActivityTest {
                             protected void initLocationManager(Configuration config, BluetoothAdapter btAdapter) {
                                 locationSocketManager = ntsm;
                                 locationManager = new NmeaLocationManager(locationSocketManager,
-                                        new NoOpNotificationStrategy<LocationManagerNotificationType>());
+                                        new NoOpNotificationStrategy<LocationManagerLifecycleNotificationType>());
                             }
                             
                             protected void initEcuDataProvider(Configuration config, BluetoothAdapter btAdapter) {
@@ -125,6 +125,11 @@ public class LogActivityIntegrationTest extends AbstractLogActivityTest {
     
     public void testDefaultView() throws Throwable {
         configuration.setLogLayoutId(R.layout.log_default);
+        genericDefaultViewTest();
+    }
+    
+    public void testRawView() throws Throwable {
+        configuration.setLogLayoutId(R.layout.log_raw);
         genericDefaultViewTest();
     }
     
@@ -306,7 +311,9 @@ public class LogActivityIntegrationTest extends AbstractLogActivityTest {
                 TrackLoggerData.LogEntry.DEFAULT_SORT_ORDER);
         // Use a range because we can't be sure how many NMEA sentences get dropped due to
         // timing issues.
-        assertTrue(logEntryCursor.getCount() > 1260 && logEntryCursor.getCount() < 1275);
+		assertTrue("Got weird number of entries: " + logEntryCursor.getCount(),
+				logEntryCursor.getCount() > 1250
+						&& logEntryCursor.getCount() < 1275);
         
         // TODO examine the data for several entries
         

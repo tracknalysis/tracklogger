@@ -17,9 +17,9 @@ package net.tracknalysis.tracklogger.view;
 
 import java.util.Locale;
 
-import net.tracknalysis.tracklogger.model.ui.GaugeConfiguration;
 
 import android.content.Context;
+import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
@@ -36,32 +36,73 @@ import android.util.AttributeSet;
  */
 public class BoxGauge extends AbstractGauge {
 
-    private final RectF workingRect;
-    private final Paint barPaint;
+	private final RectF workingRect;
+    private final Paint valueBackgroundPaint;
+    private final Paint valuePaint;
     private final Paint titlePaint;
+       
+    private Bitmap backgroundBitMap;
+    private final Paint backgroundPaint;
+    
+    private final Paint facePaint;
+    private final RectF faceRect;
+
+    private GaugeConfiguration configuration;
+           
+    // Calculated properties
     
     private float valueAreaHeight;
-    private float valueCenterX;
-    private float valueCenterY;
-    private int valueHeight;
     private float titleCenterX;
     private float titleCenterY;
+    private float valueCenterX;
+    private float valueCenterY;
 
     public BoxGauge(Context context, AttributeSet attrs) {
         super(context, attrs);
+        
         workingRect = new RectF(0, 0, 0, 0);
         
-        barPaint = new Paint();
-        barPaint.setStyle(Style.FILL);
+        valueBackgroundPaint = new Paint();
+        valueBackgroundPaint.setStyle(Style.FILL);
+        
+        
+        valuePaint = new Paint();
+        valuePaint.setTextAlign(Align.CENTER);
+        valuePaint.setAntiAlias(true);
+        
         
         titlePaint = new Paint();
-        titlePaint.setColor(Color.WHITE);
         titlePaint.setTextAlign(Align.CENTER);
         titlePaint.setAntiAlias(true);
+            
+        
+        backgroundPaint = new Paint();
+        backgroundPaint.setFilterBitmap(true);
+        
+        
+        facePaint = new Paint();
+        facePaint.setStyle(Paint.Style.FILL);
+        facePaint.setAntiAlias(true);
+        
+        faceRect = new RectF();
     }
 
     @Override
     protected void reconfigure(int canvasWidth, int canvasHeight, GaugeConfiguration config) {
+    	
+    	this.configuration = config;
+        
+    	// Configured / configurable properties
+        
+        valuePaint.setColor(Color.WHITE);
+        
+        titlePaint.setColor(Color.WHITE);
+
+        facePaint.setColor(Color.BLACK);
+        
+        faceRect.set(0, 0, canvasWidth, canvasHeight);
+        
+        // Calculated properties
         
         if (config.getTitle() != null) {
             valueAreaHeight = (int) (canvasHeight * 0.75f);
@@ -71,59 +112,79 @@ public class BoxGauge extends AbstractGauge {
                 titleHeight = 1;
             }
             
-            titlePaint.setTextSize((float) (titleHeight * 0.7f));
+            titlePaint.setTextSize((float) (titleHeight * 0.8f));
             
+            Rect titleBounds = new Rect();
+            titlePaint.getTextBounds(configuration.getTitle(), 0,
+            		configuration.getTitle().length(), titleBounds);
+
             titleCenterX = canvasWidth / 2;
-            titleCenterY = valueAreaHeight + (titleHeight / 2); //((titleBounds.bottom - titleBounds.top) / 2);
+            titleCenterY = valueAreaHeight + (titleHeight / 2)
+                    + ((titleBounds.bottom - titleBounds.top) / 2);
         } else {
             valueAreaHeight = canvasHeight;
         }
         
-        valueHeight = (int) (valueAreaHeight * 0.7f);
-        if (valueHeight <= 0) {
-            valueHeight = 1;
-        }
+        workingRect.set(0, 0, getCanvasWidth(), valueAreaHeight);
         
-        Paint tempValuePaint = new Paint();
-        tempValuePaint.setTextAlign(Align.CENTER);
+        valuePaint.setTextSize(valueAreaHeight * 0.7f);
         
-        tempValuePaint.setTextSize(valueHeight);
-        
-        // Calculate size using a fake value so that we can cache the math and not have to do it every update.
+		// Calculate size using a fake value so that we can cache the math and
+		// not have to do it every update.
         Rect valueBounds = new Rect();
-        tempValuePaint.getTextBounds("-123456789.0", 0, 3, valueBounds);
+        valuePaint.getTextBounds("-1234567890", 0, 11, valueBounds);
         
         valueCenterX = canvasWidth / 2;
         valueCenterY = (valueAreaHeight / 2) + ((valueBounds.bottom - valueBounds.top) / 2);
+        
+        renderBackground();
+    }
+    
+    protected void renderBackground() {
+		backgroundBitMap = Bitmap.createBitmap(getCanvasWidth(),
+				getCanvasHeight(), Bitmap.Config.ARGB_8888);
+        Canvas backgroundCanvas = new Canvas(backgroundBitMap);
+        
+        backgroundCanvas.drawColor(0, android.graphics.PorterDuff.Mode.CLEAR);
+        
+        drawFace(backgroundCanvas);
+        drawTitle(backgroundCanvas);
     }
 
+    protected void drawFace(Canvas backgroundCanvas) {
+        backgroundCanvas.drawRect(faceRect, facePaint);
+    }
+    
+    protected void drawTitle(Canvas backgroundCanvas) {
+        if (getConfiguration().getTitle() != null) {
+            backgroundCanvas.drawText(
+                    configuration.getTitle(), 
+                    titleCenterX,
+                    titleCenterY,
+                    titlePaint);
+        }
+    }
+    
     @Override
     protected void draw(Canvas canvas, float valueToDraw) {
-        
-        barPaint.setColor(valueToAlertColor(valueToDraw));
-        
-        if (getConfiguration().isShowValue()) {
-            String valueText = String.format(Locale.US, "%.1f", valueToDraw);
-            Paint valuePaint = new Paint(barPaint);
-            valuePaint.setTextAlign(Align.CENTER);
-            valuePaint.setTextSize(valueHeight);
-            
+    	
+    	canvas.drawBitmap(backgroundBitMap, 0, 0, backgroundPaint);
+    	
+    	if (getConfiguration().isShowValue()) {
+			String valueText = String
+					.format(
+							Locale.US,
+							"%." + configuration.getValuePrecision() + "f",
+							valueToDraw);
+            valuePaint.setColor(valueToAlertColor(valueToDraw));
             canvas.drawText(
                     valueText, 
                     valueCenterX,
                     valueCenterY,
                     valuePaint);
         } else {
-            workingRect.set(0, 0, getCanvasWidth(), valueAreaHeight);
-            canvas.drawRect(workingRect, barPaint);
-        }
-        
-        if (getConfiguration().getTitle() != null) {
-            canvas.drawText(
-                    getConfiguration().getTitle(), 
-                    titleCenterX,
-                    titleCenterY,
-                    titlePaint);
+            valueBackgroundPaint.setColor(valueToAlertColor(valueToDraw));
+            canvas.drawRect(workingRect, valueBackgroundPaint);
         }
     }
 }

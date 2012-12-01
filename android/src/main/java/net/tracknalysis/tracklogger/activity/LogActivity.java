@@ -40,8 +40,8 @@ import net.tracknalysis.tracklogger.model.PressureUnit;
 import net.tracknalysis.tracklogger.model.SpeedUnit;
 import net.tracknalysis.tracklogger.model.TemperatureUnit;
 import net.tracknalysis.tracklogger.model.TimingData;
-import net.tracknalysis.tracklogger.model.ui.Gauge;
 import net.tracknalysis.tracklogger.provider.TrackLoggerData;
+import net.tracknalysis.tracklogger.view.Gauge;
 import net.tracknalysis.tracklogger.R;
 
 import android.annotation.TargetApi;
@@ -591,7 +591,7 @@ public class LogActivity extends BaseActivity implements OnCancelListener, View.
                         setValueIfShown(shiftLightGauge, ecuData.getRpm());
                         setValueIfShown(mapGauge, (float) mapValue);
                         setValueIfShown(mgpGauge, (float) mgpValue);
-                        setValueIfShown(tpGauge, (float) ecuData.getThrottlePosition() * 100);
+                        setValueIfShown(tpGauge, (float) ecuData.getThrottlePosition());
                         setValueIfShown(afrGauge, (float) ecuData.getAirFuelRatio());
                         setValueIfShown(matGauge, (float) matValue);
                         setValueIfShown(cltGauge, (float) cltValue);

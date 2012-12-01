@@ -17,8 +17,8 @@ package net.tracknalysis.tracklogger.view;
 
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Locale;
 
-import net.tracknalysis.tracklogger.model.ui.GaugeConfiguration;
 
 import android.content.Context;
 import android.graphics.Bitmap;
@@ -263,6 +263,22 @@ public abstract class AbstractBarGauge extends AbstractGauge {
         }
     }
     
+    protected void drawTitle(Canvas backgroundCanvas) {
+        if (getConfiguration().getTitle() != null) {
+            
+            backgroundCanvas.save();
+            translateCanvasForSweepDirection(backgroundCanvas);
+            
+            backgroundCanvas.drawText(
+                    getTitleText(), 
+                    titleCenterX,
+                    titleCenterY,
+                    titlePaint);
+            
+            backgroundCanvas.restore();
+        }
+    }
+    
     protected void drawAlert(Canvas backgroundCanvas) {
         if (configuration.isAlertEnabled()) {
             backgroundCanvas.save();
@@ -359,22 +375,6 @@ public abstract class AbstractBarGauge extends AbstractGauge {
         }
     }
     
-    protected void drawTitle(Canvas backgroundCanvas) {
-        if (getConfiguration().getTitle() != null) {
-            
-            backgroundCanvas.save();
-            translateCanvasForSweepDirection(backgroundCanvas);
-            
-            backgroundCanvas.drawText(
-                    getTitleText(), 
-                    titleCenterX,
-                    titleCenterY,
-                    titlePaint);
-            
-            backgroundCanvas.restore();
-        }
-    }
-    
     protected void drawBar(Canvas canvas, float valueToDraw) {
         
         if (configuration.isUseAlertColorGradient()) {
@@ -399,7 +399,10 @@ public abstract class AbstractBarGauge extends AbstractGauge {
             translateCanvasForSweepDirection(canvas);
             
             canvas.drawText(
-                    String.format("%." + configuration.getValuePrecision() + "f", valueToDraw), 
+					String.format(
+							Locale.US,
+							"%." + configuration.getValuePrecision() + "f",
+							valueToDraw), 
                     valueCenterX,
                     valueCenterY,
                     valuePaint);
@@ -489,7 +492,12 @@ public abstract class AbstractBarGauge extends AbstractGauge {
     
     protected final String getTitleText() {
         if (configuration.getScaleMarkLabelScaleFactor() != null) {
-            return configuration.getTitle() + " x " + String.valueOf(configuration.getScaleMarkLabelScaleFactor());
+			return configuration.getTitle()
+					+ " x "
+					+ String.format(
+							Locale.US,
+							"%." + configuration.getScaleMarkLabelPrecision() + "f",
+							configuration.getScaleMarkLabelScaleFactor());
         } else {
             return configuration.getTitle();
         }

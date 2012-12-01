@@ -21,7 +21,7 @@ import java.util.Map;
 import net.tracknalysis.tracklogger.model.PressureUnit;
 import net.tracknalysis.tracklogger.model.SpeedUnit;
 import net.tracknalysis.tracklogger.model.TemperatureUnit;
-import net.tracknalysis.tracklogger.model.ui.GaugeConfiguration;
+import net.tracknalysis.tracklogger.view.GaugeConfiguration;
 
 import org.apache.log4j.Level;
 

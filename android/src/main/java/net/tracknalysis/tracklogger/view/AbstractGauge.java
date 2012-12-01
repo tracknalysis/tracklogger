@@ -15,9 +15,6 @@
  */
 package net.tracknalysis.tracklogger.view;
 
-import net.tracknalysis.tracklogger.model.ui.Gauge;
-import net.tracknalysis.tracklogger.model.ui.GaugeConfiguration;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,6 +22,7 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.PixelFormat;
 import android.graphics.PorterDuffXfermode;
 import android.graphics.PorterDuff.Mode;
 import android.util.AttributeSet;
@@ -69,6 +67,12 @@ public abstract class AbstractGauge extends SurfaceView implements SurfaceHolder
     
     public AbstractGauge(Context context, AttributeSet attrs) {
         super(context, attrs);
+        
+        if (!isInEditMode()) {
+            // Set us up for transparent backgrounds.
+            setZOrderOnTop(true);
+            getHolder().setFormat(PixelFormat.TRANSLUCENT);
+        }
         
         SurfaceHolder holder = getHolder();
         holder.addCallback(this);

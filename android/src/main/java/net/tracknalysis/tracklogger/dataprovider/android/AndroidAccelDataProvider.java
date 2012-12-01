@@ -28,6 +28,7 @@ import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
+import android.os.Build;
 import android.view.Display;
 import android.view.Surface;
 import android.view.WindowManager;
@@ -42,6 +43,9 @@ public class AndroidAccelDataProvider extends AbstractDataProvider<AccelData>
 
     private SensorManager sensorManager;
     private Sensor accelerometer;
+    private int sensorType;
+    private float[] gravity = new float[3];
+    private final float alpha = 0.8f;
     
     private WindowManager windowManager;
     private Display display;
@@ -76,9 +80,24 @@ public class AndroidAccelDataProvider extends AbstractDataProvider<AccelData>
     @Override
     public synchronized void start() {
         if (accelerometer == null) {
-            accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
-            display = windowManager.getDefaultDisplay();
-            sensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_UI);
+            if (Build.VERSION.SDK_INT >= 9) {
+            	accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION);
+            	sensorType = Sensor.TYPE_LINEAR_ACCELERATION;
+            	if (accelerometer == null) {
+            		accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+            		sensorType = Sensor.TYPE_ACCELEROMETER;
+            	}
+            } else {
+            	accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+            	sensorType = Sensor.TYPE_ACCELEROMETER;
+            }
+            
+            if (accelerometer == null) {
+            	LOG.error("No accelerometer found.");
+            } else {
+            	display = windowManager.getDefaultDisplay();
+                sensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_UI);
+            }
         } else {
             throw new IllegalStateException();
         }
@@ -104,12 +123,20 @@ public class AndroidAccelDataProvider extends AbstractDataProvider<AccelData>
     @Override
     public void onSensorChanged(SensorEvent event) {
         
+    	sensorChangeCount++;
+    	if (sensorChangeCount < 15) {
+    		// Drop the first slew of events as it hammers the handler thread
+    		// and locks up the UI on startup.  This slows things down a little,
+    		// but allows the UI to remain responsive.
+    		return;
+    	}
+    	
         long deltaSystemTime = -(System.nanoTime() - event.timestamp);
         long receviedTimestamp = (long) (System.currentTimeMillis() + (deltaSystemTime / 1000000d));
         
         if (LOG.isTraceEnabled()) {
             
-            sensorChangeCount++;
+            
             if (lastEventTime == 0) {
                 lastEventTime = event.timestamp;
             }
@@ -123,7 +150,7 @@ public class AndroidAccelDataProvider extends AbstractDataProvider<AccelData>
             
             LOG.trace(
                     "Got accel sensor update {}.  Delta T from now is {}ms.  "
-                            + "Delta T from now is {}ms.  "
+                            + "Delta T between events is {}ms.  "
                             + "Average delta T from now is {}ms.  "
                             + "Average delta T between events is {}ms.  "
                             + "Received {} updates up to now.",
@@ -137,38 +164,53 @@ public class AndroidAccelDataProvider extends AbstractDataProvider<AccelData>
                     });
         }
         
+        float[] linear_acceleration = new float[3];
+        
+        switch (sensorType) {
+        	case Sensor.TYPE_LINEAR_ACCELERATION:
+        		linear_acceleration = event.values;
+        		break;
+        	case Sensor.TYPE_ACCELEROMETER:
+        		gravity[0] = alpha * gravity[0] + (1 - alpha) * event.values[0];
+                gravity[1] = alpha * gravity[1] + (1 - alpha) * event.values[1];
+                gravity[2] = alpha * gravity[2] + (1 - alpha) * event.values[2];
+                
+                linear_acceleration[0] = event.values[0] - gravity[0];
+                linear_acceleration[1] = event.values[1] - gravity[1];
+                linear_acceleration[2] = event.values[2] - gravity[2];
+        		break;
+        }
+        
         float lateral;
         float vertical;
         float longitudinal;
         
         switch (display.getRotation()) {
             case Surface.ROTATION_0:
-                lateral = event.values[0];
-                vertical = event.values[1];
-                longitudinal = -event.values[2];
+                lateral = linear_acceleration[0];
+                vertical = linear_acceleration[1];
+                longitudinal = -linear_acceleration[2];
                 break;
             case Surface.ROTATION_90:
-                lateral = -event.values[1];
-                vertical = event.values[0];
-                longitudinal = -event.values[2];
+                lateral = -linear_acceleration[1];
+                vertical = linear_acceleration[0];
+                longitudinal = -linear_acceleration[2];
                 break;
             case Surface.ROTATION_180:
-                lateral = -event.values[0];
-                vertical = -event.values[1];
-                longitudinal = -event.values[2];
+                lateral = -linear_acceleration[0];
+                vertical = -linear_acceleration[1];
+                longitudinal = -linear_acceleration[2];
                 break;
             case Surface.ROTATION_270:
-                lateral = event.values[1];
-                vertical = -event.values[0];
-                longitudinal = -event.values[2];
+                lateral = linear_acceleration[1];
+                vertical = -linear_acceleration[0];
+                longitudinal = -linear_acceleration[2];
                 break;
             default:
                 lateral = 0;
                 vertical = 0;
                 longitudinal = 0;
         }
-        
-        vertical = vertical - SensorManager.GRAVITY_EARTH;
         
         AccelDataBuilder builder = new AccelDataBuilder();
         builder.setDataRecivedTime(receviedTimestamp);

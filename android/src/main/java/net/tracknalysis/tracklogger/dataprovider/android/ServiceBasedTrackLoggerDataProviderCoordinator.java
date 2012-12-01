@@ -29,7 +29,7 @@ import net.tracknalysis.common.android.io.BtSocketManager.BtProfile;
 import net.tracknalysis.common.io.SocketManager;
 import net.tracknalysis.common.notification.NoOpNotificationStrategy;
 import net.tracknalysis.location.LocationManager;
-import net.tracknalysis.location.LocationManagerNotificationType;
+import net.tracknalysis.location.LocationManagerLifecycleNotificationType;
 import net.tracknalysis.location.Route;
 import net.tracknalysis.location.Waypoint;
 import net.tracknalysis.location.nmea.NmeaLocationManager;
@@ -132,7 +132,7 @@ public class ServiceBasedTrackLoggerDataProviderCoordinator extends
         locationSocketManager = new BtSocketManager(config.getLocationBtAddress(),
                 btAdapter, BtProfile.SPP);
         locationManager = new NmeaLocationManager(locationSocketManager,
-                new NoOpNotificationStrategy<LocationManagerNotificationType>());
+                new NoOpNotificationStrategy<LocationManagerLifecycleNotificationType>());
     }
     
     /**

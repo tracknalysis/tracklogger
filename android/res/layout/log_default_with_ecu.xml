@@ -16,11 +16,13 @@
 -->
 <!-- Authors: David Valeri -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+  xmlns:tools="http://schemas.android.com/tools"
   android:layout_width="fill_parent"
   android:layout_height="fill_parent"
   android:background="#555555"
   android:orientation="vertical"
-  android:padding="2.5dp" >
+  android:padding="2.5dp"
+  tools:context=".activity.LogActivity" >
 
   <RelativeLayout
     android:layout_width="fill_parent"
@@ -185,21 +187,21 @@
   <net.tracknalysis.tracklogger.view.PlainHorizontalBarGauge
     android:id="@+id/log_rpm_gauge"
     android:layout_width="fill_parent"
-    android:layout_height="30dp"
+    android:layout_height="50dp"
     android:layout_margin="2.5dp"
     android:baselineAligned="false"
     android:orientation="horizontal" />
 
   <LinearLayout
     android:layout_width="fill_parent"
-    android:layout_height="wrap_content"
+    android:layout_height="50dp"
     android:baselineAligned="false"
     android:orientation="horizontal" >
 
     <net.tracknalysis.tracklogger.view.BoxGauge
       android:id="@+id/log_mgp_gauge"
       android:layout_width="wrap_content"
-      android:layout_height="30dp"
+      android:layout_height="match_parent"
       android:layout_margin="2.5dp"
       android:layout_weight="10"
       android:baselineAligned="false" />
@@ -207,7 +209,7 @@
     <net.tracknalysis.tracklogger.view.BoxGauge
       android:id="@+id/log_afr_gauge"
       android:layout_width="wrap_content"
-      android:layout_height="30dp"
+      android:layout_height="match_parent"
       android:layout_margin="2.5dp"
       android:layout_weight="10"
       android:baselineAligned="false" />
@@ -215,7 +217,7 @@
     <net.tracknalysis.tracklogger.view.BoxGauge
       android:id="@+id/log_mat_gauge"
       android:layout_width="wrap_content"
-      android:layout_height="30dp"
+      android:layout_height="match_parent"
       android:layout_margin="2.5dp"
       android:layout_weight="10"
       android:baselineAligned="false" />
@@ -223,7 +225,7 @@
     <net.tracknalysis.tracklogger.view.BoxGauge
       android:id="@+id/log_clt_gauge"
       android:layout_width="wrap_content"
-      android:layout_height="30dp"
+      android:layout_height="match_parent"
       android:layout_margin="2.5dp"
       android:layout_weight="10"
       android:baselineAligned="false" />
@@ -231,7 +233,7 @@
     <net.tracknalysis.tracklogger.view.BoxGauge
       android:id="@+id/log_batv_gauge"
       android:layout_width="wrap_content"
-      android:layout_height="30dp"
+      android:layout_height="match_parent"
       android:layout_margin="2.5dp"
       android:layout_weight="10"
       android:baselineAligned="false" />

@@ -58,13 +58,13 @@ public class RouteManagerTimingDataProvider extends AbstractDataProvider<TimingD
 
     @Override
     public void start() {
-        routeManager.addRoute(route, 15f, this);
+        routeManager.addRouteForSynchronousListeners(route, 15f, this);
         bestSplitTimes = new Long[route.getWaypoints().size()];
     }
 
     @Override
     public void stop() {
-        routeManager.removeRoute(route);
+        routeManager.removeRouteForSynchronousListeners(route);
     }
 
     @Override

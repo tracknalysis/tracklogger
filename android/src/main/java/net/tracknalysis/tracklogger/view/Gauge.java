@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package net.tracknalysis.tracklogger.model.ui;
+package net.tracknalysis.tracklogger.view;
 
 /**
  * Interface providing core gauge functionality.
