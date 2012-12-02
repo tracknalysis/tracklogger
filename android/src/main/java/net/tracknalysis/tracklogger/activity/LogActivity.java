@@ -580,7 +580,7 @@ public class LogActivity extends BaseActivity implements OnCancelListener, View.
                         setValueIfShown(rpm, "%d", ecuData.getRpm());
                         setValueIfShown(map, "%.0f", mapValue);
                         setValueIfShown(mgp, "%.0f", mgpValue);
-                        setValueIfShown(tp, "%.0f", ecuData.getThrottlePosition() * 100);
+                        setValueIfShown(tp, "%.0f", ecuData.getThrottlePosition());
                         setValueIfShown(afr, "%.1f", ecuData.getAirFuelRatio());
                         setValueIfShown(mat, "%.1f", matValue);
                         setValueIfShown(clt, "%.1f", cltValue);

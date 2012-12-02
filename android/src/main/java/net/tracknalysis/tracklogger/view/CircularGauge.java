@@ -185,11 +185,11 @@ public class CircularGauge extends AbstractGauge {
         needlePaint.setStyle(Style.FILL);
         
         needlePath = new Path();
-        needlePath.moveTo(0.48f, 0.65f); // Lower left
+        needlePath.moveTo(0.49f, 0.58f); // Lower left
         needlePath.lineTo(0.495f, 0.10f); // Point Left
         needlePath.lineTo(0.505f, 0.10f); // Point Right
-        needlePath.lineTo(0.52f, 0.65f); // Lower right
-        needlePath.lineTo(0.48f, 0.65f); // Lower left
+        needlePath.lineTo(0.51f, 0.58f); // Lower right
+        needlePath.lineTo(0.49f, 0.58f); // Lower left
         
         
         backgroundPaint = new Paint();
