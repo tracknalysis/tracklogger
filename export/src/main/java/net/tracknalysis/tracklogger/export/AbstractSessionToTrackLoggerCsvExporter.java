@@ -23,7 +23,7 @@ import java.io.UnsupportedEncodingException;
 import java.io.Writer;
 import java.util.Date;
 
-import net.tracknalysis.common.notification.NotificationStrategy;
+import net.tracknalysis.common.notification.NotificationListener;
 import net.tracknalysis.common.util.TimeUtil;
 
 /**
@@ -38,7 +38,7 @@ public abstract class AbstractSessionToTrackLoggerCsvExporter extends
     private long runningTime = 0;
 
     public AbstractSessionToTrackLoggerCsvExporter(File exportDir,
-            NotificationStrategy<SessionExporterNotificationType> notificationStrategy) {
+            NotificationListener<SessionExporterNotificationType> notificationStrategy) {
         super(exportDir, notificationStrategy);
     }
     

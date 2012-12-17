@@ -22,9 +22,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import net.tracknalysis.common.android.notification.AndroidNotificationStrategy;
+import net.tracknalysis.common.android.notification.AndroidNotificationListener;
 import net.tracknalysis.common.concurrent.GracefulShutdownThread;
-import net.tracknalysis.common.notification.NotificationStrategy;
+import net.tracknalysis.common.notification.NotificationListener;
 import net.tracknalysis.common.util.TimeUtil;
 import net.tracknalysis.tracklogger.config.Configuration;
 import net.tracknalysis.tracklogger.config.Configuration.DisplayGauge;
@@ -92,7 +92,7 @@ public class LogActivity extends BaseActivity implements OnCancelListener, View.
     
     private volatile boolean ignoreStopLogging = false;
     
-    private NotificationStrategy<DataProviderCoordinatorNotificationType> notificationStrategy;
+    private NotificationListener<DataProviderCoordinatorNotificationType> notificationStrategy;
     
     private Uri splitMarkerSetUri = null;
     
@@ -382,7 +382,7 @@ public class LogActivity extends BaseActivity implements OnCancelListener, View.
     /**
      * Returns the notification strategy used by the activity. Used in testing.
      */
-    public NotificationStrategy<DataProviderCoordinatorNotificationType> getNotificationStrategy() {
+    public NotificationListener<DataProviderCoordinatorNotificationType> getNotificationStrategy() {
         return notificationStrategy;
     }
     
@@ -612,7 +612,7 @@ public class LogActivity extends BaseActivity implements OnCancelListener, View.
             }
         };
         
-        notificationStrategy = new AndroidNotificationStrategy<DataProviderCoordinator.DataProviderCoordinatorNotificationType>(
+        notificationStrategy = new AndroidNotificationListener<DataProviderCoordinator.DataProviderCoordinatorNotificationType>(
                 new DataProviderCoordinatorHandler(this));
     }
 
@@ -1140,11 +1140,11 @@ public class LogActivity extends BaseActivity implements OnCancelListener, View.
         
         @Override
         public void run() {
-            while(run) {
+            while(keepRunning()) {
                 try {
                     Thread.sleep(100);
                 } catch (InterruptedException e) {
-                    if (run) {
+                    if (keepRunning()) {
                         LOG.error("Interrupted display task while running.", e);
                     } else {
                         LOG.info("Interrupted display task while not running.", e);

@@ -17,11 +17,9 @@ package net.tracknalysis.tracklogger.test;
 
 import java.io.IOException;
 
+import net.tracknalysis.common.io.DebugLogReaderIoManager;
+import net.tracknalysis.common.io.IoManager;
 import net.tracknalysis.common.io.SocketManager;
-import net.tracknalysis.common.notification.NoOpNotificationStrategy;
-import net.tracknalysis.ecu.ms.io.DebugLogReaderMegasquirtIoManager;
-import net.tracknalysis.ecu.ms.io.MegasquirtIoManager;
-import net.tracknalysis.location.LocationManagerLifecycleNotificationType;
 import net.tracknalysis.location.nmea.NmeaLocationManager;
 import net.tracknalysis.location.nmea.NmeaTestSocketManager;
 import net.tracknalysis.tracklogger.R;
@@ -50,7 +48,7 @@ import android.net.Uri;
 public class LogActivityIntegrationTest extends AbstractLogActivityTest {
     
     private NmeaTestSocketManager ntsm;
-    private MegasquirtIoManager msiom;
+    private IoManager msiom;
     private ServiceConnection serviceConnection;
     private DataProviderCoordinatorManagerService dpcms;
     private ServiceBasedTrackLoggerDataProviderCoordinator dpcsDelegate;
@@ -63,7 +61,7 @@ public class LogActivityIntegrationTest extends AbstractLogActivityTest {
                 getClass().getResourceAsStream(
                         "/NMEA-Test-Data.txt"), null);
         
-        msiom = new DebugLogReaderMegasquirtIoManager(getClass()
+        msiom = new DebugLogReaderIoManager(getClass()
                 .getResourceAsStream("/MS-Test-Data-2.txt"));
         
         // Rewire a factory that returns a subclass of the standard coordinator with our custom
@@ -82,8 +80,7 @@ public class LogActivityIntegrationTest extends AbstractLogActivityTest {
                             @Override
                             protected void initLocationManager(Configuration config, BluetoothAdapter btAdapter) {
                                 locationSocketManager = ntsm;
-                                locationManager = new NmeaLocationManager(locationSocketManager,
-                                        new NoOpNotificationStrategy<LocationManagerLifecycleNotificationType>());
+                                locationManager = new NmeaLocationManager(locationSocketManager);
                             }
                             
                             protected void initEcuDataProvider(Configuration config, BluetoothAdapter btAdapter) {
@@ -91,7 +88,7 @@ public class LogActivityIntegrationTest extends AbstractLogActivityTest {
                                     
                                     ecuDataProvider = new MegasquirtEcuDataProvider(ecuSocketManager, null) {
                                         @Override
-                                        protected MegasquirtIoManager createIoManager(
+                                        protected IoManager createIoManager(
                                                 SocketManager socketManager) throws IOException {
                                             return msiom;
                                         }
@@ -143,7 +140,7 @@ public class LogActivityIntegrationTest extends AbstractLogActivityTest {
         
         int delay = 43;
         
-        Thread.sleep(1000);
+        Thread.sleep(7000);
         ntsm.sendSentences(2, 0); // Send teaser to get into the ready state
         ntsm.sendSentences(100, delay); // Start trigger fires during
         

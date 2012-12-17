@@ -29,7 +29,7 @@ import android.content.ContentProviderOperation;
 import android.content.ContentProviderResult;
 import android.content.Context;
 
-import net.tracknalysis.common.notification.NotificationStrategy;
+import net.tracknalysis.common.notification.NotificationListener;
 import net.tracknalysis.tracklogger._import.AbstractSplitMarkerSetCsvImporter;
 import net.tracknalysis.tracklogger.provider.TrackLoggerData;
 
@@ -46,7 +46,7 @@ public class AndroidSplitMarkerSetCsvImporter extends AbstractSplitMarkerSetCsvI
     private int id = -1;
     
     public AndroidSplitMarkerSetCsvImporter(
-            NotificationStrategy<SplitMarkerSetImporterNotificationType> notificationStrategy,
+            NotificationListener<SplitMarkerSetImporterNotificationType> notificationStrategy,
             Context context, File csvFile) {
         super(notificationStrategy);
         this.context = context;

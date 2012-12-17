@@ -30,7 +30,7 @@ import android.content.ContentResolver;
 import android.content.Context;
 import android.database.Cursor;
 
-import net.tracknalysis.common.notification.NotificationStrategy;
+import net.tracknalysis.common.notification.NotificationListener;
 import net.tracknalysis.tracklogger.config.ConfigurationFactory;
 import net.tracknalysis.tracklogger.export.AbstractSessionToFileExporter;
 import net.tracknalysis.tracklogger.provider.TrackLoggerData;
@@ -55,7 +55,7 @@ public class AndroidSessionToTrackLoggerSqlExporter extends
     
     public AndroidSessionToTrackLoggerSqlExporter(
             Context context,
-            NotificationStrategy<SessionExporterNotificationType> notificationStrategy) {
+            NotificationListener<SessionExporterNotificationType> notificationStrategy) {
         super(
                 new File(ConfigurationFactory.getInstance().getConfiguration().getDataDirectory()),
                 notificationStrategy);

@@ -147,6 +147,12 @@ Authors: David Valeri
               <platform>16</platform>
             </sdk>
             <undeployBeforeDeploy>true</undeployBeforeDeploy>
+            <dex>
+              <jvmArguments>
+                <jvmArgument>-Xms256m</jvmArgument>
+                <jvmArgument>-Xmx2g</jvmArgument>
+              </jvmArguments>     
+            </dex>
           </configuration>
           <extensions>true</extensions>
         </plugin>

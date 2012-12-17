@@ -24,18 +24,18 @@ import java.util.HashSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import net.tracknalysis.common.io.DebugLogWriterIoManager;
+import net.tracknalysis.common.io.IoManager;
 import net.tracknalysis.common.io.SocketManager;
-import net.tracknalysis.ecu.ms.DefaultMegasquirtConfiguration;
+import net.tracknalysis.common.notification.NotificationListener;
+import net.tracknalysis.ecu.ms.DefaultMsConfiguration;
 import net.tracknalysis.ecu.ms.DefaultTableManager;
 import net.tracknalysis.ecu.ms.Megasquirt;
-import net.tracknalysis.ecu.ms.MegasquirtConfiguration;
-import net.tracknalysis.ecu.ms.MegasquirtFactory;
-import net.tracknalysis.ecu.ms.MegasquirtFactoryException;
-import net.tracknalysis.ecu.ms.SignatureException;
+import net.tracknalysis.ecu.ms.MegasquirtNotificationType;
+import net.tracknalysis.ecu.ms.MsConfiguration;
 import net.tracknalysis.ecu.ms.TableManager;
-import net.tracknalysis.ecu.ms.io.DirectMegasquirtIoManager;
-import net.tracknalysis.ecu.ms.io.DebugLogWriterMegasquirtIoManager;
-import net.tracknalysis.ecu.ms.io.MegasquirtIoManager;
+import net.tracknalysis.ecu.ms.common.OutputChannel;
+import net.tracknalysis.ecu.ms.io.MsIoManager;
 import net.tracknalysis.ecu.ms.log.Log;
 import net.tracknalysis.tracklogger.dataprovider.AbstractDataProvider;
 import net.tracknalysis.tracklogger.dataprovider.EcuDataProvider;
@@ -51,23 +51,24 @@ public class MegasquirtEcuDataProvider extends AbstractDataProvider<EcuData>
     
     private final SocketManager socketManager;
     private final TableManager tableManager;
-    private final File ioLogFile; 
+    private final File debugLogDir;
+    private final MsNotificationListener notificationListener = new MsNotificationListener();
     private Megasquirt ms;
-    private MegasquirtConfiguration msConfig;
+    private MsConfiguration msConfig;
     private volatile EcuData currentEcuData;
     
-    public MegasquirtEcuDataProvider(SocketManager socketManager, File ioLogFile) {
+    public MegasquirtEcuDataProvider(SocketManager socketManager, File debugLogDir) {
         this.socketManager = socketManager;
-        this.ioLogFile = ioLogFile;
+        this.debugLogDir = debugLogDir;
         tableManager = new DefaultTableManager();
     }
 
     @Override
     public synchronized void start() {
         if (ms == null) {
-            // Make sure we are connected if not previously connected.
+        	// Make sure we are connected if not previously connected.
             try {
-                msConfig = new DefaultMegasquirtConfiguration(
+                msConfig = new DefaultMsConfiguration(
                         new HashSet<String>(Arrays.asList(
                                 // Note: We want...
                                 //       AFR in AFR (default)
@@ -75,32 +76,16 @@ public class MegasquirtEcuDataProvider extends AbstractDataProvider<EcuData>
                                 //       Temp in Celsius
                                 "CELSIUS")));
                 
-                MegasquirtIoManager msiom = createIoManager(socketManager);
+                IoManager msiom = createIoManager(socketManager);
                 msiom.connect();
                 
-                ms = MegasquirtFactory.getInstance().getMegasquirt(
-                        msiom, 
-                        tableManager,
-                        new MegasquirtDataProviderLog(),
-                        msConfig);
+                ms = new Megasquirt(msiom, tableManager, new MegasquirtDataProviderLog(), msConfig, debugLogDir);
+                ms.addListener(notificationListener);
                 ms.start();
-                ms.startLogging();
             } catch (IOException e) {
                 LOG.error("IO error initializing data provider.");
                 // TODO
                 throw new RuntimeException("IO error initializing data provider.", e);
-            } catch (MegasquirtFactoryException e) {
-                LOG.error("Error initializing Megasquirt communication sub-system.");
-                // TODO
-                throw new RuntimeException(
-                        "Error initializing Megasquirt communication sub-system.",
-                        e);
-            } catch (SignatureException e) {
-                LOG.error("Error determining Megasquirt signature.");
-                // TODO
-                throw new RuntimeException(
-                        "Error determining Megasquirt signature.",
-                        e);
             }
         }
     }
@@ -108,6 +93,8 @@ public class MegasquirtEcuDataProvider extends AbstractDataProvider<EcuData>
     @Override
     public synchronized void stop() {
         if (ms != null) {
+        	ms.stopLogging();
+        	ms.removeListener(notificationListener);
             ms.stop();
             ms = null;
         }
@@ -123,20 +110,61 @@ public class MegasquirtEcuDataProvider extends AbstractDataProvider<EcuData>
         return LOG;
     }
     
-    protected MegasquirtIoManager createIoManager(SocketManager socketManager) throws IOException {
-        MegasquirtIoManager msiom = new DirectMegasquirtIoManager(socketManager);
-        if (ioLogFile != null) {
-            ioLogFile.delete();
-            msiom = new DebugLogWriterMegasquirtIoManager(msiom, new FileOutputStream(ioLogFile));
+    protected IoManager createIoManager(SocketManager socketManager) throws IOException {
+    	IoManager msiom = new MsIoManager(socketManager);
+        if (debugLogDir != null) {
+        	debugLogDir.delete();
+        	if (!debugLogDir.exists()) {
+                if (!debugLogDir.mkdirs()) {
+                	final String message = "Unable to create directory for Megasquirt IO log at " + 
+							debugLogDir.getAbsolutePath() + ".";
+					LOG.error(message);
+					throw new IOException(message);
+                }
+            }
+
+			msiom = new DebugLogWriterIoManager(msiom, new FileOutputStream(
+					new File(debugLogDir, "MegaComIo.log")));
         }
         
         return msiom;
     }
     
-    protected class MegasquirtDataProviderLog implements Log {
+    private class MsNotificationListener implements NotificationListener<MegasquirtNotificationType> {
+
+		@Override
+		public void onNotification(MegasquirtNotificationType notificationType) {
+			onNotification(notificationType, null);
+			
+		}
+
+		@SuppressWarnings("incomplete-switch")
+		@Override
+		public void onNotification(MegasquirtNotificationType notificationType,
+				Object messageBody) {
+			switch (notificationType) {
+				case CONNECTED:
+					ms.startLogging();
+					break;
+			}
+		}
+    }
+    
+    private class MegasquirtDataProviderLog implements Log {
         
-        boolean logging = false;
+        private volatile boolean logging = false;
         private volatile long startTime;
+        
+        private OutputChannel afr;
+        private OutputChannel batV;
+        private OutputChannel clt;
+        private OutputChannel ignAdv;
+        private OutputChannel map;
+        private OutputChannel boostvac;
+        private OutputChannel mat;
+        private OutputChannel rpm;
+        private OutputChannel tps;
+        private boolean firstWrite = true;
 
         @Override
         public synchronized void start() throws IOException {
@@ -177,18 +205,32 @@ public class MegasquirtEcuDataProvider extends AbstractDataProvider<EcuData>
         public void write(Megasquirt ms) throws IOException {
             LOG.debug("Received new Megasquirt update.  Refreshing current ECU data.");
             
-            EcuData.EcuDataBuilder builder = new EcuData.EcuDataBuilder();
-            builder.setDataRecivedTime(System.currentTimeMillis());
-            builder.setAirFuelRatio(ms.getValue("afr1"));
-            builder.setBatteryVoltage(ms.getValue("batteryVoltage"));
-            builder.setCoolantTemperature(ms.getValue("coolant"));
-            builder.setIgnitionAdvance(ms.getValue("advance"));
-            builder.setManifoldAbsolutePressure(ms.getValue("map"));
-            builder.setManifoldGaugePressure(ms.getValue("boostvac") * 6.89475729d); // PSI to KPa
-            builder.setManifoldAirTemperature(ms.getValue("mat"));
-            builder.setRpm((int) ms.getValue("rpm"));
+            if (firstWrite) {
+            	afr = ms.getOutputChannelByName("afr1");
+            	batV = ms.getOutputChannelByName("batteryVoltage");
+            	clt = ms.getOutputChannelByName("coolant");
+            	ignAdv = ms.getOutputChannelByName("advance");
+            	map = ms.getOutputChannelByName("map");
+            	boostvac = ms.getOutputChannelByName("boostvac");
+            	mat = ms.getOutputChannelByName("mat");
+            	rpm = ms.getOutputChannelByName("rpm");
+            	tps = ms.getOutputChannelByName("throttle");
+            	
+            }
             
-            double throttle = ms.getValue("throttle");
+            
+			EcuData.EcuDataBuilder builder = new EcuData.EcuDataBuilder();
+			builder.setDataRecivedTime(System.currentTimeMillis());
+			builder.setAirFuelRatio(getDoubleIfAvailable(afr));
+			builder.setBatteryVoltage(getDoubleIfAvailable(batV));
+			builder.setCoolantTemperature(getDoubleIfAvailable(clt));
+			builder.setIgnitionAdvance(getDoubleIfAvailable(ignAdv));
+			builder.setManifoldAbsolutePressure(getDoubleIfAvailable(map));
+			builder.setManifoldGaugePressure(getDoubleIfAvailable(boostvac) * 6.89475729d); // PSI to KPa
+			builder.setManifoldAirTemperature(getDoubleIfAvailable(mat));
+			builder.setRpm(getIntIfAvailable(rpm));
+            
+            double throttle = getDoubleIfAvailable(tps);
             // Set the floor for throttle position to 0
             if (throttle < 0d) {
                 throttle = 0d;
@@ -203,8 +245,24 @@ public class MegasquirtEcuDataProvider extends AbstractDataProvider<EcuData>
         }
 
         @Override
-        public boolean isLogging() {
-            return false;
+        public synchronized boolean isLogging() {
+            return logging;
+        }
+        
+        private double getDoubleIfAvailable(OutputChannel outputChannel) {
+        	if (outputChannel != null) {
+        		return outputChannel.getValue();
+        	} else {
+        		return 0d;
+        	}
+        }
+        
+        private int getIntIfAvailable(OutputChannel outputChannel) {
+        	if (outputChannel != null) {
+        		return (int) outputChannel.getValue();
+        	} else {
+        		return 0;
+        	}
         }
     }
 }

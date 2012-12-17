@@ -18,7 +18,7 @@ package net.tracknalysis.tracklogger.dataprovider;
 import java.util.HashMap;
 import java.util.Map;
 
-import net.tracknalysis.common.notification.NotificationStrategy;
+import net.tracknalysis.common.notification.NotificationListener;
 import net.tracknalysis.common.notification.NotificationType;
 import net.tracknalysis.tracklogger.model.AccelData;
 import net.tracknalysis.tracklogger.model.EcuData;
@@ -35,11 +35,11 @@ public interface DataProviderCoordinator {
      */
     public static enum DataProviderCoordinatorNotificationType implements NotificationType {
         /**
-         * Triggered when the the startup of the coordinator is begins.
+         * Triggered when the the startup of the coordinator begins.
          */
         STARTING,
         /**
-         * Triggered when the startup of the coordinator is complete.
+         * Triggered when the startup of the coordinator completes.
          */
         STARTED,
         /**
@@ -71,7 +71,7 @@ public interface DataProviderCoordinator {
          */
         LOGGING_FAILED,
         /**
-         * Triggered when the the shutdown of the coordinator is begins.
+         * Triggered when the the shutdown of the coordinator begins.
          */
         STOPPING,
         /**
@@ -139,10 +139,10 @@ public interface DataProviderCoordinator {
      * notifications will be delivered as they are produced by the coordinator.  This behavior allows for listeners
      * to synchronize immediately on registration.
      */
-    void register(NotificationStrategy<DataProviderCoordinatorNotificationType> notificationStrategy);
+    void register(NotificationListener<DataProviderCoordinatorNotificationType> notificationStrategy);
     
     /**
      * Unregister a listener for notifications regarding the overall state of the service.
      */
-    void unRegister(NotificationStrategy<DataProviderCoordinatorNotificationType> notificationStrategy);
+    void unRegister(NotificationListener<DataProviderCoordinatorNotificationType> notificationStrategy);
 }

@@ -25,7 +25,7 @@ import java.util.Date;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import net.tracknalysis.common.notification.NotificationStrategy;
+import net.tracknalysis.common.notification.NotificationListener;
 import net.tracknalysis.tracklogger.config.ConfigurationFactory;
 import net.tracknalysis.tracklogger.export.AbstractSessionToTrackLoggerCsvExporter;
 import net.tracknalysis.tracklogger.export.SessionExporter;
@@ -51,7 +51,7 @@ public class AndroidSessionToTrackLoggerCsvExporter extends AbstractSessionToTra
     private int splitMarkerCount;
 
     public AndroidSessionToTrackLoggerCsvExporter(Context context,
-            NotificationStrategy<SessionExporterNotificationType> notificationStrategy) {
+            NotificationListener<SessionExporterNotificationType> notificationStrategy) {
         super(
                 new File(ConfigurationFactory.getInstance().getConfiguration().getDataDirectory()),
                 notificationStrategy);
@@ -229,7 +229,7 @@ public class AndroidSessionToTrackLoggerCsvExporter extends AbstractSessionToTra
                 logSynchTimestamp = logEntryCursor
                         .getLong(logEntrySynchColumnIndex);
                 
-                getNotificationStrategy().sendNotification(
+                getNotificationStrategy().onNotification(
                         SessionExporter.SessionExporterNotificationType.EXPORT_PROGRESS,
                         new ExportProgress(logEntryCursor.getPosition(), recordCount));
             }

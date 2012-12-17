@@ -217,6 +217,7 @@ Authors: David Valeri
     <string name="preference_ecu_preference_group_title">ECU Logging</string>
     <string name="preference_ecu_enable">Enable</string>
     <string name="preference_ecu_bt">ECU Bluetooth Device</string>
+    <string name="preference_ecu_io_log_enable">Enable IO Logging</string>
     
     <string name="preference_display_group_title">Display</string>
     <string name="preference_dispay_units_screen_title">Display Units</string>

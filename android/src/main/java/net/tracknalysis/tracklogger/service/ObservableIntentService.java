@@ -23,7 +23,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-import net.tracknalysis.common.notification.NotificationStrategy;
+import net.tracknalysis.common.notification.NotificationListener;
 import net.tracknalysis.common.notification.NotificationType;
 
 /**
@@ -226,12 +226,12 @@ public interface ObservableIntentService {
     /**
      * Register a listener for notifications regarding the overall state of the service.
      */
-    void register(NotificationStrategy<ObservableIntentServiceNotificationType> notificationStrategy);
+    void register(NotificationListener<ObservableIntentServiceNotificationType> notificationStrategy);
     
     /**
      * Unregister a listener for notifications regarding the overall state of the service.
      */
-    void unRegister(NotificationStrategy<ObservableIntentServiceNotificationType> notificationStrategy);
+    void unRegister(NotificationListener<ObservableIntentServiceNotificationType> notificationStrategy);
     
     /**
      * Register the listener for notifications regarding the request with ID {@code requestId}.
@@ -240,12 +240,12 @@ public interface ObservableIntentService {
      */
     void register(
             int requestId,
-            NotificationStrategy<RequestNotificationType> notificationStrategy);
+            NotificationListener<RequestNotificationType> notificationStrategy);
 
     /**
      * Unregister the listener for notifications regarding the session with ID {@code requestId}.
      */
     void unRegister(
             int requestId,
-            NotificationStrategy<RequestNotificationType> notificationStrategy);
+            NotificationListener<RequestNotificationType> notificationStrategy);
 }

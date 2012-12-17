@@ -25,7 +25,7 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
-import net.tracknalysis.common.notification.NotificationStrategy;
+import net.tracknalysis.common.notification.NotificationListener;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,7 +45,7 @@ public abstract class AbstractSessionToFileExporter extends AbstractSessionExpor
 
     public AbstractSessionToFileExporter(
             File exportDir,
-            NotificationStrategy<SessionExporterNotificationType> notificationStrategy) {
+            NotificationListener<SessionExporterNotificationType> notificationStrategy) {
         super(notificationStrategy);
         this.exportDir = exportDir;
     }
@@ -103,7 +103,7 @@ public abstract class AbstractSessionToFileExporter extends AbstractSessionExpor
     private void runExport(int sessionId, Integer startLap, Integer endLap) {
         try {
             LOG.debug("Starting export.");
-            notificationStrategy.sendNotification(SessionExporterNotificationType.EXPORT_STARTING);
+            notificationStrategy.onNotification(SessionExporterNotificationType.EXPORT_STARTING);
             
             init(sessionId);
             
@@ -116,13 +116,13 @@ public abstract class AbstractSessionToFileExporter extends AbstractSessionExpor
             }
             
             LOG.debug("Started export.");
-            notificationStrategy.sendNotification(SessionExporterNotificationType.EXPORT_STARTED);
+            notificationStrategy.onNotification(SessionExporterNotificationType.EXPORT_STARTED);
             
             export(out, sessionId, startLap, endLap);
             
         } catch (Exception e) {
             LOG.error("Export failed due to an exception.");
-            getNotificationStrategy().sendNotification(
+            getNotificationStrategy().onNotification(
                     SessionExporter.SessionExporterNotificationType.EXPORT_FAILED, e);
         } finally {
             if (out != null) {
@@ -130,10 +130,10 @@ public abstract class AbstractSessionToFileExporter extends AbstractSessionExpor
                     out.flush();
                     out.close();
                     
-                    getNotificationStrategy().sendNotification(
+                    getNotificationStrategy().onNotification(
                             SessionExporter.SessionExporterNotificationType.EXPORT_FINISHED);
                 } catch (Exception e) {
-                    notificationStrategy.sendNotification(SessionExporterNotificationType.EXPORT_FAILED, e);
+                    notificationStrategy.onNotification(SessionExporterNotificationType.EXPORT_FAILED, e);
                 } finally {
                     out = null;
                 }

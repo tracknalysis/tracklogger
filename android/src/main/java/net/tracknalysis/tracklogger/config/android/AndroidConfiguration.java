@@ -51,8 +51,9 @@ public class AndroidConfiguration implements Configuration, OnSharedPreferenceCh
     
     private static final String ROOT_LOG_LEVEL_KEY = "app.log.level";
     private static final String LOG_TO_FILE_KEY = "app.log.file.enable";
-    private static final String ECU_ENABLED_KEY = "ecu.enabled";
+    private static final String ECU_ENABLED_KEY = "ecu.enable";
     private static final String ECU_BT_ADDRESS_KEY = "ecu.bt.address";
+    private static final String ECU_IO_LOG_ENABLED_KEY = "ecu.io.log.enable";
     private static final String LOCATION_BT_ADDRESS_KEY = "location.bt.address";
     private static final String LOG_LAYOUT_ID_KEY = "log.layout.id";
     private static final String DISPLAY_UNITS_SPEED_KEY = "display.units.speed";
@@ -80,6 +81,7 @@ public class AndroidConfiguration implements Configuration, OnSharedPreferenceCh
     private static final Level ROOT_LOG_LEVEL_DEFAULT = Level.WARN; 
     private static final boolean LOG_TO_FILE_DEFAULT = true;
     private static final boolean ECU_ENABLED_DEFAULT = false;
+    private static final boolean ECU_IO_LOG_ENABLED_DEFAULT = false;
     private static final int LOG_LAYOUT_ID_DEFAULT = R.layout.log_default;
     private static final SpeedUnit DISPLAY_UNITS_SPEED_DEFAULT = SpeedUnit.MPH;
     private static final TemperatureUnit DISPLAY_UNITS_TEMPERATURE_DEFAULT = TemperatureUnit.F;
@@ -152,6 +154,18 @@ public class AndroidConfiguration implements Configuration, OnSharedPreferenceCh
     @Override
     public String getEcuBtAddress() {
         return sharedPrefs.getString(ECU_BT_ADDRESS_KEY, "");
+    }
+    
+    @Override
+    public boolean isEcuIoLogEnabled() {
+    	return sharedPrefs.getBoolean(ECU_IO_LOG_ENABLED_KEY, false);
+    }
+    
+    @Override
+    public void setEcuIoLogEnabled(boolean enabled) {
+    	Editor editor = sharedPrefs.edit();
+        editor.putBoolean(ECU_IO_LOG_ENABLED_KEY, enabled);
+        editor.commit();
     }
     
     @Override
@@ -487,6 +501,10 @@ public class AndroidConfiguration implements Configuration, OnSharedPreferenceCh
         
         if (!sharedPrefs.contains(ECU_ENABLED_KEY)) {
             setEcuEnabled(ECU_ENABLED_DEFAULT);
+        }
+        
+        if (!sharedPrefs.contains(ECU_IO_LOG_ENABLED_KEY)) {
+            setEcuIoLogEnabled(ECU_IO_LOG_ENABLED_DEFAULT);
         }
         
         if (!sharedPrefs.contains(LOG_LAYOUT_ID_KEY)) {

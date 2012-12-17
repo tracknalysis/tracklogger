@@ -15,31 +15,31 @@
  */
 package net.tracknalysis.tracklogger.export;
 
-import net.tracknalysis.common.notification.NoOpNotificationStrategy;
-import net.tracknalysis.common.notification.NotificationStrategy;
+import net.tracknalysis.common.notification.NoOpNotificationListener;
+import net.tracknalysis.common.notification.NotificationListener;
 
 /**
  * @author David Valeri
  */
 public abstract class AbstractSessionExporter implements SessionExporter {
 
-    protected final NotificationStrategy<SessionExporterNotificationType> notificationStrategy;
+    protected final NotificationListener<SessionExporterNotificationType> notificationStrategy;
     
-    public AbstractSessionExporter(NotificationStrategy<SessionExporterNotificationType> notificationStrategy) {
+    public AbstractSessionExporter(NotificationListener<SessionExporterNotificationType> notificationStrategy) {
         if (notificationStrategy == null) {
-            this.notificationStrategy = new NoOpNotificationStrategy<SessionExporterNotificationType>();
+            this.notificationStrategy = new NoOpNotificationListener<SessionExporterNotificationType>();
         } else {
             this.notificationStrategy = notificationStrategy;
         }
     }
 
-    protected final NotificationStrategy<SessionExporterNotificationType> getNotificationStrategy() {
+    protected final NotificationListener<SessionExporterNotificationType> getNotificationStrategy() {
         return notificationStrategy;
     }
 
     protected final void sendExportProgressNotification(int currentRecord,
             int totalRecords) {
-                getNotificationStrategy().sendNotification(
+                getNotificationStrategy().onNotification(
                         SessionExporterNotificationType.EXPORT_PROGRESS,
                         new ExportProgress(currentRecord, totalRecords));
             }

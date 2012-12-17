@@ -28,7 +28,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Message;
-import net.tracknalysis.common.android.notification.AndroidNotificationStrategy;
+import net.tracknalysis.common.android.notification.AndroidNotificationListener;
 import net.tracknalysis.tracklogger.R;
 import net.tracknalysis.tracklogger.TrackLogger;
 import net.tracknalysis.tracklogger._import.SplitMarkerSetImporter;
@@ -96,7 +96,7 @@ public class SplitMarkerSetImporterService extends
             case CSV_1_0:
                 try {
                     importer = new AndroidSplitMarkerSetCsvImporter(
-                            new AndroidNotificationStrategy<SplitMarkerSetImporterNotificationType>(
+                            new AndroidNotificationListener<SplitMarkerSetImporterNotificationType>(
                                     requestState.getHandler()),
                             getApplicationContext(),
                             

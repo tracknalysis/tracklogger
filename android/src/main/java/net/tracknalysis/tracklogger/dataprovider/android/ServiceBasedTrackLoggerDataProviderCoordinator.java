@@ -15,6 +15,7 @@
  */
 package net.tracknalysis.tracklogger.dataprovider.android;
 
+import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.LinkedList;
@@ -27,9 +28,7 @@ import org.slf4j.LoggerFactory;
 import net.tracknalysis.common.android.io.BtSocketManager;
 import net.tracknalysis.common.android.io.BtSocketManager.BtProfile;
 import net.tracknalysis.common.io.SocketManager;
-import net.tracknalysis.common.notification.NoOpNotificationStrategy;
 import net.tracknalysis.location.LocationManager;
-import net.tracknalysis.location.LocationManagerLifecycleNotificationType;
 import net.tracknalysis.location.Route;
 import net.tracknalysis.location.Waypoint;
 import net.tracknalysis.location.nmea.NmeaLocationManager;
@@ -131,8 +130,7 @@ public class ServiceBasedTrackLoggerDataProviderCoordinator extends
     protected void initLocationManager(Configuration config, BluetoothAdapter btAdapter) {
         locationSocketManager = new BtSocketManager(config.getLocationBtAddress(),
                 btAdapter, BtProfile.SPP);
-        locationManager = new NmeaLocationManager(locationSocketManager,
-                new NoOpNotificationStrategy<LocationManagerLifecycleNotificationType>());
+        locationManager = new NmeaLocationManager(locationSocketManager);
     }
     
     /**
@@ -171,9 +169,13 @@ public class ServiceBasedTrackLoggerDataProviderCoordinator extends
             ecuSocketManager = new BtSocketManager(config.getEcuBtAddress(),
                     btAdapter, BtProfile.SPP);
             
-            String dataDir = config.getDataDirectory();
-            // TODO configurability for IO logging.
-            ecuDataProvider = new MegasquirtEcuDataProvider(ecuSocketManager, null); //new File(dataDir, "megasquirt.log"));
+            File debugLogDir = null;
+            if (config.isEcuIoLogEnabled()) {
+            	String dataDir = config.getDataDirectory();
+            	debugLogDir = new File(dataDir, "MegaCom");
+            }
+            
+            ecuDataProvider = new MegasquirtEcuDataProvider(ecuSocketManager, debugLogDir);
         }
     }
     

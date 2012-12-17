@@ -107,6 +107,16 @@ public interface Configuration {
      * Returns the address of the BT device representing the ECU.
      */
     String getEcuBtAddress();
+    
+    /**
+     * Returns true if the system should log IO operations to the ECU.
+     */
+    boolean isEcuIoLogEnabled();
+    
+    /**
+     * @see #isEcuIoLogEnabled()
+     */
+    public void setEcuIoLogEnabled(boolean enabled);
 
     /**
      * Returns the address of the BT device representing an NMEA location source.
@@ -153,8 +163,19 @@ public interface Configuration {
      */
     void setDisplayPressureUnit(PressureUnit unit);
     
+    /**
+     * Returns the gauge configuration for the given {@link DisplayGauge}.
+     *
+     * @param displayGauge the gauge to retreive the configuration for
+     */
     GaugeConfiguration getGaugeConfiguration(DisplayGauge displayGauge);
     
+    /**
+     * Sets the gauge configuration for the given gauge.
+     *
+     * @param displayGauge the gauge to save the configuration for
+     * @param gaugeConfiguration the configuration to save
+     */
     void setGaugeConfiguration(DisplayGauge displayGauge, GaugeConfiguration gaugeConfiguration);
     
     /**

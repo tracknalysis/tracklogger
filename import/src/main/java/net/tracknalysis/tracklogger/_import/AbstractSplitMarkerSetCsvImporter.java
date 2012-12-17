@@ -23,7 +23,7 @@ import java.io.InputStreamReader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import net.tracknalysis.common.notification.NotificationStrategy;
+import net.tracknalysis.common.notification.NotificationListener;
 
 /**
  * @author David Valeri
@@ -34,13 +34,13 @@ public abstract class AbstractSplitMarkerSetCsvImporter extends AbstractSplitMar
     private static final Logger LOG = LoggerFactory.getLogger(AbstractSplitMarkerSetCsvImporter.class);
     
     protected AbstractSplitMarkerSetCsvImporter(
-            NotificationStrategy<SplitMarkerSetImporterNotificationType> notificationStrategy) {
+            NotificationListener<SplitMarkerSetImporterNotificationType> notificationStrategy) {
         super(notificationStrategy);
     }
 
     @Override
     public final void doImport() {
-        getNotificationStrategy().sendNotification(SplitMarkerSetImporterNotificationType.IMPORT_STARTING);
+        getNotificationStrategy().onNotification(SplitMarkerSetImporterNotificationType.IMPORT_STARTING);
         
         InputStream is = null;
         int counter = 0;
@@ -49,7 +49,7 @@ public abstract class AbstractSplitMarkerSetCsvImporter extends AbstractSplitMar
             is = getInputStream();
             BufferedReader br = new BufferedReader(new InputStreamReader(is));
             
-            getNotificationStrategy().sendNotification(SplitMarkerSetImporterNotificationType.IMPORT_STARTED);
+            getNotificationStrategy().onNotification(SplitMarkerSetImporterNotificationType.IMPORT_STARTED);
             
             createSplitMarkerSet(getName());
             
@@ -61,21 +61,21 @@ public abstract class AbstractSplitMarkerSetCsvImporter extends AbstractSplitMar
                 if (tokens.length != 3) {
                     LOG.error("Import row [{}] does not contain 3 tokens.", line);
                     getNotificationStrategy()
-                            .sendNotification(
+                            .onNotification(
                                     SplitMarkerSetImporterNotificationType.IMPORT_FAILED);
                     return;
                 }
                 
                 try {
                     createSplitMarker(tokens[0].trim(), Double.valueOf(tokens[1]), Double.valueOf(tokens[2]));
-                    getNotificationStrategy().sendNotification(SplitMarkerSetImporterNotificationType.IMPORT_PROGRESS,
+                    getNotificationStrategy().onNotification(SplitMarkerSetImporterNotificationType.IMPORT_PROGRESS,
                             new ImportProgress(counter++, null));
                 } catch (NumberFormatException e) {
                     LOG.error(
                             "Number format error parsing latitude and longitude data from import row ["
                                     + line + "].", e);
                     getNotificationStrategy()
-                            .sendNotification(
+                            .onNotification(
                                     SplitMarkerSetImporterNotificationType.IMPORT_FAILED);
                     return;
                 }
@@ -85,10 +85,10 @@ public abstract class AbstractSplitMarkerSetCsvImporter extends AbstractSplitMar
             
             commitTx();
             
-            getNotificationStrategy().sendNotification(SplitMarkerSetImporterNotificationType.IMPORT_FINISHED, getId());
+            getNotificationStrategy().onNotification(SplitMarkerSetImporterNotificationType.IMPORT_FINISHED, getId());
         } catch (Exception e) {
             LOG.error("Unknown error performing the import.", e);
-            getNotificationStrategy().sendNotification(SplitMarkerSetImporterNotificationType.IMPORT_FAILED, e);
+            getNotificationStrategy().onNotification(SplitMarkerSetImporterNotificationType.IMPORT_FAILED, e);
             
             try {
                 rollbackTx();

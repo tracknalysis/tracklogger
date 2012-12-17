@@ -40,9 +40,16 @@ public class BtDeviceListPreference extends ListPreference {
 
         Configuration config = ConfigurationFactory.getInstance().getConfiguration();
         
-        if (!config.isTestMode()) {
-            BluetoothAdapter btAdapter = BluetoothAdapter.getDefaultAdapter();
-    
+        BluetoothAdapter btAdapter = BluetoothAdapter.getDefaultAdapter();
+        
+        if (btAdapter == null && config.isTestMode()) {
+        	String[] entries = new String[] {"Fake Device 1", "Fake Device 2"};
+            String[] entryValues = new String[] {"00:11:22:33:44:55:66", "00:11:22:33:44:55:AA"};
+            
+            setEntries(entries);
+            setEntryValues(entryValues);
+        } else if (btAdapter != null) {
+            
             Set<BluetoothDevice> pairedDevices = btAdapter.getBondedDevices();
     
             String[] entries = new String[pairedDevices.size()];
@@ -54,12 +61,6 @@ public class BtDeviceListPreference extends ListPreference {
                 entryValues[i] = dev.getAddress();
                 i++;
             }
-            
-            setEntries(entries);
-            setEntryValues(entryValues);
-        } else {
-            String[] entries = new String[] {"Fake Device 1", "Fake Device 2"};
-            String[] entryValues = new String[] {"00:11:22:33:44:55:66", "00:11:22:33:44:55:AA"};
             
             setEntries(entries);
             setEntryValues(entryValues);

@@ -22,7 +22,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-import net.tracknalysis.common.notification.NotificationStrategy;
+import net.tracknalysis.common.notification.NotificationListener;
 import net.tracknalysis.common.notification.NotificationType;
 import net.tracknalysis.tracklogger.R;
 import net.tracknalysis.tracklogger.TrackLogger;
@@ -77,10 +77,10 @@ public abstract class AbstractObservableIntentService<T, U> extends Service impl
     public static final String EXPORT_FORMAT_CSV_1 = "csv1";
     public static final String EXPORT_FORMAT_SQL_1 = "sql1";
     
-    private final SparseArray<List<WeakReference<NotificationStrategy<RequestNotificationType>>>> requestNotificationStrategyMap = 
-            new SparseArray<List<WeakReference<NotificationStrategy<RequestNotificationType>>>>();
-    private final List<WeakReference<NotificationStrategy<ObservableIntentServiceNotificationType>>> serviceNotificationStrategyMap =
-            new LinkedList<WeakReference<NotificationStrategy<ObservableIntentServiceNotificationType>>>();
+    private final SparseArray<List<WeakReference<NotificationListener<RequestNotificationType>>>> requestNotificationStrategyMap = 
+            new SparseArray<List<WeakReference<NotificationListener<RequestNotificationType>>>>();
+    private final List<WeakReference<NotificationListener<ObservableIntentServiceNotificationType>>> serviceNotificationStrategyMap =
+            new LinkedList<WeakReference<NotificationListener<ObservableIntentServiceNotificationType>>>();
     
     private final SparseArray<RequestState<T>> requestStateMap = new SparseArray<RequestState<T>>();
     private final IBinder binder = new LocalBinder(this);
@@ -170,14 +170,14 @@ public abstract class AbstractObservableIntentService<T, U> extends Service impl
 
     @Override
     public void register(int sessionId,
-            NotificationStrategy<RequestNotificationType> notificationStrategy) {
+            NotificationListener<RequestNotificationType> notificationStrategy) {
         
         synchronized (requestNotificationStrategyMap) {
-            List<WeakReference<NotificationStrategy<RequestNotificationType>>> strategies = 
+            List<WeakReference<NotificationListener<RequestNotificationType>>> strategies = 
                     requestNotificationStrategyMap.get(sessionId);
             
             if (strategies == null) {
-                strategies = new LinkedList<WeakReference<NotificationStrategy<RequestNotificationType>>>();
+                strategies = new LinkedList<WeakReference<NotificationListener<RequestNotificationType>>>();
                 requestNotificationStrategyMap.put(sessionId, strategies);
             } else {
                 // Only scrub if it was an existing list.
@@ -188,7 +188,7 @@ public abstract class AbstractObservableIntentService<T, U> extends Service impl
             
             if (index == -1) {
                 strategies.add(
-                        new WeakReference<NotificationStrategy<RequestNotificationType>>(notificationStrategy));
+                        new WeakReference<NotificationListener<RequestNotificationType>>(notificationStrategy));
                 
                 // Always synch to the current state of the queued request for the session in question when registering.
                 // This is synchronized so that we always get the latest state of the session and any subsequent updates
@@ -211,10 +211,10 @@ public abstract class AbstractObservableIntentService<T, U> extends Service impl
     @Override
     public void unRegister(
             int sessionId,
-            NotificationStrategy<RequestNotificationType> notificationStrategy) {
+            NotificationListener<RequestNotificationType> notificationStrategy) {
         
         synchronized (requestNotificationStrategyMap) {
-            List<WeakReference<NotificationStrategy<RequestNotificationType>>> strategies = 
+            List<WeakReference<NotificationListener<RequestNotificationType>>> strategies = 
                     requestNotificationStrategyMap.get(sessionId);
             
             if (strategies != null) {
@@ -232,7 +232,7 @@ public abstract class AbstractObservableIntentService<T, U> extends Service impl
     @SuppressLint("UseSparseArrays")
     @Override
     public void register(
-            NotificationStrategy<ObservableIntentServiceNotificationType> notificationStrategy) {
+            NotificationListener<ObservableIntentServiceNotificationType> notificationStrategy) {
         
         synchronized (serviceNotificationStrategyMap) {
             scrubStrategies(serviceNotificationStrategyMap);
@@ -241,7 +241,7 @@ public abstract class AbstractObservableIntentService<T, U> extends Service impl
             
             if (index == -1) {
                 serviceNotificationStrategyMap.add(
-                        new WeakReference<NotificationStrategy<ObservableIntentServiceNotificationType>>(
+                        new WeakReference<NotificationListener<ObservableIntentServiceNotificationType>>(
                                 notificationStrategy));
                 
                 synchronized (requestStateMap) {
@@ -255,7 +255,7 @@ public abstract class AbstractObservableIntentService<T, U> extends Service impl
                     ObservableIntentServiceRequestStatusNotification oisrsn =
                             new ObservableIntentServiceRequestStatusNotification(map);
                     
-                    notificationStrategy.sendNotification(
+                    notificationStrategy.onNotification(
                             ObservableIntentServiceNotificationType.REQUEST_STATUS_NOTIFICATION,
                             oisrsn);
                 }
@@ -265,7 +265,7 @@ public abstract class AbstractObservableIntentService<T, U> extends Service impl
     
     @Override
     public void unRegister(
-            NotificationStrategy<ObservableIntentServiceNotificationType> notificationStrategy) {
+            NotificationListener<ObservableIntentServiceNotificationType> notificationStrategy) {
         
         synchronized (serviceNotificationStrategyMap) {
             scrubStrategies(serviceNotificationStrategyMap);
@@ -359,12 +359,12 @@ public abstract class AbstractObservableIntentService<T, U> extends Service impl
      * @return -1 if no matching entry was found or the index of the matching reference in the list
      */
     private int findInWeakReferenceList(
-            List<? extends WeakReference<? extends NotificationStrategy<? extends NotificationType>>> strategies,
-            NotificationStrategy<?> notificationStrategy) {
+            List<? extends WeakReference<? extends NotificationListener<? extends NotificationType>>> strategies,
+            NotificationListener<?> notificationStrategy) {
         
         int index = 0;
         
-        for (WeakReference<? extends NotificationStrategy<?>> existingStrategy : strategies) {
+        for (WeakReference<? extends NotificationListener<?>> existingStrategy : strategies) {
             if (existingStrategy.get() == notificationStrategy) {
                 return index;
             }
@@ -381,9 +381,9 @@ public abstract class AbstractObservableIntentService<T, U> extends Service impl
      * @param strategies the list to inspect for stale references
      */
     private void scrubStrategies(
-            List<? extends WeakReference<? extends NotificationStrategy<? extends NotificationType>>> strategies) {
+            List<? extends WeakReference<? extends NotificationListener<? extends NotificationType>>> strategies) {
         
-        Iterator<? extends WeakReference<? extends NotificationStrategy<? extends NotificationType>>> iterator =
+        Iterator<? extends WeakReference<? extends NotificationListener<? extends NotificationType>>> iterator =
                 strategies.iterator();
         
         while (iterator.hasNext()) {
@@ -404,17 +404,17 @@ public abstract class AbstractObservableIntentService<T, U> extends Service impl
      */
     private void sendDownstreamUpdates(int requestId, RequestLifecycleStatus status, U progress) {
         synchronized (requestNotificationStrategyMap) {
-            List<WeakReference<NotificationStrategy<RequestNotificationType>>> strategies = 
+            List<WeakReference<NotificationListener<RequestNotificationType>>> strategies = 
                     requestNotificationStrategyMap.get(requestId);
             
             if (strategies != null && strategies.size() != 0) {
-                for (WeakReference<NotificationStrategy<RequestNotificationType>> strategyRef
+                for (WeakReference<NotificationListener<RequestNotificationType>> strategyRef
                         : strategies) {
                     
-                    NotificationStrategy<RequestNotificationType> strategy = strategyRef.get();
+                    NotificationListener<RequestNotificationType> strategy = strategyRef.get();
                     
                     if (strategy != null) {
-                        strategy.sendNotification(RequestNotificationType.REQUEST_LIFECYCLE_NOTIFICATION,
+                        strategy.onNotification(RequestNotificationType.REQUEST_LIFECYCLE_NOTIFICATION,
                                 new RequestLifecycleNotification<U>(status, progress));
                     }
                 }

@@ -15,26 +15,26 @@
  */
 package net.tracknalysis.tracklogger._import;
 
-import net.tracknalysis.common.notification.NoOpNotificationStrategy;
-import net.tracknalysis.common.notification.NotificationStrategy;
+import net.tracknalysis.common.notification.NoOpNotificationListener;
+import net.tracknalysis.common.notification.NotificationListener;
 
 /**
  * @author David Valeri
  */
 public abstract class AbstractSplitMarkerSetImporter implements SplitMarkerSetImporter {
 
-    protected final NotificationStrategy<SplitMarkerSetImporterNotificationType> notificationStrategy;
+    protected final NotificationListener<SplitMarkerSetImporterNotificationType> notificationStrategy;
     
     protected AbstractSplitMarkerSetImporter(
-            NotificationStrategy<SplitMarkerSetImporterNotificationType> notificationStrategy) {
+            NotificationListener<SplitMarkerSetImporterNotificationType> notificationStrategy) {
         if (notificationStrategy == null) {
-            this.notificationStrategy = new NoOpNotificationStrategy<SplitMarkerSetImporterNotificationType>();
+            this.notificationStrategy = new NoOpNotificationListener<SplitMarkerSetImporterNotificationType>();
         } else {
             this.notificationStrategy = notificationStrategy;
         }
     }
     
-    protected final NotificationStrategy<SplitMarkerSetImporterNotificationType> getNotificationStrategy() {
+    protected final NotificationListener<SplitMarkerSetImporterNotificationType> getNotificationStrategy() {
         return notificationStrategy;
     }
 }

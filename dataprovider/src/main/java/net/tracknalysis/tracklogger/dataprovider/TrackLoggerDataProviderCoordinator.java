@@ -15,10 +15,7 @@
  */
 package net.tracknalysis.tracklogger.dataprovider;
 
-import java.lang.ref.WeakReference;
 import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
@@ -28,8 +25,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import net.tracknalysis.common.concurrent.GracefulShutdownThread;
-import net.tracknalysis.common.notification.NotificationStrategy;
-import net.tracknalysis.common.notification.NotificationType;
 import net.tracknalysis.tracklogger.dataprovider.AbstractDataProviderCoordinator;
 import net.tracknalysis.tracklogger.model.AccelData;
 import net.tracknalysis.tracklogger.model.EcuData;
@@ -52,17 +47,11 @@ public abstract class TrackLoggerDataProviderCoordinator extends
     
     private static final AtomicInteger logThreadCounter = new AtomicInteger();
     
-    private final List<WeakReference<NotificationStrategy<DataProviderCoordinatorNotificationType>>> notificationStrategies =
-            new LinkedList<WeakReference<NotificationStrategy<DataProviderCoordinatorNotificationType>>>();
-    
     private volatile boolean ready;
     private volatile int sessionId;
     private volatile boolean logging;
     private volatile int currentSessionId;
     private volatile boolean loggingStartTriggerFired;
-    private volatile DataProviderCoordinatorNotificationType lastNotificationType = 
-            DataProviderCoordinatorNotificationType.STOPPED;
-    private volatile Object lastNotificationBody;
     private LogThread logThread;
     
     private final BlockingQueue<Object> dataQueue = new ArrayBlockingQueue<Object>(100);
@@ -159,56 +148,7 @@ public abstract class TrackLoggerDataProviderCoordinator extends
         return currentSessionId;
     }
     
-    @Override
-    public final void register(
-            NotificationStrategy<DataProviderCoordinatorNotificationType> notificationStrategy) {
-        
-        synchronized (notificationStrategies) {
-            scrubStrategies(notificationStrategies);
-            
-            int index = findInWeakReferenceList(notificationStrategies, notificationStrategy);
-            
-            if (index == -1) {
-                notificationStrategies.add(
-                        new WeakReference<NotificationStrategy<DataProviderCoordinatorNotificationType>>(
-                                notificationStrategy));
-                
-                if (lastNotificationBody != null) {
-                    notificationStrategy.sendNotification(lastNotificationType, lastNotificationBody);
-                } else {
-                    notificationStrategy.sendNotification(lastNotificationType);
-                }
-            }
-        }
-    }
     
-    @Override
-    public final void unRegister(
-            NotificationStrategy<DataProviderCoordinatorNotificationType> notificationStrategy) {
-        
-        synchronized (notificationStrategies) {
-            scrubStrategies(notificationStrategies);
-                
-            int index = findInWeakReferenceList(notificationStrategies, notificationStrategy);
-                
-            if (index > -1) {
-                notificationStrategies.remove(index);
-            }
-        }
-    }
-    
-    protected final void sendNotification(DataProviderCoordinatorNotificationType notificationType) {
-        sendNotification(notificationType, null);
-    }
-    
-    protected final void sendNotification(DataProviderCoordinatorNotificationType notificationType, Object body) {
-        synchronized (notificationStrategies) {
-            lastNotificationType = notificationType;
-            lastNotificationBody = body;
-            
-            sendNotificationInternal(notificationType, body);
-        }
-    }
     
     protected final void handleReady() {
         if (!ready) {
@@ -377,70 +317,6 @@ public abstract class TrackLoggerDataProviderCoordinator extends
     protected void postStop() {
     }
     
-    /**
-     * Searches a list of references for a reference that points to {@code notificationStrategy}.
-     *
-     * @param strategies the list to search
-     * @param notificationStrategy the strategy to look for in the list
-     *
-     * @return -1 if no matching entry was found or the index of the matching reference in the list
-     */
-    private int findInWeakReferenceList(
-            List<? extends WeakReference<? extends NotificationStrategy<? extends NotificationType>>> strategies,
-            NotificationStrategy<?> notificationStrategy) {
-        
-        int index = 0;
-        
-        for (WeakReference<? extends NotificationStrategy<?>> existingStrategy : strategies) {
-            if (existingStrategy.get() == notificationStrategy) {
-                return index;
-            }
-            
-            index++;
-        }
-        
-        return -1;
-    }
-    
-    /**
-     * Culls any references from the list which have had their target garbage collected.
-     *
-     * @param strategies the list to inspect for stale references
-     */
-    private void scrubStrategies(
-            List<? extends WeakReference<? extends NotificationStrategy<? extends NotificationType>>> strategies) {
-        
-        Iterator<? extends WeakReference<? extends NotificationStrategy<? extends NotificationType>>> iterator =
-                strategies.iterator();
-        
-        while (iterator.hasNext()) {
-            WeakReference<?> strategyRef = iterator.next();
-            if (strategyRef.get() == null) {
-                iterator.remove();
-            }
-        }
-    }
-    
-    /**
-     * Sends notifications to registered listeners.  Callers must synchronize on {@link #notificationStrategies}
-     * externally.
-     */
-    private void sendNotificationInternal(DataProviderCoordinatorNotificationType notificationType, Object body) {
-        for (WeakReference<NotificationStrategy<DataProviderCoordinatorNotificationType>> ref 
-                : notificationStrategies) {
-            
-            NotificationStrategy<DataProviderCoordinatorNotificationType> strategy = ref.get();
-            
-            if (strategy != null) {
-                if (body != null) {
-                    strategy.sendNotification(notificationType, body);
-                } else {
-                    strategy.sendNotification(notificationType);
-                }
-            }
-        }
-    }
-    
     private class LogThread extends GracefulShutdownThread {
         
         private int logEntriesWritten = 0;
@@ -459,7 +335,7 @@ public abstract class TrackLoggerDataProviderCoordinator extends
                 long startTime;
                 int numRead;
     
-                while (run) {
+                while (keepRunning()) {
     
                     numRead = dataQueue.drainTo(logObjects, 20);
                     startTime = System.currentTimeMillis();
@@ -501,9 +377,9 @@ public abstract class TrackLoggerDataProviderCoordinator extends
                 
             } catch (Exception e) {
                 String logMessage = "Exception while logging data.  Data queue depth is '" + dataQueue.size()
-                        + "' running is " + run + ".";
+                        + "' running is " + keepRunning() + ".";
 
-                if (run) {
+                if (keepRunning()) {
                     LOG.error(logMessage, e);
                     sendNotification(DataProviderCoordinatorNotificationType.LOGGING_FAILED);
                 } else {

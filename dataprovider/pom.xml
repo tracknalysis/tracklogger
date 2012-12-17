@@ -57,9 +57,16 @@ Authors: David Valeri
       <version>0.1.0-SNAPSHOT</version>
     </dependency>
     <dependency>
-      <groupId>net.tracknalysis.ecu</groupId> 
+      <groupId>net.tracknalysis.ecu.ms</groupId> 
       <artifactId>tracknalysis-mega-com</artifactId>
       <version>0.1.0-SNAPSHOT</version>
+      <!-- TODO: fix the megacom JAR build so this doesn't end up in transitive deps. -->
+      <exclusions>
+        <exclusion>
+          <groupId>net.tracknalysis.ecu.ms</groupId> 
+          <artifactId>tracknalysis-mega-com-normaliser</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.easymock</groupId>

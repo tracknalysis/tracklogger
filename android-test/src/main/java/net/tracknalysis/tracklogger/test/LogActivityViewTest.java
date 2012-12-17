@@ -19,7 +19,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 
-import net.tracknalysis.common.notification.NotificationStrategy;
+import net.tracknalysis.common.notification.NotificationListener;
 import net.tracknalysis.tracklogger.R;
 import net.tracknalysis.tracklogger.activity.LogActivity;
 import net.tracknalysis.tracklogger.dataprovider.DataProviderCoordinator;
@@ -45,7 +45,7 @@ import android.net.Uri;
  */
 public class LogActivityViewTest extends AbstractLogActivityTest {
     
-    private NotificationStrategy<DataProviderCoordinatorNotificationType> notificationStrategy;
+    private NotificationListener<DataProviderCoordinatorNotificationType> notificationStrategy;
     private boolean started;
     private LocationData locationData;
     private AccelData accelData;
@@ -138,15 +138,15 @@ public class LogActivityViewTest extends AbstractLogActivityTest {
 
                             @Override
                             public void register(
-                                    NotificationStrategy<DataProviderCoordinatorNotificationType> notificationStrategy) {
+                                    NotificationListener<DataProviderCoordinatorNotificationType> notificationStrategy) {
                                 LogActivityViewTest.this.notificationStrategy = notificationStrategy;
                                 LogActivityViewTest.this.notificationStrategy
-                                        .sendNotification(lastNotificationType, lastNotificationBody);
+                                        .onNotification(lastNotificationType, lastNotificationBody);
                             }
 
                             @Override
                             public void unRegister(
-                                    NotificationStrategy<DataProviderCoordinatorNotificationType> notificationStrategy) {
+                                    NotificationListener<DataProviderCoordinatorNotificationType> notificationStrategy) {
                             } 
                         };
                     }
@@ -195,10 +195,10 @@ public class LogActivityViewTest extends AbstractLogActivityTest {
 
         triggerStart(logActivity);
         
-        notificationStrategy.sendNotification(DataProviderCoordinatorNotificationType.STARTING);
-        notificationStrategy.sendNotification(DataProviderCoordinatorNotificationType.STARTED);
+        notificationStrategy.onNotification(DataProviderCoordinatorNotificationType.STARTING);
+        notificationStrategy.onNotification(DataProviderCoordinatorNotificationType.STARTED);
         
-        notificationStrategy.sendNotification(DataProviderCoordinatorNotificationType.READY_PROGRESS,
+        notificationStrategy.onNotification(DataProviderCoordinatorNotificationType.READY_PROGRESS,
                 new Object[] {locationData, null, null});
         
         runTestOnUiThread(new Runnable() {
@@ -213,9 +213,9 @@ public class LogActivityViewTest extends AbstractLogActivityTest {
             }
         });
         
-        notificationStrategy.sendNotification(DataProviderCoordinatorNotificationType.READY_PROGRESS,
+        notificationStrategy.onNotification(DataProviderCoordinatorNotificationType.READY_PROGRESS,
                 new Object[] {locationData, null, null});
-        notificationStrategy.sendNotification(DataProviderCoordinatorNotificationType.READY_PROGRESS,
+        notificationStrategy.onNotification(DataProviderCoordinatorNotificationType.READY_PROGRESS,
                 new Object[] {locationData, accelData, null});
         
         runTestOnUiThread(new Runnable() {
@@ -230,7 +230,7 @@ public class LogActivityViewTest extends AbstractLogActivityTest {
             }
         });
         
-        notificationStrategy.sendNotification(DataProviderCoordinatorNotificationType.READY);
+        notificationStrategy.onNotification(DataProviderCoordinatorNotificationType.READY);
         
         runTestOnUiThread(new Runnable() {
             
@@ -241,7 +241,7 @@ public class LogActivityViewTest extends AbstractLogActivityTest {
             }
         });
         
-        notificationStrategy.sendNotification(DataProviderCoordinatorNotificationType.TIMING_START_TRIGGER_FIRED);
+        notificationStrategy.onNotification(DataProviderCoordinatorNotificationType.TIMING_START_TRIGGER_FIRED);
         
         runTestOnUiThread(new Runnable() {
             
@@ -254,7 +254,7 @@ public class LogActivityViewTest extends AbstractLogActivityTest {
         
         // Lap 1: start
         timingData = timingBuilder.build();
-        notificationStrategy.sendNotification(DataProviderCoordinatorNotificationType.TIMING_DATA_UPDATE,
+        notificationStrategy.onNotification(DataProviderCoordinatorNotificationType.TIMING_DATA_UPDATE,
                 timingData);
         
         runTestOnUiThread(new Runnable() {
@@ -278,7 +278,7 @@ public class LogActivityViewTest extends AbstractLogActivityTest {
         timingBuilder.getBestSplitTimes().set(0, 30000l);
         timingBuilder.setLastSplitStartDataReceivedTime(initialTimingReceivedTime + 30000l);
         timingData = timingBuilder.build();
-        notificationStrategy.sendNotification(DataProviderCoordinatorNotificationType.TIMING_DATA_UPDATE,
+        notificationStrategy.onNotification(DataProviderCoordinatorNotificationType.TIMING_DATA_UPDATE,
                 timingData);
         
         runTestOnUiThread(new Runnable() {
@@ -306,7 +306,7 @@ public class LogActivityViewTest extends AbstractLogActivityTest {
         timingBuilder.setLastLapStartDataReceivedTime(initialTimingReceivedTime + 60000l);
         timingBuilder.setLastSplitStartDataReceivedTime(initialTimingReceivedTime + 60000l);
         timingData = timingBuilder.build();
-        notificationStrategy.sendNotification(DataProviderCoordinatorNotificationType.TIMING_DATA_UPDATE,
+        notificationStrategy.onNotification(DataProviderCoordinatorNotificationType.TIMING_DATA_UPDATE,
                 timingData);
         
         runTestOnUiThread(new Runnable() {
@@ -332,7 +332,7 @@ public class LogActivityViewTest extends AbstractLogActivityTest {
         timingBuilder.getBestSplitTimes().set(0, 25045l);
         timingBuilder.setLastSplitStartDataReceivedTime(initialTimingReceivedTime + 90000l);
         timingData = timingBuilder.build();
-        notificationStrategy.sendNotification(DataProviderCoordinatorNotificationType.TIMING_DATA_UPDATE,
+        notificationStrategy.onNotification(DataProviderCoordinatorNotificationType.TIMING_DATA_UPDATE,
                 timingData);
         
         runTestOnUiThread(new Runnable() {
@@ -359,7 +359,7 @@ public class LogActivityViewTest extends AbstractLogActivityTest {
         timingBuilder.setLastLapStartDataReceivedTime(initialTimingReceivedTime + 120000l);
         timingBuilder.setLastSplitStartDataReceivedTime(initialTimingReceivedTime + 120000l);
         timingData = timingBuilder.build();
-        notificationStrategy.sendNotification(DataProviderCoordinatorNotificationType.TIMING_DATA_UPDATE,
+        notificationStrategy.onNotification(DataProviderCoordinatorNotificationType.TIMING_DATA_UPDATE,
                 timingData);
         
         runTestOnUiThread(new Runnable() {

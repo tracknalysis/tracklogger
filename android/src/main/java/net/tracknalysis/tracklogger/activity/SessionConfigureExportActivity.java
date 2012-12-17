@@ -20,8 +20,8 @@ import java.lang.ref.WeakReference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import net.tracknalysis.common.android.notification.AndroidNotificationStrategy;
-import net.tracknalysis.common.notification.NotificationStrategy;
+import net.tracknalysis.common.android.notification.AndroidNotificationListener;
+import net.tracknalysis.common.notification.NotificationListener;
 import net.tracknalysis.common.util.TimeUtil;
 import net.tracknalysis.tracklogger.R;
 import net.tracknalysis.tracklogger.TrackLogger;
@@ -80,13 +80,13 @@ public class SessionConfigureExportActivity extends Activity {
     private ServiceConnection serviceConnection;
     private ObservableIntentService sessionExporterService;
     private volatile boolean bound;
-    private NotificationStrategy<RequestNotificationType> notificationStrategy;
+    private NotificationListener<RequestNotificationType> notificationStrategy;
     
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         
-        notificationStrategy = new AndroidNotificationStrategy<RequestNotificationType>(
+        notificationStrategy = new AndroidNotificationListener<RequestNotificationType>(
                 new SessionExporterServiceHandler(this));
         
         setContentView(R.layout.session_export);

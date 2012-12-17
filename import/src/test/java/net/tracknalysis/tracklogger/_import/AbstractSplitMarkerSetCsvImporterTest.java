@@ -28,7 +28,7 @@ import org.easymock.CaptureType;
 import org.junit.Before;
 import org.junit.Test;
 
-import net.tracknalysis.common.notification.NotificationStrategy;
+import net.tracknalysis.common.notification.NotificationListener;
 import net.tracknalysis.tracklogger._import.AbstractSplitMarkerSetCsvImporter;
 import net.tracknalysis.tracklogger._import.SplitMarkerSetImporter.ImportProgress;
 import net.tracknalysis.tracklogger._import.SplitMarkerSetImporter.SplitMarkerSetImporterNotificationType;
@@ -39,12 +39,12 @@ import net.tracknalysis.tracklogger.model.SplitMarker;
  */
 public class AbstractSplitMarkerSetCsvImporterTest {
     
-    private NotificationStrategy<SplitMarkerSetImporterNotificationType> notificationStrategy;
+    private NotificationListener<SplitMarkerSetImporterNotificationType> notificationStrategy;
     
     @Before
     @SuppressWarnings("unchecked")
     public void setup() {
-        notificationStrategy = createMock(NotificationStrategy.class);
+        notificationStrategy = createMock(NotificationListener.class);
     }
     
     @Test
@@ -57,27 +57,27 @@ public class AbstractSplitMarkerSetCsvImporterTest {
         
         Capture<ImportProgress> progressCapture = new Capture<SplitMarkerSetImporter.ImportProgress>(CaptureType.ALL);
         
-        notificationStrategy.sendNotification(SplitMarkerSetImporterNotificationType.IMPORT_STARTING);
+        notificationStrategy.onNotification(SplitMarkerSetImporterNotificationType.IMPORT_STARTING);
         expectLastCall();
-        notificationStrategy.sendNotification(SplitMarkerSetImporterNotificationType.IMPORT_STARTED);
+        notificationStrategy.onNotification(SplitMarkerSetImporterNotificationType.IMPORT_STARTED);
         expectLastCall();
-        notificationStrategy.sendNotification(
+        notificationStrategy.onNotification(
                 eq(SplitMarkerSetImporterNotificationType.IMPORT_PROGRESS),
                 capture(progressCapture));
         expectLastCall();
-        notificationStrategy.sendNotification(
+        notificationStrategy.onNotification(
                 eq(SplitMarkerSetImporterNotificationType.IMPORT_PROGRESS),
                 capture(progressCapture));
         expectLastCall();
-        notificationStrategy.sendNotification(
+        notificationStrategy.onNotification(
                 eq(SplitMarkerSetImporterNotificationType.IMPORT_PROGRESS),
                 capture(progressCapture));
         expectLastCall();
-        notificationStrategy.sendNotification(
+        notificationStrategy.onNotification(
                 eq(SplitMarkerSetImporterNotificationType.IMPORT_PROGRESS),
                 capture(progressCapture));
         expectLastCall();
-        notificationStrategy.sendNotification(eq(SplitMarkerSetImporterNotificationType.IMPORT_FINISHED), eq(0));
+        notificationStrategy.onNotification(eq(SplitMarkerSetImporterNotificationType.IMPORT_FINISHED), eq(0));
         expectLastCall();
         
         replay(notificationStrategy);
@@ -113,11 +113,11 @@ public class AbstractSplitMarkerSetCsvImporterTest {
                 AbstractSplitMarkerSetCsvImporterTest.class
                         .getResourceAsStream("csv-splitmarker-invalid-line-tokens.csv"));
         
-        notificationStrategy.sendNotification(SplitMarkerSetImporterNotificationType.IMPORT_STARTING);
+        notificationStrategy.onNotification(SplitMarkerSetImporterNotificationType.IMPORT_STARTING);
         expectLastCall();
-        notificationStrategy.sendNotification(SplitMarkerSetImporterNotificationType.IMPORT_STARTED);
+        notificationStrategy.onNotification(SplitMarkerSetImporterNotificationType.IMPORT_STARTED);
         expectLastCall();
-        notificationStrategy.sendNotification(SplitMarkerSetImporterNotificationType.IMPORT_FAILED);
+        notificationStrategy.onNotification(SplitMarkerSetImporterNotificationType.IMPORT_FAILED);
         expectLastCall();
         
         replay(notificationStrategy);
@@ -134,11 +134,11 @@ public class AbstractSplitMarkerSetCsvImporterTest {
                 AbstractSplitMarkerSetCsvImporterTest.class
                         .getResourceAsStream("csv-splitmarker-invalid-blank-line.csv"));
         
-        notificationStrategy.sendNotification(SplitMarkerSetImporterNotificationType.IMPORT_STARTING);
+        notificationStrategy.onNotification(SplitMarkerSetImporterNotificationType.IMPORT_STARTING);
         expectLastCall();
-        notificationStrategy.sendNotification(SplitMarkerSetImporterNotificationType.IMPORT_STARTED);
+        notificationStrategy.onNotification(SplitMarkerSetImporterNotificationType.IMPORT_STARTED);
         expectLastCall();
-        notificationStrategy.sendNotification(SplitMarkerSetImporterNotificationType.IMPORT_FAILED);
+        notificationStrategy.onNotification(SplitMarkerSetImporterNotificationType.IMPORT_FAILED);
         expectLastCall();
         
         replay(notificationStrategy);
@@ -155,11 +155,11 @@ public class AbstractSplitMarkerSetCsvImporterTest {
                 AbstractSplitMarkerSetCsvImporterTest.class
                         .getResourceAsStream("csv-splitmarker-invalid-number-format.csv"));
         
-        notificationStrategy.sendNotification(SplitMarkerSetImporterNotificationType.IMPORT_STARTING);
+        notificationStrategy.onNotification(SplitMarkerSetImporterNotificationType.IMPORT_STARTING);
         expectLastCall();
-        notificationStrategy.sendNotification(SplitMarkerSetImporterNotificationType.IMPORT_STARTED);
+        notificationStrategy.onNotification(SplitMarkerSetImporterNotificationType.IMPORT_STARTED);
         expectLastCall();
-        notificationStrategy.sendNotification(SplitMarkerSetImporterNotificationType.IMPORT_FAILED);
+        notificationStrategy.onNotification(SplitMarkerSetImporterNotificationType.IMPORT_FAILED);
         expectLastCall();
         
         replay(notificationStrategy);
@@ -177,7 +177,7 @@ public class AbstractSplitMarkerSetCsvImporterTest {
         private List<SplitMarker> splitMarkers = new LinkedList<SplitMarker>();
 
         protected SplitMarkerSetCsvImporterTestHarness(
-                NotificationStrategy<SplitMarkerSetImporterNotificationType> notificationStrategy,
+                NotificationListener<SplitMarkerSetImporterNotificationType> notificationStrategy,
                 InputStream is) {
             super(notificationStrategy);
             this.is = is;

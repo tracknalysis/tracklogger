@@ -20,7 +20,7 @@ import static org.junit.Assert.*;
 
 import java.util.Arrays;
 
-import net.tracknalysis.common.notification.NotificationStrategy;
+import net.tracknalysis.common.notification.NotificationListener;
 import net.tracknalysis.tracklogger.dataprovider.DataProviderCoordinator.DataProviderCoordinatorNotificationType;
 import net.tracknalysis.tracklogger.model.LocationData;
 import net.tracknalysis.tracklogger.model.TimingData;
@@ -40,7 +40,7 @@ public class TrackLoggerDataProviderCoordinatorTest {
 
     private TestTrackLoggerDataProviderCoordinator dpc;
     
-    private NotificationStrategy<DataProviderCoordinatorNotificationType> mockNotificationStrategy;
+    private NotificationListener<DataProviderCoordinatorNotificationType> mockNotificationStrategy;
     private LocationDataProvider mockLocationDataProvider;
     private EcuDataProvider mockEcuDataProvider;
     private AccelDataProvider mockAccelDataProvider;
@@ -49,7 +49,7 @@ public class TrackLoggerDataProviderCoordinatorTest {
     @SuppressWarnings("unchecked")
     @Before
     public void setup() throws Exception {
-        mockNotificationStrategy = createMock(NotificationStrategy.class);
+        mockNotificationStrategy = createMock(NotificationListener.class);
         mockLocationDataProvider = createMock(LocationDataProvider.class);
         mockEcuDataProvider = createMock(EcuDataProvider.class);
         mockAccelDataProvider = createMock(AccelDataProvider.class);
@@ -103,12 +103,12 @@ public class TrackLoggerDataProviderCoordinatorTest {
         Capture<DataListener<TimingData>> timingListenerCapture = new Capture<DataListener<TimingData>>();
         
         // Before start()
-        mockNotificationStrategy.sendNotification(
+        mockNotificationStrategy.onNotification(
                 eq(DataProviderCoordinator.DataProviderCoordinatorNotificationType.STOPPED));
         expectLastCall();
         
         // start()
-        mockNotificationStrategy.sendNotification(
+        mockNotificationStrategy.onNotification(
                 eq(DataProviderCoordinator.DataProviderCoordinatorNotificationType.STARTING));
         expectLastCall();
         mockLocationDataProvider.addSynchronousListener(capture(locationListenerCapture));
@@ -126,7 +126,7 @@ public class TrackLoggerDataProviderCoordinatorTest {
         mockTimingDataProvider.addSynchronousListener(capture(timingListenerCapture));
         expectLastCall();
         
-        mockNotificationStrategy.sendNotification(
+        mockNotificationStrategy.onNotification(
                 eq(DataProviderCoordinator.DataProviderCoordinatorNotificationType.STARTED));
         expectLastCall();
 
@@ -137,7 +137,7 @@ public class TrackLoggerDataProviderCoordinatorTest {
         expect(mockAccelDataProvider.getCurrentData()).andReturn(null);
         expect(mockEcuDataProvider.getCurrentData()).andReturn(null);
         
-        mockNotificationStrategy.sendNotification(
+        mockNotificationStrategy.onNotification(
                 eq(DataProviderCoordinator.DataProviderCoordinatorNotificationType.READY_PROGRESS),
                 anyObject(Object[].class));
         expectLastCall();
@@ -149,7 +149,7 @@ public class TrackLoggerDataProviderCoordinatorTest {
         expect(mockAccelDataProvider.getCurrentData()).andReturn(accelDataBuilder.build());
         expect(mockEcuDataProvider.getCurrentData()).andReturn(null);
         
-        mockNotificationStrategy.sendNotification(
+        mockNotificationStrategy.onNotification(
                 eq(DataProviderCoordinator.DataProviderCoordinatorNotificationType.READY_PROGRESS),
                 anyObject(Object[].class));
         expectLastCall();
@@ -161,7 +161,7 @@ public class TrackLoggerDataProviderCoordinatorTest {
         expect(mockAccelDataProvider.getCurrentData()).andReturn(accelDataBuilder.build());
         expect(mockEcuDataProvider.getCurrentData()).andReturn(ecuDataBuilder.build());
         
-        mockNotificationStrategy.sendNotification(
+        mockNotificationStrategy.onNotification(
                 eq(DataProviderCoordinator.DataProviderCoordinatorNotificationType.READY_PROGRESS),
                 anyObject(Object[].class));
         expectLastCall();
@@ -169,7 +169,7 @@ public class TrackLoggerDataProviderCoordinatorTest {
         mockTimingDataProvider.start();
         expectLastCall();
         
-        mockNotificationStrategy.sendNotification(
+        mockNotificationStrategy.onNotification(
                 eq(DataProviderCoordinator.DataProviderCoordinatorNotificationType.READY));
         expectLastCall();
         
@@ -178,11 +178,11 @@ public class TrackLoggerDataProviderCoordinatorTest {
         expect(mockEcuDataProvider.getCurrentData()).andReturn(ecuDataBuilder.build());
         
         // receiveData(TimingData) - 1
-        mockNotificationStrategy.sendNotification(
+        mockNotificationStrategy.onNotification(
                 eq(DataProviderCoordinator.DataProviderCoordinatorNotificationType.TIMING_START_TRIGGER_FIRED));
         expectLastCall();
         mockNotificationStrategy
-                .sendNotification(
+                .onNotification(
                         eq(DataProviderCoordinator.DataProviderCoordinatorNotificationType.TIMING_DATA_UPDATE),
                         anyObject(TimingData.class));
         expectLastCall();
@@ -193,13 +193,13 @@ public class TrackLoggerDataProviderCoordinatorTest {
         
         // receiveData(TimingData) - 2
         mockNotificationStrategy
-                .sendNotification(
+                .onNotification(
                         eq(DataProviderCoordinator.DataProviderCoordinatorNotificationType.TIMING_DATA_UPDATE),
                         anyObject(TimingData.class));
         expectLastCall();
         
         // stop()
-        mockNotificationStrategy.sendNotification(
+        mockNotificationStrategy.onNotification(
                 eq(DataProviderCoordinator.DataProviderCoordinatorNotificationType.STOPPING));
         expectLastCall();
         mockAccelDataProvider.removeSynchronousListener(notNull(DataListener.class));
@@ -218,7 +218,7 @@ public class TrackLoggerDataProviderCoordinatorTest {
         expectLastCall();
         mockEcuDataProvider.stop();
         expectLastCall();
-        mockNotificationStrategy.sendNotification(
+        mockNotificationStrategy.onNotification(
                 eq(DataProviderCoordinator.DataProviderCoordinatorNotificationType.STOPPED));
         expectLastCall();
         

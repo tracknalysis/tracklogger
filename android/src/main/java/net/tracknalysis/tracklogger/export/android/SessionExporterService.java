@@ -17,7 +17,7 @@ package net.tracknalysis.tracklogger.export.android;
 
 import java.io.File;
 
-import net.tracknalysis.common.android.notification.AndroidNotificationStrategy;
+import net.tracknalysis.common.android.notification.AndroidNotificationListener;
 import net.tracknalysis.tracklogger.R;
 import net.tracknalysis.tracklogger.TrackLogger;
 import net.tracknalysis.tracklogger.export.SessionExporter;
@@ -134,11 +134,11 @@ public class SessionExporterService extends
         if (EXPORT_FORMAT_CSV_1.equals(exportFormat)) {
             exporter = new AndroidSessionToTrackLoggerCsvExporter(
                     getApplicationContext(),
-                    new AndroidNotificationStrategy<SessionExporterNotificationType>(requestState.getHandler()));
+                    new AndroidNotificationListener<SessionExporterNotificationType>(requestState.getHandler()));
         } else if (EXPORT_FORMAT_SQL_1.equals(exportFormat)) {
             exporter = new AndroidSessionToTrackLoggerSqlExporter(
                     getApplicationContext(),
-                    new AndroidNotificationStrategy<SessionExporterNotificationType>(requestState.getHandler()));
+                    new AndroidNotificationListener<SessionExporterNotificationType>(requestState.getHandler()));
         } else {
             LOG.error(
                     "Export format identifier [{}] is not supported in request with request state [{}].",

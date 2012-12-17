@@ -46,6 +46,7 @@ public abstract class AbstractLogActivityTest extends ActivityInstrumentationTes
         configuration.setRootLogLevel(Level.INFO);
         configuration.setLogToFile(false);
         configuration.setTestMode(true);
+        configuration.setEcuIoLogEnabled(false);
         
         configuration.setLogLayoutId(R.layout.log_default);
         
