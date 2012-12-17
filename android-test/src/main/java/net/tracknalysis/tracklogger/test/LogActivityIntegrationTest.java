@@ -309,7 +309,7 @@ public class LogActivityIntegrationTest extends AbstractLogActivityTest {
         // Use a range because we can't be sure how many NMEA sentences get dropped due to
         // timing issues.
 		assertTrue("Got weird number of entries: " + logEntryCursor.getCount(),
-				logEntryCursor.getCount() > 1250
+				logEntryCursor.getCount() > 1240
 						&& logEntryCursor.getCount() < 1275);
         
         // TODO examine the data for several entries

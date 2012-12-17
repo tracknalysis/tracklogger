@@ -23,7 +23,7 @@ import net.tracknalysis.common.notification.NotificationListener;
 import net.tracknalysis.tracklogger.R;
 import net.tracknalysis.tracklogger.activity.LogActivity;
 import net.tracknalysis.tracklogger.dataprovider.DataProviderCoordinator;
-import net.tracknalysis.tracklogger.dataprovider.DataProviderCoordinator.DataProviderCoordinatorNotificationType;
+import net.tracknalysis.tracklogger.dataprovider.DataProviderCoordinatorNotificationType;
 import net.tracknalysis.tracklogger.dataprovider.android.DataProviderCoordinatorFactory;
 import net.tracknalysis.tracklogger.dataprovider.android.DataProviderCoordinatorManagerService;
 import net.tracknalysis.tracklogger.model.AccelData;
@@ -45,7 +45,7 @@ import android.net.Uri;
  */
 public class LogActivityViewTest extends AbstractLogActivityTest {
     
-    private NotificationListener<DataProviderCoordinatorNotificationType> notificationStrategy;
+    private NotificationListener<DataProviderCoordinatorNotificationType> notificationListener;
     private boolean started;
     private LocationData locationData;
     private AccelData accelData;
@@ -135,19 +135,29 @@ public class LogActivityViewTest extends AbstractLogActivityTest {
                             public void startAsynch() {
                                 start();
                             }
-
+                            
                             @Override
-                            public void register(
-                                    NotificationListener<DataProviderCoordinatorNotificationType> notificationStrategy) {
-                                LogActivityViewTest.this.notificationStrategy = notificationStrategy;
-                                LogActivityViewTest.this.notificationStrategy
-                                        .onNotification(lastNotificationType, lastNotificationBody);
+                            public void addListener(
+                            		NotificationListener<DataProviderCoordinatorNotificationType> listener) {
+                            }
+                            
+                            @Override
+                            public void removeListener(
+                            		NotificationListener<DataProviderCoordinatorNotificationType> listener) {
                             }
 
                             @Override
-                            public void unRegister(
-                                    NotificationListener<DataProviderCoordinatorNotificationType> notificationStrategy) {
-                            } 
+                            public void addWeakReferenceListener(
+                            		NotificationListener<DataProviderCoordinatorNotificationType> listener) {
+                            	LogActivityViewTest.this.notificationListener = listener;
+                                LogActivityViewTest.this.notificationListener
+                                        .onNotification(lastNotificationType, lastNotificationBody);
+                            }
+                            
+                            @Override
+                            public void removeWeakReferenceListener(
+                            		NotificationListener<DataProviderCoordinatorNotificationType> listener) {
+                            }
                         };
                     }
         });
@@ -195,10 +205,10 @@ public class LogActivityViewTest extends AbstractLogActivityTest {
 
         triggerStart(logActivity);
         
-        notificationStrategy.onNotification(DataProviderCoordinatorNotificationType.STARTING);
-        notificationStrategy.onNotification(DataProviderCoordinatorNotificationType.STARTED);
+        notificationListener.onNotification(DataProviderCoordinatorNotificationType.STARTING);
+        notificationListener.onNotification(DataProviderCoordinatorNotificationType.STARTED);
         
-        notificationStrategy.onNotification(DataProviderCoordinatorNotificationType.READY_PROGRESS,
+        notificationListener.onNotification(DataProviderCoordinatorNotificationType.READY_PROGRESS,
                 new Object[] {locationData, null, null});
         
         runTestOnUiThread(new Runnable() {
@@ -213,9 +223,9 @@ public class LogActivityViewTest extends AbstractLogActivityTest {
             }
         });
         
-        notificationStrategy.onNotification(DataProviderCoordinatorNotificationType.READY_PROGRESS,
+        notificationListener.onNotification(DataProviderCoordinatorNotificationType.READY_PROGRESS,
                 new Object[] {locationData, null, null});
-        notificationStrategy.onNotification(DataProviderCoordinatorNotificationType.READY_PROGRESS,
+        notificationListener.onNotification(DataProviderCoordinatorNotificationType.READY_PROGRESS,
                 new Object[] {locationData, accelData, null});
         
         runTestOnUiThread(new Runnable() {
@@ -230,7 +240,7 @@ public class LogActivityViewTest extends AbstractLogActivityTest {
             }
         });
         
-        notificationStrategy.onNotification(DataProviderCoordinatorNotificationType.READY);
+        notificationListener.onNotification(DataProviderCoordinatorNotificationType.READY);
         
         runTestOnUiThread(new Runnable() {
             
@@ -241,7 +251,7 @@ public class LogActivityViewTest extends AbstractLogActivityTest {
             }
         });
         
-        notificationStrategy.onNotification(DataProviderCoordinatorNotificationType.TIMING_START_TRIGGER_FIRED);
+        notificationListener.onNotification(DataProviderCoordinatorNotificationType.TIMING_START_TRIGGER_FIRED);
         
         runTestOnUiThread(new Runnable() {
             
@@ -254,7 +264,7 @@ public class LogActivityViewTest extends AbstractLogActivityTest {
         
         // Lap 1: start
         timingData = timingBuilder.build();
-        notificationStrategy.onNotification(DataProviderCoordinatorNotificationType.TIMING_DATA_UPDATE,
+        notificationListener.onNotification(DataProviderCoordinatorNotificationType.TIMING_DATA_UPDATE,
                 timingData);
         
         runTestOnUiThread(new Runnable() {
@@ -278,7 +288,7 @@ public class LogActivityViewTest extends AbstractLogActivityTest {
         timingBuilder.getBestSplitTimes().set(0, 30000l);
         timingBuilder.setLastSplitStartDataReceivedTime(initialTimingReceivedTime + 30000l);
         timingData = timingBuilder.build();
-        notificationStrategy.onNotification(DataProviderCoordinatorNotificationType.TIMING_DATA_UPDATE,
+        notificationListener.onNotification(DataProviderCoordinatorNotificationType.TIMING_DATA_UPDATE,
                 timingData);
         
         runTestOnUiThread(new Runnable() {
@@ -306,7 +316,7 @@ public class LogActivityViewTest extends AbstractLogActivityTest {
         timingBuilder.setLastLapStartDataReceivedTime(initialTimingReceivedTime + 60000l);
         timingBuilder.setLastSplitStartDataReceivedTime(initialTimingReceivedTime + 60000l);
         timingData = timingBuilder.build();
-        notificationStrategy.onNotification(DataProviderCoordinatorNotificationType.TIMING_DATA_UPDATE,
+        notificationListener.onNotification(DataProviderCoordinatorNotificationType.TIMING_DATA_UPDATE,
                 timingData);
         
         runTestOnUiThread(new Runnable() {
@@ -332,7 +342,7 @@ public class LogActivityViewTest extends AbstractLogActivityTest {
         timingBuilder.getBestSplitTimes().set(0, 25045l);
         timingBuilder.setLastSplitStartDataReceivedTime(initialTimingReceivedTime + 90000l);
         timingData = timingBuilder.build();
-        notificationStrategy.onNotification(DataProviderCoordinatorNotificationType.TIMING_DATA_UPDATE,
+        notificationListener.onNotification(DataProviderCoordinatorNotificationType.TIMING_DATA_UPDATE,
                 timingData);
         
         runTestOnUiThread(new Runnable() {
@@ -359,7 +369,7 @@ public class LogActivityViewTest extends AbstractLogActivityTest {
         timingBuilder.setLastLapStartDataReceivedTime(initialTimingReceivedTime + 120000l);
         timingBuilder.setLastSplitStartDataReceivedTime(initialTimingReceivedTime + 120000l);
         timingData = timingBuilder.build();
-        notificationStrategy.onNotification(DataProviderCoordinatorNotificationType.TIMING_DATA_UPDATE,
+        notificationListener.onNotification(DataProviderCoordinatorNotificationType.TIMING_DATA_UPDATE,
                 timingData);
         
         runTestOnUiThread(new Runnable() {

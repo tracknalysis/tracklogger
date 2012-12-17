@@ -20,6 +20,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.concurrent.CountDownLatch;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -56,6 +57,8 @@ public class MegasquirtEcuDataProvider extends AbstractDataProvider<EcuData>
     private Megasquirt ms;
     private MsConfiguration msConfig;
     private volatile EcuData currentEcuData;
+    private CountDownLatch stopLatch;
+    private CountDownLatch startLatch;
     
     public MegasquirtEcuDataProvider(SocketManager socketManager, File debugLogDir) {
         this.socketManager = socketManager;
@@ -66,6 +69,8 @@ public class MegasquirtEcuDataProvider extends AbstractDataProvider<EcuData>
     @Override
     public synchronized void start() {
         if (ms == null) {
+        	stopLatch = new CountDownLatch(1);
+        	startLatch = new CountDownLatch(1);
         	// Make sure we are connected if not previously connected.
             try {
                 msConfig = new DefaultMsConfiguration(
@@ -82,6 +87,11 @@ public class MegasquirtEcuDataProvider extends AbstractDataProvider<EcuData>
                 ms = new Megasquirt(msiom, tableManager, new MegasquirtDataProviderLog(), msConfig, debugLogDir);
                 ms.addListener(notificationListener);
                 ms.start();
+                try {
+					startLatch.await();
+				} catch (InterruptedException e) {
+					//Ignore
+				}
             } catch (IOException e) {
                 LOG.error("IO error initializing data provider.");
                 // TODO
@@ -94,8 +104,13 @@ public class MegasquirtEcuDataProvider extends AbstractDataProvider<EcuData>
     public synchronized void stop() {
         if (ms != null) {
         	ms.stopLogging();
+        	ms.stop();
+        	try {
+				stopLatch.await();
+			} catch (InterruptedException e) {
+				//Ignore
+			}
         	ms.removeListener(notificationListener);
-            ms.stop();
             ms = null;
         }
     }
@@ -135,7 +150,6 @@ public class MegasquirtEcuDataProvider extends AbstractDataProvider<EcuData>
 		@Override
 		public void onNotification(MegasquirtNotificationType notificationType) {
 			onNotification(notificationType, null);
-			
 		}
 
 		@SuppressWarnings("incomplete-switch")
@@ -144,7 +158,12 @@ public class MegasquirtEcuDataProvider extends AbstractDataProvider<EcuData>
 				Object messageBody) {
 			switch (notificationType) {
 				case CONNECTED:
+					startLatch.countDown();
 					ms.startLogging();
+					break;
+				case DISCONNECTED:
+					startLatch.countDown();
+					stopLatch.countDown();
 					break;
 			}
 		}
@@ -203,45 +222,47 @@ public class MegasquirtEcuDataProvider extends AbstractDataProvider<EcuData>
 
         @Override
         public void write(Megasquirt ms) throws IOException {
-            LOG.debug("Received new Megasquirt update.  Refreshing current ECU data.");
-            
-            if (firstWrite) {
-            	afr = ms.getOutputChannelByName("afr1");
-            	batV = ms.getOutputChannelByName("batteryVoltage");
-            	clt = ms.getOutputChannelByName("coolant");
-            	ignAdv = ms.getOutputChannelByName("advance");
-            	map = ms.getOutputChannelByName("map");
-            	boostvac = ms.getOutputChannelByName("boostvac");
-            	mat = ms.getOutputChannelByName("mat");
-            	rpm = ms.getOutputChannelByName("rpm");
-            	tps = ms.getOutputChannelByName("throttle");
-            	
-            }
-            
-            
-			EcuData.EcuDataBuilder builder = new EcuData.EcuDataBuilder();
-			builder.setDataRecivedTime(System.currentTimeMillis());
-			builder.setAirFuelRatio(getDoubleIfAvailable(afr));
-			builder.setBatteryVoltage(getDoubleIfAvailable(batV));
-			builder.setCoolantTemperature(getDoubleIfAvailable(clt));
-			builder.setIgnitionAdvance(getDoubleIfAvailable(ignAdv));
-			builder.setManifoldAbsolutePressure(getDoubleIfAvailable(map));
-			builder.setManifoldGaugePressure(getDoubleIfAvailable(boostvac) * 6.89475729d); // PSI to KPa
-			builder.setManifoldAirTemperature(getDoubleIfAvailable(mat));
-			builder.setRpm(getIntIfAvailable(rpm));
-            
-            double throttle = getDoubleIfAvailable(tps);
-            // Set the floor for throttle position to 0
-            if (throttle < 0d) {
-                throttle = 0d;
-            }
-            
-            builder.setThrottlePosition(throttle);
-            
-            EcuData newEcuData = builder.build();
-            currentEcuData = newEcuData;
-            
-            notifySynchronousListeners(newEcuData);
+        	if (logging) {
+	            LOG.debug("Received new Megasquirt update.  Refreshing current ECU data.");
+	            
+	            if (firstWrite) {
+	            	afr = ms.getOutputChannelByName("afr1");
+	            	batV = ms.getOutputChannelByName("batteryVoltage");
+	            	clt = ms.getOutputChannelByName("coolant");
+	            	ignAdv = ms.getOutputChannelByName("advance");
+	            	map = ms.getOutputChannelByName("map");
+	            	boostvac = ms.getOutputChannelByName("boostvac");
+	            	mat = ms.getOutputChannelByName("mat");
+	            	rpm = ms.getOutputChannelByName("rpm");
+	            	tps = ms.getOutputChannelByName("throttle");
+	            	
+	            }
+	            
+	            
+				EcuData.EcuDataBuilder builder = new EcuData.EcuDataBuilder();
+				builder.setDataRecivedTime(System.currentTimeMillis());
+				builder.setAirFuelRatio(getDoubleIfAvailable(afr));
+				builder.setBatteryVoltage(getDoubleIfAvailable(batV));
+				builder.setCoolantTemperature(getDoubleIfAvailable(clt));
+				builder.setIgnitionAdvance(getDoubleIfAvailable(ignAdv));
+				builder.setManifoldAbsolutePressure(getDoubleIfAvailable(map));
+				builder.setManifoldGaugePressure(getDoubleIfAvailable(boostvac) * 6.89475729d); // PSI to KPa
+				builder.setManifoldAirTemperature(getDoubleIfAvailable(mat));
+				builder.setRpm(getIntIfAvailable(rpm));
+	            
+	            double throttle = getDoubleIfAvailable(tps);
+	            // Set the floor for throttle position to 0
+	            if (throttle < 0d) {
+	                throttle = 0d;
+	            }
+	            
+	            builder.setThrottlePosition(throttle);
+	            
+	            EcuData newEcuData = builder.build();
+	            currentEcuData = newEcuData;
+	            
+	            notifySynchronousListeners(newEcuData);
+        	}
         }
 
         @Override

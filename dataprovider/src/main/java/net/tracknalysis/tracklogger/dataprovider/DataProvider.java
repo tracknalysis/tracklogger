@@ -24,8 +24,14 @@ import net.tracknalysis.tracklogger.model.AbstractData;
  */
 public interface DataProvider<T extends AbstractData> {
     
+	/**
+	 * Synchronously starts the provider.
+	 */
     void start();
     
+    /**
+     * Synchronously stops the provider.
+     */
     void stop();
     
     T getCurrentData();

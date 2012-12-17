@@ -15,11 +15,8 @@
  */
 package net.tracknalysis.tracklogger.dataprovider;
 
-import java.util.HashMap;
-import java.util.Map;
 
-import net.tracknalysis.common.notification.NotificationListener;
-import net.tracknalysis.common.notification.NotificationType;
+import net.tracknalysis.common.notification.NotificationListenerRegistry;
 import net.tracknalysis.tracklogger.model.AccelData;
 import net.tracknalysis.tracklogger.model.EcuData;
 import net.tracknalysis.tracklogger.model.LocationData;
@@ -28,84 +25,8 @@ import net.tracknalysis.tracklogger.model.TimingData;
 /**
  * @author David Valeri
  */
-public interface DataProviderCoordinator {
-
-    /**
-     * Enumeration of notification types that this implementation may generate.
-     */
-    public static enum DataProviderCoordinatorNotificationType implements NotificationType {
-        /**
-         * Triggered when the the startup of the coordinator begins.
-         */
-        STARTING,
-        /**
-         * Triggered when the startup of the coordinator completes.
-         */
-        STARTED,
-        /**
-         * Triggered when the startup of the coordinator fails.  The notification contains the exception that
-         * triggered the failure.
-         */
-        START_FAILED,
-        /**
-         * Triggered when an update from a subordinate data provider arrives and the coordinator is not
-         * yet ready to start logging.  The notification contains an array of {@link LocationData}, {@link AccelData},
-         * and {@link EcuData}.
-         */
-        READY_PROGRESS,
-        /**
-         * Triggered when an all subordinate data providers are ready and logging can start. 
-         */
-        READY,
-        /**
-         * Triggered when the condition for the start of timing is met.
-         */
-        TIMING_START_TRIGGER_FIRED,
-        /**
-         * Triggered when an update to timing data becomes available.  The notification contains
-         * the new {@link TimingData}.
-         */
-        TIMING_DATA_UPDATE,
-        /**
-         * Triggered when there is a failure recording logged data.
-         */
-        LOGGING_FAILED,
-        /**
-         * Triggered when the the shutdown of the coordinator begins.
-         */
-        STOPPING,
-        /**
-         * Triggered when the the shutdown of the coordinator completes.
-         */
-        STOPPED,
-        /**
-         * Triggered when the the shutdown of the coordinator fails.  The notification contains the exception that
-         * triggered the failure.
-         */
-        STOP_FAILED;
-        
-        private static final Map<Integer, DataProviderCoordinatorNotificationType> intToTypeMap = new HashMap<Integer, DataProviderCoordinatorNotificationType>();
-        
-        static {
-            for (DataProviderCoordinatorNotificationType type : DataProviderCoordinatorNotificationType.values()) {
-                intToTypeMap.put(type.ordinal(), type);
-            }
-        }
-    
-        public static DataProviderCoordinatorNotificationType fromInt(int i) {
-            DataProviderCoordinatorNotificationType type = intToTypeMap.get(Integer.valueOf(i));
-            if (type == null) {
-                throw new IllegalArgumentException(
-                        "No enum const " + i);
-            }
-            return type;
-        }
-    
-        @Override
-        public int getNotificationTypeId() {
-            return ordinal();
-        }
-    }
+public interface DataProviderCoordinator extends
+		NotificationListenerRegistry<DataProviderCoordinatorNotificationType> {
 
     void start();
     
@@ -132,17 +53,4 @@ public interface DataProviderCoordinator {
     boolean isLoggingStartTriggerFired();
 
     boolean isReady();
-    
-    /**
-     * Register a listener for notifications regarding the overall state of the coordinator.  When the listener is
-     * registered, it will immediately receive the last known notification sent by the coordinator.  Following
-     * notifications will be delivered as they are produced by the coordinator.  This behavior allows for listeners
-     * to synchronize immediately on registration.
-     */
-    void register(NotificationListener<DataProviderCoordinatorNotificationType> notificationStrategy);
-    
-    /**
-     * Unregister a listener for notifications regarding the overall state of the service.
-     */
-    void unRegister(NotificationListener<DataProviderCoordinatorNotificationType> notificationStrategy);
 }

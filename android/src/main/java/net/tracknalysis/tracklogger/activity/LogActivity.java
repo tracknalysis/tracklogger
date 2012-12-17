@@ -30,7 +30,7 @@ import net.tracknalysis.tracklogger.config.Configuration;
 import net.tracknalysis.tracklogger.config.Configuration.DisplayGauge;
 import net.tracknalysis.tracklogger.config.ConfigurationFactory;
 import net.tracknalysis.tracklogger.dataprovider.DataProviderCoordinator;
-import net.tracknalysis.tracklogger.dataprovider.DataProviderCoordinator.DataProviderCoordinatorNotificationType;
+import net.tracknalysis.tracklogger.dataprovider.DataProviderCoordinatorNotificationType;
 import net.tracknalysis.tracklogger.dataprovider.android.DataProviderCoordinatorManagerService;
 import net.tracknalysis.tracklogger.dataprovider.android.DataProviderCoordinatorManagerService.LocalBinder;
 import net.tracknalysis.tracklogger.model.AccelData;
@@ -599,7 +599,7 @@ public class LogActivity extends BaseActivity implements OnCancelListener, View.
                         setValueIfShown(batVGauge, (float) ecuData.getBatteryVoltage());
                     }
                 } catch (IllegalStateException e) {
-                    LOG.warn(
+                    LOG.info(
                             "Scheduled runnable on UI thread was still executing when the data "
                                     + "provider coordinator service was destroyed.  This is likely just a timing"
                                     + " issue; however, this still warrants a look as a possible cause of errors if the"
@@ -612,7 +612,7 @@ public class LogActivity extends BaseActivity implements OnCancelListener, View.
             }
         };
         
-        notificationStrategy = new AndroidNotificationListener<DataProviderCoordinator.DataProviderCoordinatorNotificationType>(
+        notificationStrategy = new AndroidNotificationListener<DataProviderCoordinatorNotificationType>(
                 new DataProviderCoordinatorHandler(this));
     }
 
@@ -722,7 +722,7 @@ public class LogActivity extends BaseActivity implements OnCancelListener, View.
         
         if (dpcManagerService != null && dpcManagerService.isInitialized()) {
             
-            dpcManagerService.getInstance().unRegister(notificationStrategy);
+            dpcManagerService.getInstance().removeWeakReferenceListener(notificationStrategy);
             
             if (stopLogging && !ignoreStopLogging) {
                 dpcManagerService.uninitialize();
@@ -883,7 +883,7 @@ public class LogActivity extends BaseActivity implements OnCancelListener, View.
                     startService(new Intent(getApplicationContext(), DataProviderCoordinatorManagerService.class));
                     dpcManagerService.initialize(getApplication(), btAdapter,
                             splitMarkerSetUri);
-                    dpcManagerService.getInstance().register(notificationStrategy);
+                    dpcManagerService.getInstance().addWeakReferenceListener(notificationStrategy);
                     dpcManagerService.getInstance().startAsynch();
                 } else {
                     LOG.error("Missing split marker set URI while initializing data providers and coordinator.");
@@ -893,7 +893,7 @@ public class LogActivity extends BaseActivity implements OnCancelListener, View.
                 // Register for notifications. As soon as we do this, we will
                 // receive a notification of the coordinator's current state. 
                 // From there we launch into the next phase of initialization.
-                dpcManagerService.getInstance().register(notificationStrategy);
+                dpcManagerService.getInstance().addWeakReferenceListener(notificationStrategy);
             }
         } catch (Exception e) {
             LOG.error("Fatal error while initializing data providers and coordinator.", e);
@@ -1196,8 +1196,8 @@ public class LogActivity extends BaseActivity implements OnCancelListener, View.
             
                 LOG.debug("Handling data provider coordinator message: {}.", msg);
                 
-                DataProviderCoordinator.DataProviderCoordinatorNotificationType type = 
-                        DataProviderCoordinator.DataProviderCoordinatorNotificationType.fromInt(msg.what);
+                DataProviderCoordinatorNotificationType type = 
+                        DataProviderCoordinatorNotificationType.fromInt(msg.what);
                 
                 try {
                     switch (type) {

@@ -77,10 +77,10 @@ public abstract class TrackLoggerDataProviderCoordinator extends
                 
                 super.start();
                 postStart();
-                sendNotification(DataProviderCoordinator.DataProviderCoordinatorNotificationType.STARTED);
+                sendNotification(DataProviderCoordinatorNotificationType.STARTED);
             } catch (RuntimeException e) {
                 LOG.error("Error during startup.", e);
-                sendNotification(DataProviderCoordinator.DataProviderCoordinatorNotificationType.START_FAILED, e);
+                sendNotification(DataProviderCoordinatorNotificationType.START_FAILED, e);
                 
                 try {
                     stop();
@@ -117,7 +117,7 @@ public abstract class TrackLoggerDataProviderCoordinator extends
             } catch (RuntimeException e) {
                 logThread = null;
                 LOG.error("Error during shutdown.", e);
-                sendNotification(DataProviderCoordinator.DataProviderCoordinatorNotificationType.STOP_FAILED, e);
+                sendNotification(DataProviderCoordinatorNotificationType.STOP_FAILED, e);
             }
         }
     }
@@ -148,10 +148,8 @@ public abstract class TrackLoggerDataProviderCoordinator extends
         return currentSessionId;
     }
     
-    
-    
     protected final void handleReady() {
-        if (!ready) {
+        if (!ready && isRunning()) {
         
             LocationData locationData = getLocationDataProvider().getCurrentData();
             AccelData accelData = getAccelDataProvider().getCurrentData();

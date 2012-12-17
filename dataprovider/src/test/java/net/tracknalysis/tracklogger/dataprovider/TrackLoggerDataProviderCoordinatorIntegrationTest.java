@@ -27,7 +27,6 @@ import net.tracknalysis.location.LocationManager;
 import net.tracknalysis.location.Route;
 import net.tracknalysis.location.Waypoint;
 import net.tracknalysis.location.nmea.NmeaLocationManager;
-import net.tracknalysis.tracklogger.dataprovider.DataProviderCoordinator.DataProviderCoordinatorNotificationType;
 import net.tracknalysis.tracklogger.dataprovider.location.LocationManagerLocationDataProvider;
 import net.tracknalysis.tracklogger.dataprovider.timing.RouteManagerTimingDataProvider;
 import net.tracknalysis.tracklogger.model.TimingData;
@@ -88,11 +87,11 @@ public class TrackLoggerDataProviderCoordinatorIntegrationTest {
         accelDataBuilder.setVertical(0);
         
         mockNotificationStrategy.onNotification(
-                eq(DataProviderCoordinator.DataProviderCoordinatorNotificationType.STOPPED));
+                eq(DataProviderCoordinatorNotificationType.STOPPED));
         expectLastCall();
         
         mockNotificationStrategy.onNotification(
-                eq(DataProviderCoordinator.DataProviderCoordinatorNotificationType.STARTING));
+                eq(DataProviderCoordinatorNotificationType.STARTING));
         expectLastCall();
         
         mockAccelDataProvider.addSynchronousListener(anyObject(DataListener.class));
@@ -101,46 +100,46 @@ public class TrackLoggerDataProviderCoordinatorIntegrationTest {
         expectLastCall();
                 
         mockNotificationStrategy.onNotification(
-                eq(DataProviderCoordinator.DataProviderCoordinatorNotificationType.STARTED));
+                eq(DataProviderCoordinatorNotificationType.STARTED));
         expectLastCall();
         
         mockNotificationStrategy.onNotification(
-                eq(DataProviderCoordinator.DataProviderCoordinatorNotificationType.READY_PROGRESS),
+                eq(DataProviderCoordinatorNotificationType.READY_PROGRESS),
                 anyObject(Object[].class));
         expectLastCall().anyTimes();
         
         mockNotificationStrategy.onNotification(
-                eq(DataProviderCoordinator.DataProviderCoordinatorNotificationType.READY));
+                eq(DataProviderCoordinatorNotificationType.READY));
         expectLastCall();
         
         expect(mockAccelDataProvider.getCurrentData()).andReturn(accelDataBuilder.build());
         
         mockNotificationStrategy.onNotification(
-                eq(DataProviderCoordinator.DataProviderCoordinatorNotificationType.TIMING_START_TRIGGER_FIRED));
+                eq(DataProviderCoordinatorNotificationType.TIMING_START_TRIGGER_FIRED));
         expectLastCall();
         
         // While logging we will get a bunch of calls to this method
         expect(mockAccelDataProvider.getCurrentData()).andReturn(accelDataBuilder.build()).anyTimes();
         mockNotificationStrategy
                 .onNotification(
-                        eq(DataProviderCoordinator.DataProviderCoordinatorNotificationType.TIMING_DATA_UPDATE),
+                        eq(DataProviderCoordinatorNotificationType.TIMING_DATA_UPDATE),
                         anyObject(TimingData.class));
         expectLastCall().times(6);
         
         mockNotificationStrategy.onNotification(
-                eq(DataProviderCoordinator.DataProviderCoordinatorNotificationType.STOPPING));
+                eq(DataProviderCoordinatorNotificationType.STOPPING));
         expectLastCall();
         mockAccelDataProvider.removeSynchronousListener(anyObject(DataListener.class));
         expectLastCall();
         mockAccelDataProvider.stop();
         expectLastCall();
         mockNotificationStrategy.onNotification(
-                eq(DataProviderCoordinator.DataProviderCoordinatorNotificationType.STOPPED));
+                eq(DataProviderCoordinatorNotificationType.STOPPED));
         expectLastCall();
         
         replay(mockNotificationStrategy, mockAccelDataProvider);
         
-        dpc.register(mockNotificationStrategy);
+        dpc.addWeakReferenceListener(mockNotificationStrategy);
         dpc.start();
         locationManager.start();
         
